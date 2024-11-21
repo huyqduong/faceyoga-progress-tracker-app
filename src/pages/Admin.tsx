@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dumbbell, BookOpen, Settings } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import ExerciseManager from './Admin/ExerciseManager';
 import CourseManager from './Admin/CourseManager';
 import SettingsManager from './Admin/SettingsManager';
@@ -7,7 +8,15 @@ import SettingsManager from './Admin/SettingsManager';
 type Tab = 'exercises' | 'courses' | 'settings';
 
 function Admin() {
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<Tab>('exercises');
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && (tab === 'exercises' || tab === 'courses' || tab === 'settings')) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   return (
     <div className="space-y-8">

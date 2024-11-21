@@ -98,14 +98,14 @@ function Home() {
 
   const adminTiles: MenuTile[] = [
     {
-      path: '/admin',
+      path: '/admin?tab=exercises',
       icon: Settings,
       label: 'Exercise Manager',
       description: 'Manage exercise database',
       color: 'bg-purple-600'
     },
     {
-      path: '/admin/courses',
+      path: '/admin?tab=courses',
       icon: GraduationCap,
       label: 'Course Manager',
       description: 'Manage course content',
