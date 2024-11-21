@@ -4,6 +4,7 @@ import { Target, Clock, ArrowLeft, Edit2, CheckCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
+import ReactMarkdown from 'react-markdown';
 
 interface UserGoals {
   goals: string[];
@@ -162,8 +163,8 @@ function Goals() {
           {userGoals.ai_recommendation && (
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h2 className="text-2xl font-semibold text-gray-900 mb-4">AI Recommendations</h2>
-              <div className="bg-mint-50 rounded-lg p-6">
-                <p className="text-gray-800 whitespace-pre-wrap">{userGoals.ai_recommendation}</p>
+              <div className="bg-mint-50 rounded-lg p-6 prose prose-mint max-w-none">
+                <ReactMarkdown>{userGoals.ai_recommendation}</ReactMarkdown>
               </div>
             </div>
           )}
