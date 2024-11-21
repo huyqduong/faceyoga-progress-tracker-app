@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface UserGoals {
   goals: string[];
@@ -163,8 +164,28 @@ function Goals() {
           {userGoals.ai_recommendation && (
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h2 className="text-2xl font-semibold text-gray-900 mb-4">AI Recommendations</h2>
-              <div className="bg-mint-50 rounded-lg p-6 prose prose-mint max-w-none">
-                <ReactMarkdown>{userGoals.ai_recommendation}</ReactMarkdown>
+              <div className="bg-mint-50 rounded-lg p-6">
+                <div className="prose prose-lg prose-mint max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+                  <ReactMarkdown 
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      p: ({node, ...props}) => <p className="mb-4 leading-relaxed" {...props} />,
+                      h1: ({node, ...props}) => <h1 className="text-2xl font-bold mb-4 mt-6" {...props} />,
+                      h2: ({node, ...props}) => <h2 className="text-xl font-bold mb-3 mt-5" {...props} />,
+                      h3: ({node, ...props}) => <h3 className="text-lg font-bold mb-2 mt-4" {...props} />,
+                      ul: ({node, ...props}) => <ul className="list-disc list-inside mb-4 space-y-2" {...props} />,
+                      ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-4 space-y-2" {...props} />,
+                      li: ({node, ...props}) => <li className="ml-4" {...props} />,
+                      strong: ({node, ...props}) => <strong className="font-semibold text-gray-900" {...props} />,
+                      em: ({node, ...props}) => <em className="italic text-gray-800" {...props} />,
+                      blockquote: ({node, ...props}) => (
+                        <blockquote className="border-l-4 border-mint-500 pl-4 my-4 italic text-gray-700" {...props} />
+                      ),
+                    }}
+                  >
+                    {userGoals.ai_recommendation}
+                  </ReactMarkdown>
+                </div>
               </div>
             </div>
           )}
