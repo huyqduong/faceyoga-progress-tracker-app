@@ -8,6 +8,7 @@ interface CreateCourseData {
   difficulty: string;
   duration: string;
   image_url?: string;
+  welcome_video?: string;
   sections: {
     title: string;
     description: string;

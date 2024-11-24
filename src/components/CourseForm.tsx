@@ -26,7 +26,8 @@ function CourseForm({ initialData, onSubmit, onCancel, isSubmitting }: CourseFor
     description: initialData?.description || '',
     difficulty: initialData?.difficulty || 'Beginner',
     duration: initialData?.duration || '',
-    image_url: initialData?.image_url || ''
+    image_url: initialData?.image_url || '',
+    welcome_video: initialData?.welcome_video || ''
   });
 
   const [sections, setSections] = useState<CourseSection[]>([
@@ -80,11 +81,27 @@ function CourseForm({ initialData, onSubmit, onCancel, isSubmitting }: CourseFor
     const validSections = sections.filter(section => 
       section.title.trim() && section.description.trim()
     );
+
+    // Validate welcome video URL if provided
+    if (formData.welcome_video && !isValidVideoUrl(formData.welcome_video)) {
+      toast.error('Invalid welcome video URL');
+      return;
+    }
     
     await onSubmit({
       ...formData,
       sections: validSections
     });
+  };
+
+  const isValidVideoUrl = (url: string): boolean => {
+    if (!url) return true; // Empty URL is valid (video is optional)
+    try {
+      const videoUrl = new URL(url);
+      return videoUrl.protocol === 'http:' || videoUrl.protocol === 'https:';
+    } catch {
+      return false;
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -178,6 +195,20 @@ function CourseForm({ initialData, onSubmit, onCancel, isSubmitting }: CourseFor
               type="url"
               name="image_url"
               value={formData.image_url}
+              onChange={handleInputChange}
+              className="w-full p-2 border rounded-lg"
+              placeholder="https://..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Welcome Video URL (optional)
+            </label>
+            <input
+              type="url"
+              name="welcome_video"
+              value={formData.welcome_video}
               onChange={handleInputChange}
               className="w-full p-2 border rounded-lg"
               placeholder="https://..."

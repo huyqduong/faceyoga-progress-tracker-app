@@ -48,6 +48,7 @@ export interface Course {
   title: string;
   description: string;
   image_url?: string;
+  welcome_video?: string;
   difficulty: string;
   duration: string;
   created_at: string;

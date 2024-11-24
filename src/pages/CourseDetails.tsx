@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, Target, BookOpen } from 'lucide-react';
+import { ArrowLeft, Clock, Target, BookOpen, AlertCircle } from 'lucide-react';
 import { useCourseStore } from '../store/courseStore';
 import toast from 'react-hot-toast';
 
@@ -19,6 +19,7 @@ function CourseDetails() {
   } = useCourseStore();
 
   const [isLoading, setIsLoading] = useState(true);
+  const [videoError, setVideoError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadCourseData = async () => {
@@ -52,6 +53,53 @@ function CourseDetails() {
     loadCourseData();
   }, [courseId]); // Remove dependencies that cause re-runs
 
+  const getEmbedUrl = (url: string): string | null => {
+    if (!url) return null;
+    
+    try {
+      if (url.includes('vimeo.com')) {
+        let videoId = '';
+        if (url.includes('player.vimeo.com/video/')) {
+          videoId = url.split('player.vimeo.com/video/')[1]?.split('?')[0] || '';
+        } else {
+          videoId = url.split('vimeo.com/')[1]?.split('?')[0] || '';
+        }
+        
+        if (!videoId) {
+          throw new Error('Invalid Vimeo URL');
+        }
+        
+        return `https://player.vimeo.com/video/${videoId}?autoplay=0&title=0&byline=0&portrait=0&dnt=1`;
+      }
+      
+      let videoId = '';
+      const urlObj = new URL(url);
+      
+      if (url.includes('youtube.com/watch')) {
+        videoId = urlObj.searchParams.get('v') || '';
+      } else if (url.includes('youtu.be/')) {
+        videoId = url.split('youtu.be/')[1]?.split('?')[0] || '';
+      } else if (url.includes('youtube.com/embed/')) {
+        videoId = url.split('youtube.com/embed/')[1]?.split('?')[0] || '';
+      } else if (url.includes('youtube.com/shorts/')) {
+        videoId = url.split('youtube.com/shorts/')[1]?.split('?')[0] || '';
+      }
+
+      if (!videoId && url.trim().length === 11) {
+        videoId = url.trim();
+      }
+
+      if (!videoId) {
+        throw new Error('Invalid video URL');
+      }
+
+      return `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1`;
+    } catch (error) {
+      setVideoError('Invalid video URL. Please check the URL and try again.');
+      return null;
+    }
+  };
+
   if (!courseId) {
     return <div>Course not found</div>;
   }
@@ -80,6 +128,8 @@ function CourseDetails() {
     navigate(`/exercises/${exerciseId}`, { state: { fromCourse: courseId } });
   };
 
+  const welcomeEmbedUrl = course.welcome_video ? getEmbedUrl(course.welcome_video) : null;
+
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
       {/* Header */}
@@ -103,6 +153,30 @@ function CourseDetails() {
                 alt={course.title}
                 className="w-full h-full object-cover"
               />
+            </div>
+          )}
+
+          {/* Welcome Video */}
+          {welcomeEmbedUrl && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-gray-900">Welcome Video</h2>
+              <div className="aspect-w-16 aspect-h-9 rounded-xl overflow-hidden bg-gray-100">
+                <iframe
+                  src={welcomeEmbedUrl}
+                  title={`${course.title} welcome video`}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="w-full h-full"
+                  frameBorder="0"
+                />
+              </div>
+            </div>
+          )}
+
+          {videoError && (
+            <div className="p-4 bg-red-50 text-red-600 rounded-lg flex items-center">
+              <AlertCircle className="w-5 h-5 mr-2" />
+              <p>{videoError}</p>
             </div>
           )}
 
