@@ -45,41 +45,50 @@ export const useCourseStore = create<CourseState>((set, get) => ({
   clearError: () => set({ error: null }),
 
   fetchCourses: async () => {
-    set({ loading: true, error: null });
     try {
       const courses = await courseApi.fetchCourses();
-      set({ courses, loading: false });
+      set(state => ({ 
+        courses,
+        loading: state.loading // Preserve loading state
+      }));
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch courses';
-      set({ error: message, loading: false });
+      set(state => ({ 
+        error: message,
+        loading: state.loading // Preserve loading state
+      }));
     }
   },
 
   fetchCourseSections: async (courseId: string) => {
-    set({ loading: true, error: null });
     try {
       const sections = await courseApi.fetchCourseSections(courseId);
-      set((state) => ({
+      set(state => ({
         sections: { ...state.sections, [courseId]: sections },
-        loading: false
+        loading: state.loading // Preserve loading state
       }));
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch course sections';
-      set({ error: message, loading: false });
+      set(state => ({ 
+        error: message,
+        loading: state.loading // Preserve loading state
+      }));
     }
   },
 
   fetchSectionExercises: async (sectionId: string) => {
-    set({ loading: true, error: null });
     try {
       const exercises = await courseApi.fetchSectionExercises(sectionId);
-      set((state) => ({
+      set(state => ({
         exercises: { ...state.exercises, [sectionId]: exercises },
-        loading: false
+        loading: state.loading // Preserve loading state
       }));
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch section exercises';
-      set({ error: message, loading: false });
+      set(state => ({ 
+        error: message,
+        loading: state.loading // Preserve loading state
+      }));
     }
   },
 

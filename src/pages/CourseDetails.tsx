@@ -11,7 +11,7 @@ function CourseDetails() {
     courses, 
     sections, 
     exercises: sectionExercises,
-    loading,
+    loading: storeLoading,
     error,
     fetchCourses,
     fetchCourseSections,
@@ -20,10 +20,13 @@ function CourseDetails() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [videoError, setVideoError] = useState<string | null>(null);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   useEffect(() => {
     const loadCourseData = async () => {
       if (!courseId) return;
+      
+      if (dataLoaded) return; // Prevent reloading if data is already loaded
       
       setIsLoading(true);
       try {
@@ -33,15 +36,24 @@ function CourseDetails() {
         }
 
         // Fetch sections for this course
-        const sectionsData = await fetchCourseSections(courseId);
+        await fetchCourseSections(courseId);
         
-        // Wait for sections to be loaded before fetching exercises
+        // Get sections after they're loaded
         const courseSections = sections[courseId] || [];
         
-        // Fetch exercises for all sections in parallel
-        await Promise.all(
-          courseSections.map(section => fetchSectionExercises(section.id))
-        );
+        // Fetch exercises for all sections
+        const exercisePromises = courseSections.map(section => {
+          // Only fetch if we don't already have the exercises
+          if (!sectionExercises[section.id]) {
+            return fetchSectionExercises(section.id);
+          }
+          return Promise.resolve();
+        });
+        
+        // Wait for ALL exercises to be loaded
+        await Promise.all(exercisePromises);
+        
+        setDataLoaded(true);
       } catch (err) {
         console.error('Error loading course data:', err);
         toast.error('Failed to load course details');
@@ -51,7 +63,7 @@ function CourseDetails() {
     };
 
     loadCourseData();
-  }, [courseId]); // Remove dependencies that cause re-runs
+  }, [courseId, courses.length, fetchCourses, fetchCourseSections, fetchSectionExercises, sections, sectionExercises, dataLoaded]);
 
   const getEmbedUrl = (url: string): string | null => {
     if (!url) return null;
@@ -107,7 +119,7 @@ function CourseDetails() {
   const course = courses.find(c => c.id === courseId);
   const courseSections = sections[courseId] || [];
 
-  if (isLoading || loading) {
+  if (isLoading || storeLoading) {
     return (
       <div className="text-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-mint-500 mx-auto"></div>
