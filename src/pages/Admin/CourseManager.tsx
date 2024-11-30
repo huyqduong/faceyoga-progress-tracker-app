@@ -25,21 +25,24 @@ function CourseManager() {
   const [isEditing, setIsEditing] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
+      if (dataLoaded) return;
       try {
         await Promise.all([
           fetchCourses(),
           fetchExercises()
         ]);
+        setDataLoaded(true);
       } catch (err) {
         console.error('Error loading initial data:', err);
         toast.error('Failed to load data');
       }
     };
     loadData();
-  }, [fetchCourses, fetchExercises]);
+  }, [fetchCourses, fetchExercises, dataLoaded]);
 
   const handleCreateCourse = async (data: any) => {
     try {
@@ -73,16 +76,23 @@ function CourseManager() {
   const handleEditCourse = async (course: Course) => {
     setIsLoadingDetails(true);
     try {
-      // Fetch sections for the course
-      await fetchCourseSections(course.id);
+      // Only fetch if we don't already have the data
+      if (!sections[course.id]) {
+        await fetchCourseSections(course.id);
+      }
       
       // Get the sections for this course
       const courseSections = sections[course.id] || [];
       
-      // Fetch exercises for each section
-      await Promise.all(
-        courseSections.map(section => fetchSectionExercises(section.id))
-      );
+      // Only fetch exercises for sections we don't have
+      const exercisePromises = courseSections.map(section => {
+        if (!sectionExercises[section.id]) {
+          return fetchSectionExercises(section.id);
+        }
+        return Promise.resolve();
+      });
+      
+      await Promise.all(exercisePromises);
       
       setSelectedCourse(course);
       setIsEditing(true);

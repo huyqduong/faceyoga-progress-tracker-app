@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Course, CourseSection, SectionExercise } from './supabase-types';
+import type { Course, CourseSection, SectionExercise, CoursePurchase, CourseAccess } from './supabase-types';
 
 interface CreateCourseWithSections {
   title: string;
@@ -45,7 +45,10 @@ export const courseApi = {
     const { data, error } = await supabase
       .from('section_exercises')
       .select(`
-        *,
+        id,
+        section_id,
+        exercise_id,
+        order_index,
         exercise:exercises (*)
       `)
       .eq('section_id', sectionId)
@@ -148,6 +151,183 @@ export const courseApi = {
       .from('courses')
       .delete()
       .eq('id', id);
+
+    if (error) throw error;
+  },
+
+  async fetchUserPurchases(userId: string): Promise<CoursePurchase[]> {
+    const { data, error } = await supabase
+      .from('course_purchases')
+      .select(`
+        *,
+        course:courses (*)
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async fetchUserCourseAccess(userId: string): Promise<CourseAccess[]> {
+    const { data, error } = await supabase
+      .from('course_access')
+      .select(`
+        *,
+        course:courses (*),
+        purchase:course_purchases (*)
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async hasAccessToCourse(userId: string, courseId: string): Promise<boolean> {
+    const { data, error } = await supabase
+      .from('course_access')
+      .select('id, expires_at')
+      .eq('user_id', userId)
+      .eq('course_id', courseId)
+      .maybeSingle();
+
+    if (error) throw error;
+    
+    if (!data) return false;
+    
+    // If expires_at is null, it's a lifetime access
+    if (!data.expires_at) return true;
+    
+    // Check if access hasn't expired
+    return new Date(data.expires_at) > new Date();
+  },
+
+  async hasAccessToExercise(userId: string, exerciseId: string): Promise<boolean> {
+    if (!userId || !exerciseId) {
+      console.error('Invalid userId or exerciseId');
+      return false;
+    }
+
+    try {
+      // Find all courses this exercise belongs to
+      const { data: sectionExercises, error: exerciseError } = await supabase
+        .from('section_exercises')
+        .select(`
+          section:course_sections!inner (
+            course_id
+          )
+        `)
+        .eq('exercise_id', exerciseId);
+
+      if (exerciseError) {
+        console.error('Error finding exercise courses:', exerciseError);
+        return false;
+      }
+
+      if (!sectionExercises || sectionExercises.length === 0) {
+        console.error('Exercise not found or not associated with any course');
+        return false;
+      }
+
+      // Check if user has access to any of the courses containing this exercise
+      for (const sectionExercise of sectionExercises) {
+        const courseId = sectionExercise.section?.course_id;
+        if (courseId) {
+          const hasAccess = await this.hasAccessToCourse(userId, courseId);
+          if (hasAccess) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Error checking exercise access:', error);
+      return false;
+    }
+  },
+
+  async createPurchase(purchase: Omit<CoursePurchase, 'id' | 'created_at' | 'updated_at'>): Promise<CoursePurchase> {
+    const { data, error } = await supabase
+      .from('course_purchases')
+      .insert(purchase)
+      .select(`
+        *,
+        course:courses (*)
+      `)
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async grantCourseAccess(access: Omit<CourseAccess, 'id' | 'created_at' | 'updated_at'>): Promise<CourseAccess> {
+    const { data, error } = await supabase
+      .from('course_access')
+      .insert(access)
+      .select(`
+        *,
+        course:courses (*),
+        purchase:course_purchases (*)
+      `)
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async updatePurchaseStatus(
+    purchaseId: string, 
+    status: 'completed' | 'failed' | 'refunded',
+    receiptUrl?: string
+  ): Promise<CoursePurchase> {
+    const { data, error } = await supabase
+      .from('course_purchases')
+      .update({ 
+        status,
+        receipt_url: receiptUrl,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', purchaseId)
+      .select(`
+        *,
+        course:courses (*)
+      `)
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async updateAccessExpiry(accessId: string, expiresAt: string): Promise<CourseAccess> {
+    const { data, error } = await supabase
+      .from('course_access')
+      .update({ 
+        expires_at: expiresAt,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', accessId)
+      .select(`
+        *,
+        course:courses (*),
+        purchase:course_purchases (*)
+      `)
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async updateLastAccessed(userId: string, courseId: string): Promise<void> {
+    const { error } = await supabase
+      .from('course_access')
+      .update({ 
+        last_accessed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', userId)
+      .eq('course_id', courseId);
 
     if (error) throw error;
   }

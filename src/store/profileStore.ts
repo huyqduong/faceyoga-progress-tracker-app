@@ -6,6 +6,7 @@ interface ProfileState {
   profile: Profile | null;
   loading: boolean;
   error: string | null;
+  lastFetchedUserId: string | null;
   fetchProfile: (userId: string) => Promise<void>;
   updateProfile: (profile: Partial<Profile> & { user_id: string }) => Promise<void>;
   clearProfile: () => void;
@@ -15,17 +16,30 @@ export const useProfileStore = create<ProfileState>((set) => ({
   profile: null,
   loading: false,
   error: null,
+  lastFetchedUserId: null,
 
   fetchProfile: async (userId: string) => {
+    // Skip if we're already loading or if we've already fetched this user's profile
     if (!userId) {
       set({ error: 'Invalid user ID', loading: false });
       return;
     }
 
-    set({ loading: true, error: null });
+    set((state) => {
+      // If we're already loading this user's profile or have it, skip
+      if (state.loading && state.lastFetchedUserId === userId) {
+        return state;
+      }
+      // If we already have this user's profile and no error, skip
+      if (state.profile?.user_id === userId && !state.error) {
+        return state;
+      }
+      return { ...state, loading: true, error: null, lastFetchedUserId: userId };
+    });
+
     try {
       const profile = await supabaseApi.getProfile(userId);
-      set({ profile, loading: false });
+      set({ profile, loading: false, error: null });
     } catch (error) {
       console.error('Error fetching profile:', error);
       set({ 
@@ -49,7 +63,8 @@ export const useProfileStore = create<ProfileState>((set) => ({
           ...state.profile!,
           ...updatedProfile
         },
-        loading: false
+        loading: false,
+        error: null
       }));
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -62,6 +77,6 @@ export const useProfileStore = create<ProfileState>((set) => ({
   },
 
   clearProfile: () => {
-    set({ profile: null, loading: false, error: null });
+    set({ profile: null, loading: false, error: null, lastFetchedUserId: null });
   },
 }));

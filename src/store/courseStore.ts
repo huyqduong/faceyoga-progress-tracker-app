@@ -61,33 +61,47 @@ export const useCourseStore = create<CourseState>((set, get) => ({
   },
 
   fetchCourseSections: async (courseId: string) => {
+    set(state => ({ loading: true, error: null }));
     try {
+      // Check if we already have the sections
+      if (get().sections[courseId]) {
+        set(state => ({ loading: false }));
+        return;
+      }
+
       const sections = await courseApi.fetchCourseSections(courseId);
-      set(state => ({
+      set(state => ({ 
         sections: { ...state.sections, [courseId]: sections },
-        loading: state.loading // Preserve loading state
+        loading: false
       }));
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch course sections';
       set(state => ({ 
         error: message,
-        loading: state.loading // Preserve loading state
+        loading: false
       }));
     }
   },
 
   fetchSectionExercises: async (sectionId: string) => {
+    set(state => ({ loading: true, error: null }));
     try {
+      // Check if we already have the exercises
+      if (get().exercises[sectionId]) {
+        set(state => ({ loading: false }));
+        return;
+      }
+
       const exercises = await courseApi.fetchSectionExercises(sectionId);
       set(state => ({
         exercises: { ...state.exercises, [sectionId]: exercises },
-        loading: state.loading // Preserve loading state
+        loading: false
       }));
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch section exercises';
       set(state => ({ 
         error: message,
-        loading: state.loading // Preserve loading state
+        loading: false
       }));
     }
   },

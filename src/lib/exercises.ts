@@ -1,39 +1,49 @@
 import { supabase } from './supabase';
 import type { Exercise } from './supabase-types';
 
+const DEFAULT_PAGE_SIZE = 50;
+
 export const exerciseApi = {
-  async getExercises(): Promise<Exercise[]> {
+  async getExercises(page = 1): Promise<Exercise[]> {
     try {
       const { data, error } = await supabase
         .from('exercises')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range((page - 1) * DEFAULT_PAGE_SIZE, page * DEFAULT_PAGE_SIZE - 1);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching exercises:', error);
+        return [];
+      }
       return data || [];
     } catch (error) {
       console.error('Error fetching exercises:', error);
-      throw new Error('Failed to fetch exercises');
+      return [];
     }
   },
 
-  async getExercisesByCategory(category: string): Promise<Exercise[]> {
+  async getExercisesByCategory(category: string, page = 1): Promise<Exercise[]> {
     try {
       const { data, error } = await supabase
         .from('exercises')
         .select('*')
         .eq('category', category)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range((page - 1) * DEFAULT_PAGE_SIZE, page * DEFAULT_PAGE_SIZE - 1);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching exercises by category:', error);
+        return [];
+      }
       return data || [];
     } catch (error) {
       console.error('Error fetching exercises by category:', error);
-      throw new Error('Failed to fetch exercises');
+      return [];
     }
   },
 
-  async createExercise(exercise: Omit<Exercise, 'id' | 'created_at' | 'updated_at'>): Promise<Exercise> {
+  async createExercise(exercise: Omit<Exercise, 'id' | 'created_at' | 'updated_at'>): Promise<Exercise | null> {
     try {
       const { data, error } = await supabase
         .from('exercises')
@@ -45,31 +55,46 @@ export const exerciseApi = {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating exercise:', error);
+        return null;
+      }
       return data;
     } catch (error) {
       console.error('Error creating exercise:', error);
-      throw new Error('Failed to create exercise');
+      return null;
     }
   },
 
   async updateExercise(id: string, exercise: Partial<Exercise>): Promise<Exercise> {
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
       const { data, error } = await supabase
-        .from('exercises')
-        .update({
-          ...exercise,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id)
-        .select()
-        .single();
+        .rpc('update_exercise', {
+          exercise_id: id,
+          exercise_data: {
+            title: exercise.title,
+            duration: exercise.duration,
+            target_area: exercise.target_area,
+            description: exercise.description,
+            image_url: exercise.image_url,
+            video_url: exercise.video_url,
+            category: exercise.category,
+            difficulty: exercise.difficulty,
+            instructions: exercise.instructions,
+            benefits: exercise.benefits
+          },
+          auth_uid: user.id
+        });
 
       if (error) throw error;
       return data;
     } catch (error) {
       console.error('Error updating exercise:', error);
-      throw new Error('Failed to update exercise');
+      throw error;
     }
   },
 

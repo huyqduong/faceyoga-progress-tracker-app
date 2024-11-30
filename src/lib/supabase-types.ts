@@ -51,6 +51,13 @@ export interface Course {
   welcome_video?: string;
   difficulty: string;
   duration: string;
+  price: number;
+  currency: string;
+  is_published: boolean;
+  access_type: 'lifetime' | 'subscription' | 'trial';
+  trial_duration_days: number;
+  subscription_duration_months: number;
+  rating: number;
   created_at: string;
   updated_at: string;
 }
@@ -80,4 +87,35 @@ export interface Progress {
   image_url: string;
   notes: string;
   created_at: string;
+}
+
+export interface CoursePurchase {
+  id: string;
+  user_id: string;
+  course_id: string;
+  amount: number;
+  currency: string;
+  status: 'pending' | 'completed' | 'failed' | 'refunded';
+  payment_intent_id: string;
+  payment_method: string;
+  receipt_url?: string;
+  expires_at?: string;
+  created_at: string;
+  updated_at: string;
+  course?: Course;
+}
+
+export interface CourseAccess {
+  id: string;
+  user_id: string;
+  course_id: string;
+  purchase_id: string;
+  access_type: 'lifetime' | 'subscription' | 'trial';
+  starts_at: string;
+  expires_at?: string;
+  last_accessed_at?: string;
+  created_at: string;
+  updated_at: string;
+  course?: Course;
+  purchase?: CoursePurchase;
 }

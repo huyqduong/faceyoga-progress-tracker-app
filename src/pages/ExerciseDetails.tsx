@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Play, Pause, RotateCcw, CheckCircle, ArrowLeft, AlertCircle, X, ImageOff } from 'lucide-react';
+import { Play, Pause, RotateCcw, CheckCircle, ArrowLeft, AlertCircle, X, ImageOff, Lock } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useExerciseStore } from '../store/exerciseStore';
 import { useProfileStore } from '../store/profileStore';
+import { courseApi } from '../lib/courses';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
@@ -23,10 +24,34 @@ function ExerciseDetails() {
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
+  const [hasAccess, setHasAccess] = useState<boolean>(false);
+  const [checkingAccess, setCheckingAccess] = useState(true);
 
   useEffect(() => {
     fetchExercises();
   }, [fetchExercises]);
+
+  useEffect(() => {
+    const checkAccess = async () => {
+      if (!user || !exerciseId) {
+        setHasAccess(false);
+        setCheckingAccess(false);
+        return;
+      }
+
+      try {
+        const access = await courseApi.hasAccessToExercise(user.id, exerciseId);
+        setHasAccess(access);
+      } catch (error) {
+        console.error('Error checking exercise access:', error);
+        setHasAccess(false);
+      } finally {
+        setCheckingAccess(false);
+      }
+    };
+
+    checkAccess();
+  }, [user, exerciseId]);
 
   const exercise = exercises.find(ex => ex.id === exerciseId);
 
@@ -151,6 +176,50 @@ function ExerciseDetails() {
     }
   };
 
+  if (checkingAccess) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-mint-500"></div>
+      </div>
+    );
+  }
+
+  if (!hasAccess) {
+    return (
+      <div className="container mx-auto px-4 py-8 space-y-8">
+        <button
+          onClick={() => navigate('/exercises')}
+          className="p-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100"
+        >
+          <ArrowLeft className="w-6 h-6" />
+        </button>
+
+        <div className="max-w-lg mx-auto text-center space-y-4 bg-white rounded-lg shadow-sm p-8">
+          <div className="flex justify-center">
+            <Lock className="w-16 h-16 text-gray-400" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900">Exercise Locked</h2>
+          <p className="text-gray-600">
+            This exercise is part of a course. Please purchase the course to access this exercise.
+          </p>
+          <button
+            onClick={() => {
+              const fromCourse = location.state?.fromCourse;
+              if (fromCourse) {
+                navigate(`/courses/${fromCourse}`);
+              } else {
+                navigate('/courses');
+              }
+            }}
+            className="mt-4 px-6 py-2 bg-mint-500 text-white rounded-md hover:bg-mint-600 transition-colors"
+          >
+            View Course
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!exercise) {
     return (
       <div className="text-center py-12">
@@ -242,7 +311,7 @@ function ExerciseDetails() {
                   <span>Start Exercise</span>
                 </button>
               ) : (
-                <>
+                <React.Fragment>
                   <button
                     onClick={handlePause}
                     className="p-2 text-mint-600 hover:text-mint-700 rounded-lg hover:bg-mint-50"
@@ -255,7 +324,7 @@ function ExerciseDetails() {
                   >
                     <RotateCcw className="w-6 h-6" />
                   </button>
-                </>
+                </React.Fragment>
               )}
             </div>
 

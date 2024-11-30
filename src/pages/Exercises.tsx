@@ -1,25 +1,34 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Play } from 'lucide-react';
 import { useExerciseStore } from '../store/exerciseStore';
+import { useAuth } from '../hooks/useAuth';
+import { courseApi } from '../lib/courses';
 import ExerciseSearch from '../components/ExerciseSearch';
 import ExerciseFilter from '../components/ExerciseFilter';
 import ExerciseGrid from '../components/ExerciseGrid';
 
+type AccessFilter = 'all' | 'free' | 'premium';
+
 function Exercises() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { exercises, loading, error, fetchExercises, fetchExercisesByCategory } = useExerciseStore();
+  const { exercises, loading, error, fetchExercises, fetchExercisesByCategory, reset, loadMore, hasMore } = useExerciseStore();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [accessFilter, setAccessFilter] = useState<AccessFilter>('all');
+  const { user } = useAuth();
 
   useEffect(() => {
+    // Reset the store when changing categories
+    reset();
+    
     if (selectedCategory === 'all') {
       fetchExercises();
     } else {
       fetchExercisesByCategory(selectedCategory);
     }
-  }, [selectedCategory, fetchExercises, fetchExercisesByCategory]);
+  }, [selectedCategory, fetchExercises, fetchExercisesByCategory, reset]);
 
   useEffect(() => {
     // Check if there's an exercise to start
@@ -29,14 +38,56 @@ function Exercises() {
     }
   }, [searchParams, navigate]);
 
-  const filteredExercises = exercises.filter((exercise) =>
-    exercise.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    exercise.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleStartExercise = async (id: string) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
 
-  const handleStartExercise = (id: string) => {
+    // Check if exercise is locked
+    const hasAccess = await courseApi.hasAccessToExercise(user.id, id);
+    if (!hasAccess) {
+      // Get course info
+      const { data: sectionExercise } = await courseApi
+        .from('section_exercises')
+        .select(`
+          section:course_sections(
+            course_id
+          )
+        `)
+        .eq('exercise_id', id)
+        .single();
+
+      if (sectionExercise?.section?.course_id) {
+        navigate(`/courses/${sectionExercise.section.course_id}`);
+      } else {
+        navigate('/courses');
+      }
+      return;
+    }
+
     navigate(`/exercises/${id}`);
   };
+
+  // Add intersection observer for infinite scroll
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !loading && hasMore) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [loading, hasMore, loadMore]);
 
   return (
     <div className="space-y-8 pb-24">
@@ -63,7 +114,19 @@ function Exercises() {
           <p className="text-gray-500">Loading exercises...</p>
         </div>
       ) : (
-        <ExerciseGrid exercises={filteredExercises} onStartExercise={handleStartExercise} />
+        <ExerciseGrid 
+          exercises={exercises.filter((exercise) =>
+            exercise.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            exercise.description.toLowerCase().includes(searchQuery.toLowerCase())
+          )}
+          onStartExercise={handleStartExercise}
+        />
+      )}
+
+      {hasMore && (
+        <div ref={loadMoreRef} className="text-center py-12">
+          <p className="text-gray-500">Loading more exercises...</p>
+        </div>
       )}
 
       <div className="bg-mint-50 rounded-xl p-8 text-center">

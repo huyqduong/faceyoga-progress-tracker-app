@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Dumbbell, BookOpen, Settings } from 'lucide-react';
+import { Dumbbell, BookOpen, Settings, CreditCard } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import ExerciseManager from './Admin/ExerciseManager';
 import CourseManager from './Admin/CourseManager';
 import SettingsManager from './Admin/SettingsManager';
+import { CoursePurchaseTest } from '../components/CoursePurchaseTest';
 
-type Tab = 'exercises' | 'courses' | 'settings';
+type Tab = 'exercises' | 'courses' | 'settings' | 'purchases';
 
 function Admin() {
   const [searchParams] = useSearchParams();
@@ -13,7 +14,7 @@ function Admin() {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && (tab === 'exercises' || tab === 'courses' || tab === 'settings')) {
+    if (tab && (tab === 'exercises' || tab === 'courses' || tab === 'settings' || tab === 'purchases')) {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -61,12 +62,24 @@ function Admin() {
           <Settings className="w-5 h-5 mr-2" />
           Settings
         </button>
+        <button
+          onClick={() => setActiveTab('purchases')}
+          className={`flex items-center px-6 py-3 border-b-2 font-medium text-sm transition-colors
+            ${activeTab === 'purchases'
+              ? 'border-mint-500 text-mint-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+        >
+          <CreditCard className="w-5 h-5 mr-2" />
+          Test Purchases
+        </button>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm p-6">
         {activeTab === 'exercises' && <ExerciseManager />}
         {activeTab === 'courses' && <CourseManager />}
         {activeTab === 'settings' && <SettingsManager />}
+        {activeTab === 'purchases' && <CoursePurchaseTest />}
       </div>
     </div>
   );

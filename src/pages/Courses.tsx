@@ -1,17 +1,53 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock, Target, BookOpen } from 'lucide-react';
+import { BookOpen, Filter } from 'lucide-react';
 import { useCourseStore } from '../store/courseStore';
+import { useAuth } from '../hooks/useAuth';
+import { courseApi } from '../lib/courses';
+import PublicCourseCard from '../components/PublicCourseCard';
+import type { Course } from '../lib/supabase-types';
+
+type AccessFilter = 'all' | 'free' | 'owned' | 'premium';
 
 function Courses() {
   const navigate = useNavigate();
   const { courses, loading, error, fetchCourses } = useCourseStore();
+  const { user } = useAuth();
+  const [accessFilter, setAccessFilter] = useState<AccessFilter>('all');
+  const [courseAccess, setCourseAccess] = useState<Record<string, boolean>>({});
+  const [checkingAccess, setCheckingAccess] = useState(true);
 
   useEffect(() => {
     fetchCourses();
   }, [fetchCourses]);
 
-  if (loading) {
+  useEffect(() => {
+    const checkCoursesAccess = async () => {
+      if (!user || courses.length === 0) {
+        setCheckingAccess(false);
+        return;
+      }
+
+      const access: Record<string, boolean> = {};
+      for (const course of courses) {
+        access[course.id] = await courseApi.hasAccessToCourse(user.id, course.id);
+      }
+      setCourseAccess(access);
+      setCheckingAccess(false);
+    };
+
+    checkCoursesAccess();
+  }, [user, courses]);
+
+  const filteredCourses = courses.filter(course => {
+    if (accessFilter === 'all') return true;
+    if (accessFilter === 'free') return course.price === 0;
+    if (accessFilter === 'owned') return courseAccess[course.id];
+    if (accessFilter === 'premium') return course.price > 0;
+    return true;
+  });
+
+  if (loading || checkingAccess) {
     return (
       <div className="text-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-mint-500 mx-auto"></div>
@@ -35,41 +71,68 @@ function Courses() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-        {courses.map((course) => (
-          <div
-            key={course.id}
-            onClick={() => navigate(`/courses/${course.id}`)}
-            className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all cursor-pointer border border-gray-100"
-          >
-            {course.image_url && (
-              <div className="aspect-w-16 aspect-h-9">
-                <img
-                  src={course.image_url}
-                  alt={course.title}
-                  className="w-full h-full object-cover"
-                />
-              </div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Filter className="w-5 h-5 text-gray-500" />
+          <div className="flex gap-2">
+            <button
+              onClick={() => setAccessFilter('all')}
+              className={`px-3 py-1 rounded-full text-sm ${
+                accessFilter === 'all'
+                  ? 'bg-mint-500 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setAccessFilter('free')}
+              className={`px-3 py-1 rounded-full text-sm ${
+                accessFilter === 'free'
+                  ? 'bg-mint-500 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              Free
+            </button>
+            {user && (
+              <button
+                onClick={() => setAccessFilter('owned')}
+                className={`px-3 py-1 rounded-full text-sm ${
+                  accessFilter === 'owned'
+                    ? 'bg-mint-500 text-white'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                Owned
+              </button>
             )}
-            <div className="p-4 sm:p-6">
-              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
-                {course.title}
-              </h3>
-              <p className="text-gray-600 mb-4 line-clamp-2 text-sm sm:text-base">
-                {course.description}
-              </p>
-              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
-                <div className="flex items-center">
-                  <Clock className="w-4 h-4 mr-1" />
-                  {course.duration}
-                </div>
-                <div className="flex items-center">
-                  <Target className="w-4 h-4 mr-1" />
-                  {course.difficulty}
-                </div>
-              </div>
-            </div>
+            <button
+              onClick={() => setAccessFilter('premium')}
+              className={`px-3 py-1 rounded-full text-sm ${
+                accessFilter === 'premium'
+                  ? 'bg-mint-500 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              Premium
+            </button>
           </div>
+        </div>
+        <div className="text-sm text-gray-600">
+          {filteredCourses.length} courses found
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        {filteredCourses.map((course) => (
+          <PublicCourseCard
+            key={course.id}
+            course={course}
+            hasAccess={!!courseAccess[course.id]}
+            price={course.price || 0}
+            onClick={() => navigate(`/courses/${course.id}`)}
+          />
         ))}
       </div>
 

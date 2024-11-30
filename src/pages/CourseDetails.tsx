@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, Target, BookOpen, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Clock, Target, BookOpen, AlertCircle, Lock } from 'lucide-react';
 import { useCourseStore } from '../store/courseStore';
+import { CoursePurchaseButton } from '../components/CoursePurchaseButton';
+import { useAuthStore } from '../store/authStore';
+import { courseApi } from '../lib/courses';
 import toast from 'react-hot-toast';
 
 function CourseDetails() {
   const { courseId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const { 
     courses, 
     sections, 
@@ -21,6 +25,7 @@ function CourseDetails() {
   const [isLoading, setIsLoading] = useState(true);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [hasAccess, setHasAccess] = useState<boolean>(false);
 
   useEffect(() => {
     const loadCourseData = async () => {
@@ -64,6 +69,24 @@ function CourseDetails() {
 
     loadCourseData();
   }, [courseId, courses.length, fetchCourses, fetchCourseSections, fetchSectionExercises, sections, sectionExercises, dataLoaded]);
+
+  useEffect(() => {
+    const checkAccess = async () => {
+      if (!user || !courseId) {
+        setHasAccess(false);
+        return;
+      }
+      try {
+        const access = await courseApi.hasAccessToCourse(user.id, courseId);
+        setHasAccess(access);
+      } catch (error) {
+        console.error('Error checking course access:', error);
+        setHasAccess(false);
+      }
+    };
+
+    checkAccess();
+  }, [user, courseId]);
 
   const getEmbedUrl = (url: string): string | null => {
     if (!url) return null;
@@ -119,155 +142,178 @@ function CourseDetails() {
   const course = courses.find(c => c.id === courseId);
   const courseSections = sections[courseId] || [];
 
+  if (error) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="flex items-center justify-center text-red-500 space-x-2">
+          <AlertCircle className="w-5 h-5" />
+          <p>Error loading course details</p>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading || storeLoading) {
     return (
-      <div className="text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-mint-500 mx-auto"></div>
-        <p className="mt-4 text-gray-600">Loading course details...</p>
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          <div className="h-64 bg-gray-200 rounded"></div>
+        </div>
       </div>
     );
   }
 
   if (!course) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-600">Course not found</p>
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="flex items-center justify-center text-gray-500 space-x-2">
+          <AlertCircle className="w-5 h-5" />
+          <p>Course not found</p>
+        </div>
       </div>
     );
   }
 
-  const handleExerciseClick = (exerciseId: string) => {
+  const handleExerciseClick = async (exerciseId: string) => {
+    if (!user) {
+      toast.error('Please sign in to access exercises');
+      return;
+    }
+    
+    if (!hasAccess) {
+      toast.error('Please purchase this course to access exercises');
+      return;
+    }
+
     navigate(`/exercises/${exerciseId}`, { state: { fromCourse: courseId } });
   };
 
   const welcomeEmbedUrl = course.welcome_video ? getEmbedUrl(course.welcome_video) : null;
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-        <button
-          onClick={() => navigate('/courses')}
-          className="inline-flex items-center justify-center p-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100 w-10 h-10"
-        >
-          <ArrowLeft className="w-6 h-6" />
-        </button>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{course.title}</h1>
-      </div>
+    <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+      {/* Back button */}
+      <button
+        onClick={() => navigate('/courses')}
+        className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+      >
+        <ArrowLeft className="w-5 h-5 mr-2" />
+        Back to Courses
+      </button>
 
-      {/* Course Overview */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <div className="p-4 sm:p-6 space-y-6">
-          {course.image_url && (
-            <div className="aspect-w-16 aspect-h-9 sm:aspect-h-7 rounded-lg overflow-hidden">
-              <img
-                src={course.image_url}
-                alt={course.title}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          )}
+      {/* Course header */}
+      <div className="space-y-4">
+        <h1 className="text-4xl font-bold text-gray-900">{course.title}</h1>
+        <p className="text-lg text-gray-600">{course.description}</p>
 
-          {/* Welcome Video */}
-          {welcomeEmbedUrl && (
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-gray-900">Welcome Video</h2>
-              <div className="aspect-w-16 aspect-h-9 rounded-xl overflow-hidden bg-gray-100">
-                <iframe
-                  src={welcomeEmbedUrl}
-                  title={`${course.title} welcome video`}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  className="w-full h-full"
-                  frameBorder="0"
-                />
-              </div>
-            </div>
-          )}
-
-          {videoError && (
-            <div className="p-4 bg-red-50 text-red-600 rounded-lg flex items-center">
-              <AlertCircle className="w-5 h-5 mr-2" />
-              <p>{videoError}</p>
-            </div>
-          )}
-
-          <div className="flex flex-wrap gap-4 sm:gap-6">
-            <div className="flex items-center text-gray-600">
-              <Clock className="w-5 h-5 mr-2" />
-              <span>{course.duration}</span>
-            </div>
-            <div className="flex items-center text-gray-600">
-              <Target className="w-5 h-5 mr-2" />
-              <span>{course.difficulty}</span>
-            </div>
-            <div className="flex items-center text-gray-600">
-              <BookOpen className="w-5 h-5 mr-2" />
-              <span>{courseSections.length} Sections</span>
-            </div>
+        {/* Course metadata */}
+        <div className="flex flex-wrap gap-4">
+          <div className="flex items-center text-gray-600">
+            <Clock className="w-5 h-5 mr-2" />
+            <span>{course.duration}</span>
           </div>
-
-          <p className="text-gray-600">{course.description}</p>
-
-          {/* Course Content */}
-          <div className="space-y-6">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Course Content</h2>
-            
-            {courseSections.map((section, index) => {
-              const exercises = sectionExercises[section.id] || [];
-              
-              return (
-                <div key={section.id} className="bg-gray-50 rounded-lg p-4 sm:p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Section {index + 1}: {section.title}
-                  </h3>
-                  <p className="text-gray-600 mb-4">{section.description}</p>
-
-                  {exercises.length > 0 && (
-                    <div className="space-y-3">
-                      <h4 className="text-sm font-medium text-gray-700">
-                        Exercises in this section:
-                      </h4>
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        {exercises.map((exerciseData) => (
-                          exerciseData.exercise && (
-                            <div
-                              key={exerciseData.id}
-                              onClick={() => handleExerciseClick(exerciseData.exercise_id)}
-                              className="flex items-center space-x-4 p-4 bg-white rounded-lg border border-gray-100 hover:shadow-md transition-all cursor-pointer"
-                            >
-                              <img
-                                src={exerciseData.exercise.image_url}
-                                alt={exerciseData.exercise.title}
-                                className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
-                              />
-                              <div className="min-w-0 flex-1">
-                                <h5 className="font-medium text-gray-900 truncate">
-                                  {exerciseData.exercise.title}
-                                </h5>
-                                <div className="flex items-center space-x-2 text-sm text-gray-500">
-                                  <span className="truncate">{exerciseData.exercise.duration}</span>
-                                  <span>•</span>
-                                  <span className="truncate">{exerciseData.exercise.difficulty}</span>
-                                </div>
-                              </div>
-                            </div>
-                          )
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-
-            {courseSections.length === 0 && (
-              <div className="text-center py-8 bg-gray-50 rounded-lg">
-                <p className="text-gray-500">No sections available for this course.</p>
-              </div>
-            )}
+          <div className="flex items-center text-gray-600">
+            <Target className="w-5 h-5 mr-2" />
+            <span>{course.difficulty}</span>
+          </div>
+          <div className="flex items-center text-gray-600">
+            <BookOpen className="w-5 h-5 mr-2" />
+            <span>{courseSections.length} sections</span>
           </div>
         </div>
+
+        {/* Purchase button */}
+        <div className="max-w-sm">
+          <CoursePurchaseButton 
+            course={course} 
+            onPurchaseComplete={() => {
+              // Optionally refresh the page or course data
+              toast.success('Course unlocked! You can now access all content.');
+            }} 
+          />
+        </div>
+      </div>
+
+      {/* Welcome video */}
+      {welcomeEmbedUrl && (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-gray-900">Course Introduction</h2>
+          <div className="relative pb-[56.25%] h-0">
+            <iframe
+              src={welcomeEmbedUrl}
+              className="absolute top-0 left-0 w-full h-full rounded-lg"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              onError={() => setVideoError('Failed to load video')}
+            />
+          </div>
+          {videoError && (
+            <div className="text-red-500 text-sm">{videoError}</div>
+          )}
+        </div>
+      )}
+
+      {/* Course sections */}
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold text-gray-900">Course Content</h2>
+        {courseSections.map((section, index) => (
+          <div key={section.id} className="bg-white rounded-lg shadow-sm p-6 space-y-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Section {index + 1}: {section.title}
+                </h3>
+                <p className="text-gray-600">{section.description}</p>
+              </div>
+            </div>
+
+            {/* Section exercises */}
+            <div className="space-y-2">
+              {sectionExercises[section.id]?.map((exercise, exerciseIndex) => (
+                exercise.exercise && (
+                  <div 
+                    key={exercise.id}
+                    onClick={() => handleExerciseClick(exercise.exercise_id)}
+                    className={`flex items-center p-3 rounded-md transition-colors ${
+                      hasAccess 
+                        ? 'bg-gray-50 hover:bg-gray-100 cursor-pointer' 
+                        : 'bg-gray-100 cursor-not-allowed'
+                    }`}
+                  >
+                    {/* Exercise image */}
+                    {exercise.exercise.image_url && (
+                      <div className="w-12 h-12 rounded-md overflow-hidden flex-shrink-0 mr-4">
+                        <img 
+                          src={exercise.exercise.image_url} 
+                          alt={exercise.exercise.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    
+                    {/* Exercise info */}
+                    <div className="flex-grow">
+                      <div className="font-medium text-gray-900">
+                        {exercise.exercise.title}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {exercise.exercise.duration}
+                      </div>
+                    </div>
+
+                    {/* Lock icon and difficulty */}
+                    <div className="flex items-center gap-3 text-gray-400">
+                      <span className="text-sm">{exercise.exercise.difficulty}</span>
+                      {!hasAccess && <Lock className="w-4 h-4" />}
+                    </div>
+                  </div>
+                )
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
