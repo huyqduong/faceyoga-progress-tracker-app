@@ -1,305 +1,359 @@
-# Face Yoga Progress Tracker - Architecture Documentation
+# Face Yoga Progress Tracker Architecture
 
 ## System Architecture
 
-The application follows a modern client-server architecture with the following key components:
-
-### Frontend Architecture
+### High-Level Overview
 
 ```mermaid
-graph TD
-    App[App.tsx] --> Router[React Router]
-    Router --> Pages[Pages]
-    Router --> Guards[Auth Guards]
-    
-    Pages --> Components[Components]
-    Pages --> Hooks[Custom Hooks]
-    Pages --> Store[Zustand Store]
-    
-    Store --> API[API Layer]
-    API --> Supabase[Supabase Client]
-    API --> OpenAI[OpenAI Client]
+graph TB
+    subgraph "Frontend Layer"
+        UI[React UI Components]
+        State[Zustand State Management]
+        API[API Client Layer]
+    end
+
+    subgraph "Backend Layer"
+        Auth[Supabase Auth]
+        DB[(Supabase PostgreSQL)]
+        Storage[Supabase Storage]
+    end
+
+    UI --> State
+    State --> API
+    API --> Auth
+    API --> DB
+    API --> Storage
+    Auth --> DB
 ```
-
-### Backend Architecture
-
-```mermaid
-graph TD
-    API[FastAPI] --> Auth[Authentication]
-    API --> Routes[Routes]
-    Routes --> Controllers[Controllers]
-    Controllers --> Database[Supabase Database]
-    Controllers --> Storage[Supabase Storage]
-```
-
-## Component Architecture
-
-### Core Components
-
-1. **Authentication Flow**
-```mermaid
-sequenceDiagram
-    participant User
-    participant AuthComponent
-    participant AuthStore
-    participant SupabaseAuth
-    
-    User->>AuthComponent: Login/Signup
-    AuthComponent->>SupabaseAuth: Authenticate
-    SupabaseAuth-->>AuthStore: Update State
-    AuthStore-->>AuthComponent: Reflect Changes
-    AuthComponent->>User: Redirect/Response
-```
-
-2. **Exercise Management**
-```mermaid
-sequenceDiagram
-    participant Admin
-    participant ExerciseManager
-    participant ExerciseStore
-    participant Database
-    
-    Admin->>ExerciseManager: CRUD Operation
-    ExerciseManager->>ExerciseStore: Update State
-    ExerciseStore->>Database: Persist Changes
-    Database-->>ExerciseStore: Confirm
-    ExerciseStore-->>ExerciseManager: Update UI
-```
-
-3. **Progress Tracking**
-```mermaid
-sequenceDiagram
-    participant User
-    participant ProgressComponent
-    participant ProgressStore
-    participant Storage
-    participant Database
-    
-    User->>ProgressComponent: Upload Photo
-    ProgressComponent->>Storage: Store Image
-    Storage-->>ProgressComponent: Image URL
-    ProgressComponent->>Database: Save Progress
-    Database-->>ProgressStore: Update State
-    ProgressStore-->>ProgressComponent: Update UI
-```
-
-## State Management Architecture
-
-### Store Structure
-
-```typescript
-interface RootStore {
-  auth: AuthStore;
-  profile: ProfileStore;
-  exercises: ExerciseStore;
-  courses: CourseStore;
-  progress: ProgressStore;
-  chat: ChatStore;
-}
-
-interface AuthStore {
-  user: User | null;
-  loading: boolean;
-  error: Error | null;
-  signIn: (email: string, password: string) => Promise<void>;
-  signOut: () => Promise<void>;
-}
-
-interface ProfileStore {
-  profile: Profile | null;
-  loading: boolean;
-  error: Error | null;
-  updateProfile: (data: Partial<Profile>) => Promise<void>;
-}
-
-// ... other store interfaces
-```
-
-## Database Architecture
-
-### Entity Relationship Diagram
-
-```mermaid
-erDiagram
-    USERS ||--o{ PROFILES : has
-    USERS ||--o{ PROGRESS : tracks
-    EXERCISES ||--o{ PROGRESS : includes
-    COURSES ||--|{ SECTIONS : contains
-    SECTIONS ||--|{ SECTION_EXERCISES : contains
-    EXERCISES ||--o{ SECTION_EXERCISES : includes
-    
-    USERS {
-        uuid id PK
-        string email
-        string password_hash
-    }
-    
-    PROFILES {
-        uuid id PK
-        uuid user_id FK
-        string username
-        string full_name
-        string avatar_url
-        string role
-    }
-    
-    EXERCISES {
-        uuid id PK
-        string title
-        string duration
-        string target_area
-        string description
-        string image_url
-        string video_url
-        string category
-        string difficulty
-        string[] instructions
-        string[] benefits
-    }
-    
-    PROGRESS {
-        uuid id PK
-        uuid user_id FK
-        uuid exercise_id FK
-        string image_url
-        string notes
-        timestamp created_at
-    }
-    
-    COURSES {
-        uuid id PK
-        string title
-        string description
-        string image_url
-        string difficulty
-        string duration
-    }
-    
-    SECTIONS {
-        uuid id PK
-        uuid course_id FK
-        string title
-        string description
-        integer order_index
-    }
-    
-    SECTION_EXERCISES {
-        uuid id PK
-        uuid section_id FK
-        uuid exercise_id FK
-        integer order_index
-    }
-```
-
-## Security Architecture
 
 ### Authentication Flow
 
 ```mermaid
 sequenceDiagram
-    participant Client
-    participant AuthGuard
-    participant SupabaseAuth
-    participant RLS
-    participant Database
+    participant U as User
+    participant FE as Frontend
+    participant Auth as Supabase Auth
+    participant DB as Database
+
+    U->>FE: Login Request
+    FE->>Auth: Authenticate
+    Auth->>DB: Verify Credentials
+    DB->>Auth: Return User Data
+    Auth->>FE: JWT Token
+    FE->>U: Login Success
+    Note over FE: Store Token in Local Storage
+```
+
+### Exercise Management Flow
+
+```mermaid
+sequenceDiagram
+    participant A as Admin
+    participant FE as Frontend
+    participant RPC as Stored Procedures
+    participant DB as Database
+    participant Policy as RLS Policies
+
+    A->>FE: Update Exercise
+    FE->>RPC: Call update_exercise
+    RPC->>Policy: Check Admin Status
+    Policy->>DB: Verify Role
+    DB->>Policy: Return Status
+    alt is admin
+        Policy->>RPC: Allow Update
+        RPC->>DB: Update Exercise
+        DB->>FE: Return Updated Data
+    else not admin
+        Policy->>RPC: Deny Update
+        RPC->>FE: Return Error
+    end
+```
+
+### Data Access Control
+
+```mermaid
+flowchart TD
+    subgraph "Access Control"
+        Auth[Authentication]
+        RLS[Row Level Security]
+        Proc[Stored Procedures]
+    end
+
+    subgraph "Tables"
+        P[Profiles]
+        E[Exercises]
+        EH[Exercise History]
+        C[Courses]
+    end
+
+    Auth --> RLS
+    RLS --> P
+    RLS --> E
+    RLS --> EH
+    RLS --> C
     
-    Client->>AuthGuard: Request Protected Route
-    AuthGuard->>SupabaseAuth: Verify Token
-    SupabaseAuth-->>AuthGuard: Token Valid
-    AuthGuard->>RLS: Apply Policies
-    RLS->>Database: Filtered Query
-    Database-->>Client: Protected Data
+    Proc --> P
+    Proc --> E
 ```
 
-### Row Level Security
+## Component Architecture
 
-```sql
--- Example RLS Policies
-CREATE POLICY "Users can view own profile"
-ON profiles FOR SELECT
-USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can update own profile"
-ON profiles FOR UPDATE
-USING (auth.uid() = user_id);
-
-CREATE POLICY "Admins can manage exercises"
-ON exercises
-USING (EXISTS (
-    SELECT 1 FROM profiles
-    WHERE profiles.user_id = auth.uid()
-    AND profiles.role = 'admin'
-));
-```
-
-## API Architecture
-
-### RESTful Endpoints
-
-```typescript
-interface APIEndpoints {
-  auth: {
-    signIn: '/auth/signin' // POST
-    signUp: '/auth/signup' // POST
-    signOut: '/auth/signout' // POST
-  }
-  profiles: {
-    get: '/profiles/:id' // GET
-    update: '/profiles/:id' // PUT
-    uploadAvatar: '/profiles/:id/avatar' // POST
-  }
-  exercises: {
-    list: '/exercises' // GET
-    create: '/exercises' // POST
-    update: '/exercises/:id' // PUT
-    delete: '/exercises/:id' // DELETE
-  }
-  progress: {
-    list: '/progress' // GET
-    create: '/progress' // POST
-    delete: '/progress/:id' // DELETE
-  }
-  courses: {
-    list: '/courses' // GET
-    create: '/courses' // POST
-    update: '/courses/:id' // PUT
-    delete: '/courses/:id' // DELETE
-    sections: '/courses/:id/sections' // GET, POST
-  }
-}
-```
-
-## Storage Architecture
-
-### File Storage Structure
-
-```
-storage/
-├── avatars/
-│   └── {user_id}/
-│       └── avatar.{ext}
-├── progress/
-│   └── {user_id}/
-│       └── {timestamp}.{ext}
-└── exercises/
-    └── {exercise_id}.{ext}
-```
-
-## Integration Architecture
-
-### Third-party Services
+### Frontend Structure
 
 ```mermaid
 graph TD
-    App[Application] --> Supabase[Supabase]
-    App --> OpenAI[OpenAI]
-    
-    Supabase --> Auth[Authentication]
-    Supabase --> DB[Database]
-    Supabase --> Storage[File Storage]
-    
-    OpenAI --> Assistant[AI Coach]
-    OpenAI --> Completion[Text Generation]
+    subgraph "Pages"
+        Home
+        Exercises
+        Courses
+        Profile
+        Admin
+    end
+
+    subgraph "Components"
+        ExerciseCard
+        CourseCard
+        Navigation
+        Forms
+    end
+
+    subgraph "State Management"
+        Store[Zustand Store]
+        subgraph "Stores"
+            UserStore
+            ExerciseStore
+            CourseStore
+        end
+    end
+
+    Pages --> Components
+    Components --> Store
+    Store --> Stores
 ```
 
-This architecture documentation provides a comprehensive overview of the system's structure and components. For specific implementation details, refer to the inline code documentation and the README.md file.
+### State Management Flow
+
+```mermaid
+flowchart LR
+    subgraph "UI Layer"
+        Components
+        Pages
+    end
+
+    subgraph "State Layer"
+        Store[Zustand Store]
+        Actions[Store Actions]
+        State[Store State]
+    end
+
+    subgraph "Data Layer"
+        API[API Client]
+        Cache[State Cache]
+    end
+
+    Components --> Store
+    Pages --> Store
+    Store --> Actions
+    Store --> State
+    Actions --> API
+    State --> Cache
+```
+
+## Database Schema
+
+### Core Tables Relationship
+
+```mermaid
+erDiagram
+    USERS ||--o{ PROFILES : has
+    PROFILES ||--o{ EXERCISE_HISTORY : tracks
+    EXERCISES ||--o{ EXERCISE_HISTORY : includes
+    COURSES ||--o{ COURSE_SECTIONS : contains
+    COURSE_SECTIONS ||--o{ SECTION_EXERCISES : contains
+    EXERCISES ||--o{ SECTION_EXERCISES : includes
+    USERS ||--o{ COURSE_PURCHASES : makes
+    COURSES ||--o{ COURSE_PURCHASES : involves
+    USERS ||--o{ COURSE_ACCESS : has
+    COURSES ||--o{ COURSE_ACCESS : grants
+```
+
+## Security Architecture
+
+### Row Level Security Flow
+
+```mermaid
+flowchart TD
+    subgraph "Request Flow"
+        Client[Client Request]
+        Auth[Auth Check]
+        RLS[RLS Policies]
+        Proc[Stored Procedures]
+        Data[Data Access]
+    end
+
+    Client --> Auth
+    Auth --> RLS
+    RLS --> Proc
+    Proc --> Data
+
+    subgraph "Policy Types"
+        Select[SELECT Policies]
+        Insert[INSERT Policies]
+        Update[UPDATE Policies]
+        Delete[DELETE Policies]
+    end
+
+    RLS --> Select
+    RLS --> Insert
+    RLS --> Update
+    RLS --> Delete
+```
+
+## Deployment Architecture
+
+```mermaid
+graph TB
+    subgraph "Client Side"
+        Browser[Web Browser]
+        PWA[Progressive Web App]
+    end
+
+    subgraph "Hosting"
+        Vercel[Vercel Frontend]
+    end
+
+    subgraph "Backend Services"
+        Supabase[Supabase Platform]
+        subgraph "Supabase Services"
+            Auth[Authentication]
+            DB[PostgreSQL Database]
+            Storage[File Storage]
+        end
+    end
+
+    Browser --> Vercel
+    PWA --> Vercel
+    Vercel --> Supabase
+    Supabase --> Auth
+    Supabase --> DB
+    Supabase --> Storage
+```
+
+## Implementation Details
+
+### Exercise Update Flow
+
+```mermaid
+sequenceDiagram
+    participant UI as User Interface
+    participant Store as Zustand Store
+    participant API as API Client
+    participant RPC as Stored Procedure
+    participant DB as Database
+
+    UI->>Store: Update Exercise
+    Store->>API: Call updateExercise
+    API->>RPC: Execute update_exercise
+    RPC->>DB: Check Admin Status
+    DB->>RPC: Return Status
+    alt is admin
+        RPC->>DB: Update Exercise
+        DB->>RPC: Return Updated Data
+        RPC->>API: Return Success
+        API->>Store: Update State
+        Store->>UI: Render Update
+    else not admin
+        RPC->>API: Return Error
+        API->>Store: Set Error State
+        Store->>UI: Show Error
+    end
+```
+
+## Performance Considerations
+
+### Data Loading Strategy
+
+```mermaid
+graph TD
+    subgraph "Initial Load"
+        First[First Paint]
+        Shell[App Shell]
+        Data[Critical Data]
+    end
+
+    subgraph "Lazy Loading"
+        Course[Course Data]
+        Exercise[Exercise Data]
+        History[User History]
+    end
+
+    subgraph "Caching"
+        Memory[Memory Cache]
+        Storage[Local Storage]
+    end
+
+    First --> Shell
+    Shell --> Data
+    Data --> Course
+    Data --> Exercise
+    Course --> Memory
+    Exercise --> Memory
+    Memory --> Storage
+```
+
+## Error Handling
+
+### Error Flow
+
+```mermaid
+flowchart TD
+    subgraph "Error Sources"
+        API[API Errors]
+        Auth[Auth Errors]
+        Val[Validation Errors]
+    end
+
+    subgraph "Error Handling"
+        Catch[Error Boundary]
+        Log[Error Logging]
+        UI[User Feedback]
+    end
+
+    API --> Catch
+    Auth --> Catch
+    Val --> Catch
+    Catch --> Log
+    Catch --> UI
+```
+
+## Future Considerations
+
+### Planned Improvements
+
+```mermaid
+graph LR
+    subgraph "Current"
+        Basic[Basic Features]
+        Auth[Authentication]
+        Data[Data Management]
+    end
+
+    subgraph "Short Term"
+        Cache[Caching]
+        Offline[Offline Support]
+        Analytics[Usage Analytics]
+    end
+
+    subgraph "Long Term"
+        AI[AI Features]
+        Social[Social Features]
+        Scale[Scalability]
+    end
+
+    Basic --> Cache
+    Auth --> Offline
+    Data --> Analytics
+    Cache --> AI
+    Offline --> Social
+    Analytics --> Scale
+```
