@@ -127,25 +127,26 @@ export const supabaseApi = {
   },
 
   async uploadFile(file: File, bucket: string): Promise<string> {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) throw new Error('No authenticated user');
+    return retryOperation(async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('No authenticated user');
 
-    const fileExt = file.name.split('.').pop();
-    const filePath = `${userData.user.id}/${Date.now()}.${fileExt}`;
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${session.user.id}/${Date.now()}.${fileExt}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from(bucket)
-      .upload(filePath, file);
+      const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(filePath, file);
 
-    if (uploadError) throw uploadError;
+      if (uploadError) throw uploadError;
 
-    const { data: { publicUrl } } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(filePath);
+      const { data: { publicUrl } } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(filePath);
 
-    return publicUrl;
+      return publicUrl;
+    });
   },
-
   async uploadAvatar(userId: string, file: File): Promise<string> {
     const fileExt = file.name.split('.').pop();
     const filePath = `${userId}/avatar.${fileExt}`;
@@ -162,7 +163,6 @@ export const supabaseApi = {
 
     return publicUrl;
   },
-
   async uploadProgressImage(userId: string, file: File): Promise<string> {
     const fileExt = file.name.split('.').pop();
     const filePath = `${userId}/${Date.now()}.${fileExt}`;
@@ -179,7 +179,6 @@ export const supabaseApi = {
 
     return publicUrl;
   },
-
   async createProgressEntry(userId: string, imageUrl: string, notes: string): Promise<Progress> {
     const { data, error } = await supabase
       .from('user_progress')
@@ -194,7 +193,6 @@ export const supabaseApi = {
     if (error) throw error;
     return data;
   },
-
   async getUserProgress(userId: string): Promise<Progress[]> {
     const { data, error } = await supabase
       .from('user_progress')

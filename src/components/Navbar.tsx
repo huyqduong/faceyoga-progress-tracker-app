@@ -8,7 +8,9 @@ import {
   LogOut,
   Menu,
   X,
-  GraduationCap
+  GraduationCap,
+  CreditCard,
+  Layout
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useSettingsStore } from '../store/settingsStore';
@@ -46,6 +48,8 @@ function Navbar() {
     setIsMenuOpen(false);
     setIsProfileMenuOpen(false);
   };
+
+  const isAdmin = profile?.role === 'admin';
 
   return (
     <nav className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-mint-100 sticky top-0 z-50">
@@ -91,7 +95,33 @@ function Navbar() {
               <Home className="w-4 h-4" />
               <span>Home</span>
             </Link>
-            
+
+            <Link
+              to="/dashboard"
+              className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors
+                ${location.pathname === '/dashboard'
+                  ? 'text-mint-600 bg-mint-50'
+                  : 'text-gray-600 hover:text-mint-600 hover:bg-mint-50'
+                }`}
+            >
+              <Layout className="w-4 h-4" />
+              <span>My Courses</span>
+            </Link>
+
+            {isAdmin && (
+              <Link
+                to="/test-payment"
+                className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors
+                  ${location.pathname === '/test-payment'
+                    ? 'text-mint-600 bg-mint-50'
+                    : 'text-gray-600 hover:text-mint-600 hover:bg-mint-50'
+                  }`}
+              >
+                <CreditCard className="w-4 h-4" />
+                <span>Test Payment</span>
+              </Link>
+            )}
+
             {/* Desktop Profile Menu */}
             <div className="relative ml-2">
               <button
@@ -181,13 +211,30 @@ function Navbar() {
 
               <div className="border-t border-mint-100 mt-2 pt-2 px-2">
                 <Link
-                  to="/profile"
-                  className="flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-700 hover:bg-mint-50"
+                  to="/"
+                  className="block px-4 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-mint-50"
                   onClick={closeAllMenus}
                 >
-                  <UserCircle className="w-5 h-5" />
-                  <span>Profile Settings</span>
+                  Home
                 </Link>
+
+                <Link
+                  to="/dashboard"
+                  className="block px-4 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-mint-50"
+                  onClick={closeAllMenus}
+                >
+                  My Courses
+                </Link>
+
+                {isAdmin && (
+                  <Link
+                    to="/test-payment"
+                    className="block px-4 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-mint-50"
+                    onClick={closeAllMenus}
+                  >
+                    Test Payment
+                  </Link>
+                )}
                 <button
                   onClick={handleSignOut}
                   disabled={isSigningOut}

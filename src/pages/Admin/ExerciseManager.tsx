@@ -63,8 +63,8 @@ function ExerciseManager() {
     if (!data.description.trim()) return 'Description is required';
     if (!data.category) return 'Category is required';
     if (!data.difficulty) return 'Difficulty is required';
-    if (!data.instructions.some(i => i.trim())) return 'At least one instruction is required';
-    if (!data.benefits.some(b => b.trim())) return 'At least one benefit is required';
+    if (!data.instructions?.length || !data.instructions.some(i => i.trim())) return 'At least one instruction is required';
+    if (!data.benefits?.length || !data.benefits.some(b => b.trim())) return 'At least one benefit is required';
     if (!imageFile && !data.image_url) return 'Image is required';
     if (data.video_url && !isValidVideoUrl(data.video_url)) return 'Invalid video URL';
     return null;
@@ -99,6 +99,7 @@ function ExerciseManager() {
     const validationError = validateForm(formData);
     if (validationError) {
       setError(validationError);
+      toast.error(validationError);
       return;
     }
 
@@ -113,9 +114,10 @@ function ExerciseManager() {
 
       const cleanedData = {
         ...formData,
-        instructions: formData.instructions.filter(i => i.trim()),
-        benefits: formData.benefits.filter(b => b.trim()),
+        instructions: formData.instructions?.filter(i => i.trim()) || [],
+        benefits: formData.benefits?.filter(b => b.trim()) || [],
         image_url: imageUrl,
+        video_url: formData.video_url?.trim() || null,
       };
 
       if (formData.id) {
@@ -133,7 +135,9 @@ function ExerciseManager() {
       fetchExercises();
     } catch (err) {
       console.error('Error saving exercise:', err);
-      toast.error('Failed to save exercise');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save exercise';
+      toast.error(errorMessage);
+      setError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -507,7 +511,7 @@ function ExerciseManager() {
                         <span className={`px-2 py-1 text-xs font-medium rounded-full
                           ${exercise.difficulty === 'Beginner' ? 'bg-green-100 text-green-800' :
                             exercise.difficulty === 'Intermediate' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-red-100 text-red-800'}`}>
+                            'bg-red-100 text-red-800'}`} >
                           {exercise.difficulty}
                         </span>
                       </td>
