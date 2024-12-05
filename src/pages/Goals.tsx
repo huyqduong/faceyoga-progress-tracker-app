@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Target, Clock, ArrowLeft, Edit2, CheckCircle } from 'lucide-react';
+import { Target, Clock, Edit2, CheckCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import BackButton from '../components/BackButton';
 
 interface UserGoals {
   goals: string[];
@@ -100,23 +101,18 @@ function Goals() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-8">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-4">
-          <button
-            onClick={() => navigate('/')}
-            className="p-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100"
-          >
-            <ArrowLeft className="w-6 h-6" />
-          </button>
-          <h1 className="text-3xl font-bold text-gray-900">Your Goals & Recommendations</h1>
+          <BackButton />
+          <h1 className="text-2xl font-bold">My Goals</h1>
         </div>
         <button
           onClick={handleUpdateGoals}
-          className="flex items-center px-4 py-2 bg-mint-500 text-white rounded-lg hover:bg-mint-600 transition-colors"
+          className="flex items-center space-x-2 px-4 py-2 text-mint-600 hover:text-mint-700 rounded-lg hover:bg-mint-50"
         >
-          <Edit2 className="w-5 h-5 mr-2" />
-          Update Goals
+          <Edit2 className="w-4 h-4" />
+          <span>Update Goals</span>
         </button>
       </div>
 

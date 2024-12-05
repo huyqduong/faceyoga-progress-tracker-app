@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Clock } from 'lucide-react';
+import { Calendar, Clock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
+import BackButton from '../components/BackButton';
 
 interface ExerciseHistoryEntry {
   id: string;
@@ -70,15 +71,12 @@ function ExerciseHistory() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-6">
-      <div className="flex items-center space-x-4">
-        <button
-          onClick={() => navigate('/')}
-          className="p-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100"
-        >
-          <ArrowLeft className="w-6 h-6" />
-        </button>
-        <h1 className="text-3xl font-bold text-gray-900">Exercise History</h1>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-4">
+          <BackButton />
+          <h1 className="text-2xl font-bold">Exercise History</h1>
+        </div>
       </div>
 
       {history.length === 0 ? (

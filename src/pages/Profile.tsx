@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useProfileStore } from '../store/profileStore';
 import { supabaseApi } from '../lib/supabase';
 import toast from 'react-hot-toast';
+import BackButton from '../components/BackButton';
 
 function Profile() {
   const { user, profile } = useAuth();
@@ -81,13 +82,13 @@ function Profile() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 space-y-8">
-      <header className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">Profile Settings</h1>
-        <p className="text-lg text-gray-600">
-          Manage your account information and preferences
-        </p>
-      </header>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-4">
+          <BackButton />
+          <h1 className="text-2xl font-bold">Profile</h1>
+        </div>
+      </div>
 
       <div className="bg-white rounded-xl shadow-sm p-8">
         <div className="flex flex-col items-center mb-8">

@@ -4,6 +4,7 @@ import { useProgressStore } from '../store/progressStore';
 import { useAuth } from '../hooks/useAuth';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
+import BackButton from '../components/BackButton';
 
 function Progress() {
   const { user } = useAuth();
@@ -163,7 +164,14 @@ function Progress() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-4">
+          <BackButton />
+          <h1 className="text-2xl font-bold">Progress Tracker</h1>
+        </div>
+      </div>
+
       <header className="text-center">
         <h1 className="text-4xl font-bold text-gray-900 mb-4">Track Your Progress</h1>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
