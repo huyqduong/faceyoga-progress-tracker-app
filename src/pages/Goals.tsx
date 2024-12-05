@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Target, Clock, Edit2, CheckCircle } from 'lucide-react';
+import { Target, Clock, Sparkles, Edit2, Heart, Star, Sun, Moon, Smile } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
@@ -15,52 +15,64 @@ interface UserGoals {
   ai_recommendation: string;
 }
 
-const goalIcons = {
-  jawline: Target,
-  puffiness: Clock,
-  elasticity: CheckCircle,
-};
+interface Goal {
+  id: string;
+  icon: keyof typeof iconComponents;
+  label: string;
+  description: string;
+}
 
-const goalTitles = {
-  jawline: 'Tone Jawline',
-  puffiness: 'Reduce Puffiness',
-  elasticity: 'Improve Elasticity',
-};
-
-const goalDescriptions = {
-  jawline: 'Strengthen and define your jawline muscles',
-  puffiness: 'Decrease facial puffiness and improve circulation',
-  elasticity: 'Enhance skin elasticity and reduce fine lines',
+const iconComponents = {
+  Target,
+  Clock,
+  Sparkles,
+  Edit2,
+  Heart,
+  Star,
+  Sun,
+  Moon,
+  Smile,
 };
 
 function Goals() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [userGoals, setUserGoals] = useState<UserGoals | null>(null);
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchUserGoals = async () => {
+    const fetchData = async () => {
       if (!user) return;
 
       try {
-        const { data, error } = await supabase
+        // Fetch goals
+        const { data: goalsData, error: goalsError } = await supabase
+          .from('goals')
+          .select('*')
+          .order('created_at', { ascending: true });
+
+        if (goalsError) throw goalsError;
+        setGoals(goalsData || []);
+
+        // Fetch user goals
+        const { data: userGoalsData, error: userGoalsError } = await supabase
           .from('user_goals')
           .select('*')
           .eq('user_id', user.id)
           .single();
 
-        if (error) throw error;
-        setUserGoals(data);
+        if (userGoalsError) throw userGoalsError;
+        setUserGoals(userGoalsData);
       } catch (err) {
-        console.error('Error fetching user goals:', err);
+        console.error('Error fetching data:', err);
         toast.error('Failed to load goals');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUserGoals();
+    fetchData();
   }, [user]);
 
   const handleUpdateGoals = async () => {
@@ -128,24 +140,23 @@ function Goals() {
               <h2 className="text-2xl font-bold text-gray-900 mb-8">Your Goals</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {userGoals.goals.map((goalId) => {
-                  const Icon = goalIcons[goalId as keyof typeof goalIcons];
+                  const goal = goals.find(g => g.id === goalId);
+                  if (!goal) return null;
+                  
+                  const IconComponent = iconComponents[goal.icon as keyof typeof iconComponents];
+                  if (!IconComponent) return null;
+                  
                   return (
                     <div 
                       key={goalId} 
-                      className="group bg-gradient-to-br from-mint-50 to-white rounded-xl p-6 transition-all duration-300
-                        hover:shadow-xl transform hover:-translate-y-2 border border-mint-100"
+                      className="group p-8 rounded-xl border-2 transition-all duration-300 transform hover:-translate-y-1 
+                        border-mint-500 bg-gradient-to-br from-mint-50 to-white shadow-lg"
                     >
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className="p-3 bg-white rounded-xl shadow-md group-hover:shadow-lg transition-all duration-300">
-                          <Icon className="w-7 h-7 text-mint-600" />
-                        </div>
-                        <h3 className="text-xl font-semibold text-gray-900">
-                          {goalTitles[goalId as keyof typeof goalTitles]}
-                        </h3>
+                      <div className="p-4 rounded-xl mb-6 bg-white shadow-md">
+                        <IconComponent className="w-10 h-10 text-mint-600" />
                       </div>
-                      <p className="text-gray-600 leading-relaxed text-lg">
-                        {goalDescriptions[goalId as keyof typeof goalDescriptions]}
-                      </p>
+                      <h3 className="text-xl font-semibold text-mint-700">{goal.label}</h3>
+                      <p className="mt-4 text-gray-600 leading-relaxed">{goal.description}</p>
                     </div>
                   );
                 })}

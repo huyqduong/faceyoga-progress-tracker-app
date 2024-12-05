@@ -218,6 +218,32 @@ export interface Database {
         };
         Relationships: []
       };
+      goals: {
+        Row: {
+          id: string;
+          label: string;
+          icon: string;
+          description: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          label: string;
+          icon: string;
+          description: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          label?: string;
+          icon?: string;
+          description?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Views: {
       [_ in never]: never

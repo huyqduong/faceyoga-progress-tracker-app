@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Settings, Users, BarChart, FileText, Menu, X, Dumbbell, GraduationCap, CreditCard } from 'lucide-react';
+import { Settings, Users, BarChart, FileText, Menu, X, Dumbbell, GraduationCap, CreditCard, Target } from 'lucide-react';
 import { useState } from 'react';
 
 export default function Admin() {
@@ -25,6 +25,12 @@ export default function Admin() {
       href: '/admin/courses',
       icon: GraduationCap,
       current: location.pathname === '/admin/courses',
+    },
+    {
+      name: 'Goal Management',
+      href: '/admin/goals',
+      icon: Target,
+      current: location.pathname === '/admin/goals',
     },
     {
       name: 'Website Settings',

@@ -1,16 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Target, Clock, Sparkles, ArrowLeft } from 'lucide-react';
+import { Target, Clock, Sparkles, ArrowLeft, Heart, Star, Sun, Moon, Smile } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import { openaiApi } from '../lib/openai';
 import toast from 'react-hot-toast';
 
-const goals = [
-  { id: 'jawline', label: 'Tone Jawline', icon: Target },
-  { id: 'puffiness', label: 'Reduce Puffiness', icon: Clock },
-  { id: 'elasticity', label: 'Improve Elasticity', icon: Sparkles },
-];
+interface Goal {
+  id: string;
+  label: string;
+  icon: string;
+  description: string;
+}
+
+const iconComponents = {
+  Target,
+  Clock,
+  Sparkles,
+  Heart,
+  Star,
+  Sun,
+  Moon,
+  Smile,
+};
 
 const timeOptions = [
   { value: '5', label: '5 minutes' },
@@ -22,12 +34,34 @@ const timeOptions = [
 function Onboarding() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
   const [timeCommitment, setTimeCommitment] = useState('10');
   const [concerns, setConcerns] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [aiRecommendation, setAiRecommendation] = useState<string | null>(null);
   const [savingGoals, setSavingGoals] = useState(false);
+
+  useEffect(() => {
+    fetchGoals();
+  }, []);
+
+  const fetchGoals = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('goals')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      setGoals(data || []);
+    } catch (error) {
+      console.error('Error fetching goals:', error);
+      toast.error('Failed to fetch goals');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getAIRecommendations = async () => {
     try {
@@ -169,7 +203,7 @@ Format the response in a clear, encouraging way.`;
             <div>
               <h2 className="text-3xl font-bold text-gray-900 mb-6">What are your goals?</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {goals.map(({ id, label, icon: Icon }) => (
+                {goals.map(({ id, label, icon }) => (
                   <button
                     key={id}
                     onClick={() => {
@@ -190,9 +224,14 @@ Format the response in a clear, encouraging way.`;
                         ? 'bg-white shadow-md' 
                         : 'bg-gray-50 group-hover:bg-white group-hover:shadow-sm'
                     }`}>
-                      <Icon className={`w-10 h-10 transition-colors duration-300 ${
-                        selectedGoals.includes(id) ? 'text-mint-600' : 'text-gray-400 group-hover:text-mint-400'
-                      }`} />
+                      {(() => {
+                        const IconComponent = iconComponents[icon as keyof typeof iconComponents];
+                        return IconComponent ? (
+                          <IconComponent className={`w-10 h-10 transition-colors duration-300 ${
+                            selectedGoals.includes(id) ? 'text-mint-600' : 'text-gray-400 group-hover:text-mint-400'
+                          }`} />
+                        ) : null;
+                      })()}
                     </div>
                     <h3 className={`text-xl font-semibold transition-colors duration-300 ${
                       selectedGoals.includes(id) ? 'text-mint-700' : 'text-gray-900'

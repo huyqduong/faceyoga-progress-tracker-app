@@ -29,6 +29,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import ExerciseManager from './pages/Admin/ExerciseManager';
 import SettingsManager from './pages/Admin/SettingsManager';
 import UserManager from './pages/Admin/UserManager';
+import AdminGoals from './pages/Admin/Goals';
 
 function App() {
   const { user, profile, loading } = useAuth();
@@ -75,6 +76,7 @@ function App() {
                   <Route index element={<AdminDashboard />} />
                   <Route path="exercises" element={<ExerciseManager />} />
                   <Route path="courses" element={<CourseManager />} />
+                  <Route path="goals" element={<AdminGoals />} />
                   <Route path="settings" element={<SettingsManager />} />
                   <Route path="users" element={<UserManager />} />
                   <Route path="test-payment" element={<StripeTestPayment />} />
