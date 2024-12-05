@@ -127,6 +127,109 @@ export interface Database {
           updated_at?: string;
         };
       };
+      early_access_signups: {
+        Row: {
+          id: string;
+          email: string;
+          created_at: string;
+          status: 'pending' | 'notified';
+        };
+        Insert: {
+          id?: string;
+          email: string;
+          created_at?: string;
+          status?: 'pending' | 'notified';
+        };
+        Update: {
+          id?: string;
+          email?: string;
+          created_at?: string;
+          status?: 'pending' | 'notified';
+        };
+      };
+      site_settings: {
+        Row: {
+          id: string;
+          business_name: string;
+          logo_url: string | null;
+          primary_color: string | null;
+          secondary_color: string | null;
+          description: string | null;
+          contact_email: string | null;
+          social_links: Record<string, string> | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_name?: string;
+          logo_url?: string | null;
+          primary_color?: string | null;
+          secondary_color?: string | null;
+          description?: string | null;
+          contact_email?: string | null;
+          social_links?: Record<string, string> | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_name?: string;
+          logo_url?: string | null;
+          primary_color?: string | null;
+          secondary_color?: string | null;
+          description?: string | null;
+          contact_email?: string | null;
+          social_links?: Record<string, string> | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      app_settings: {
+        Row: {
+          id: string;
+          business_name: string;
+          logo_url: string | null;
+          description: string;
+          primary_color: string;
+          secondary_color: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_name?: string;
+          logo_url?: string | null;
+          description?: string;
+          primary_color?: string;
+          secondary_color?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_name?: string;
+          logo_url?: string | null;
+          description?: string;
+          primary_color?: string;
+          secondary_color?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: []
+      };
+    };
+    Views: {
+      [_ in never]: never
+    };
+    Functions: {
+      [_ in never]: never
+    };
+    Enums: {
+      [_ in never]: never
+    };
+    CompositeTypes: {
+      [_ in never]: never
     };
   };
 }

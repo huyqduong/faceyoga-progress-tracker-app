@@ -202,5 +202,26 @@ export const supabaseApi = {
 
     if (error) throw error;
     return data;
+  },
+  async signupForEarlyAccess(email: string) {
+    const { data, error } = await supabase
+      .from('early_access_signups')
+      .insert([
+        {
+          email,
+          status: 'pending'
+        }
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === '23505') { // unique violation
+        throw new Error('This email has already been registered for early access.');
+      }
+      throw error;
+    }
+
+    return data;
   }
 };

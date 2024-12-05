@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        .before-after {
+            width: 400px;
+            height: 500px;
+            background: linear-gradient(45deg, #e6fffb, #99f6e4);
+            margin: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-family: Arial, sans-serif;
+            color: #115e59;
+            font-size: 24px;
+            border-radius: 12px;
+            position: relative;
+        }
+        .before-after::after {
+            content: 'Before & After';
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            font-size: 16px;
+            color: #115e59;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="before-after">Placeholder 1</div>
+        <div class="before-after">Placeholder 2</div>
+        <div class="before-after">Placeholder 3</div>
+    </div>
+</body>
+</html>

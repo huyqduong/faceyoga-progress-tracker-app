@@ -24,6 +24,7 @@ import Onboarding from './pages/Onboarding';
 import Dashboard from './pages/Dashboard';
 import Courses from './pages/Courses';
 import CourseDetails from './pages/CourseDetails';
+import Landing from './pages/Landing';
 
 function App() {
   const { user, profile, loading } = useAuth();
@@ -48,7 +49,9 @@ function App() {
                 <Route path="/login" element={
                   user ? <Navigate to="/" replace /> : <Login />
                 } />
-                <Route path="/" element={<AuthGuard><Home /></AuthGuard>} />
+                <Route path="/" element={
+                  user ? <AuthGuard><Home /></AuthGuard> : <Landing />
+                } />
                 {/* User Routes */}
                 <Route path="/dashboard" element={<AuthGuard><UserDashboard /></AuthGuard>} />
                 <Route path="/profile" element={<AuthGuard><Profile /></AuthGuard>} />
