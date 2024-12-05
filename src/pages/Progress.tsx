@@ -1,10 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Camera, Upload, X, Trash2 } from 'lucide-react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { Camera, Upload, X, Trash2, CameraOff, RefreshCcw, ImagePlus, Calendar as CalendarIcon } from 'lucide-react';
 import { useProgressStore } from '../store/progressStore';
 import { useAuth } from '../hooks/useAuth';
-import { format } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import toast from 'react-hot-toast';
 import BackButton from '../components/BackButton';
+import Calendar from 'react-calendar';
+import 'react-calendar/dist/Calendar.css';
 
 function Progress() {
   const { user } = useAuth();
@@ -14,6 +16,13 @@ function Progress() {
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [calendarView, setCalendarView] = useState<'month' | 'year'>('month');
+  const [activeStartDate, setActiveStartDate] = useState<Date>(new Date());
+  const [photoDates, setPhotoDates] = useState<Set<string>>(new Set());
+  const [isComparing, setIsComparing] = useState(false);
+  const [selectedEntries, setSelectedEntries] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -33,6 +42,45 @@ function Progress() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!loading && entries.length > 0) {
+      const dates = new Set<string>();
+      entries.forEach((entry) => {
+        if (entry.created_at) {
+          const date = new Date(entry.created_at);
+          dates.add(date.toISOString().split('T')[0]);
+        }
+      });
+      setPhotoDates(dates);
+    }
+  }, [entries, loading]);
+
+  const filteredEntries = useMemo(() => {
+    if (!entries) return [];
+    
+    if (selectedDate) {
+      // Filter by specific date
+      return entries.filter(entry => 
+        isSameDay(new Date(entry.created_at), selectedDate)
+      );
+    } else if (calendarView === 'month') {
+      // Filter by active month
+      return entries.filter(entry => {
+        const entryDate = new Date(entry.created_at);
+        return (
+          entryDate.getMonth() === activeStartDate.getMonth() &&
+          entryDate.getFullYear() === activeStartDate.getFullYear()
+        );
+      });
+    } else {
+      // Filter by active year
+      return entries.filter(entry => {
+        const entryDate = new Date(entry.created_at);
+        return entryDate.getFullYear() === activeStartDate.getFullYear();
+      });
+    }
+  }, [entries, selectedDate, calendarView, activeStartDate]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -69,6 +117,7 @@ function Progress() {
         videoRef.current.srcObject = stream;
       }
       streamRef.current = stream;
+      setIsCameraActive(true);
       setError(null);
     } catch (err) {
       setError('Unable to access camera. Please check your permissions.');
@@ -91,6 +140,7 @@ function Progress() {
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
+    setIsCameraActive(false);
   };
 
   const capturePhoto = () => {
@@ -148,6 +198,7 @@ function Progress() {
       await deleteProgress(id);
       toast.success('Photo deleted successfully');
       await fetchProgress(user.id);
+      setSelectedEntries([]);
     } catch (err) {
       console.error('Delete error:', err);
       toast.error('Failed to delete photo');
@@ -163,6 +214,57 @@ function Progress() {
     stopCamera();
   };
 
+  const toggleEntrySelection = (id: string) => {
+    setSelectedEntries(prev => {
+      if (prev.includes(id)) {
+        return prev.filter(entryId => entryId !== id);
+      }
+      return [...prev, id];
+    });
+  };
+
+  const startComparison = () => {
+    if (selectedEntries.length < 2) {
+      toast.error('Please select at least 2 photos to compare');
+      return;
+    }
+    setIsComparing(true);
+  };
+
+  const handleDateClick = (value: Date) => {
+    setSelectedDate(prev => prev && isSameDay(prev, value) ? null : value);
+    setIsComparing(false);
+    setSelectedEntries([]);
+  };
+
+  const handleActiveStartDateChange = ({ activeStartDate, view }: { activeStartDate: Date, view: 'month' | 'year' }) => {
+    setActiveStartDate(activeStartDate);
+    setCalendarView(view);
+    setSelectedDate(null);
+  };
+
+  const tileContent = ({ date, view }: { date: Date; view: string }) => {
+    if (view === 'month') {
+      const dateStr = date.toISOString().split('T')[0];
+      if (photoDates.has(dateStr)) {
+        return (
+          <div className="dot-container">
+            <div className="dot"></div>
+          </div>
+        );
+      }
+    }
+    return null;
+  };
+
+  const tileClassName = ({ date, view }: { date: Date; view: string }) => {
+    if (view === 'month') {
+      const dateStr = date.toISOString().split('T')[0];
+      return photoDates.has(dateStr) ? 'has-entries' : '';
+    }
+    return '';
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
@@ -172,177 +274,321 @@ function Progress() {
         </div>
       </div>
 
-      <header className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">Track Your Progress</h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Document your face yoga journey with photos and see your transformation over time.
-        </p>
-      </header>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Column - Photo Upload and Calendar */}
+        <div className="lg:col-span-1 space-y-8">
+          {/* Photo Upload Section */}
+          <div className="bg-white rounded-xl shadow-sm p-6 space-y-6">
+            <h2 className="text-xl font-semibold text-gray-900">Add New Progress Photo</h2>
+            
+            {error && (
+              <div className="p-4 bg-red-50 text-red-600 rounded-lg flex items-center">
+                <X className="w-5 h-5 mr-2 flex-shrink-0" />
+                <p>{error}</p>
+              </div>
+            )}
 
-      <div className="bg-white rounded-xl shadow-sm p-8">
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-lg flex items-center">
-            <X className="w-5 h-5 mr-2 flex-shrink-0" />
-            <p>{error}</p>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {!preview ? (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {!preview ? (
+              <div className="space-y-4">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  accept="image/*"
+                  className="hidden"
+                />
+                
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 rounded-lg hover:border-mint-500 transition-colors"
+                  className="w-full flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 rounded-lg hover:border-mint-500 transition-colors group"
                 >
-                  <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                  <span className="text-sm text-gray-600">Upload Photo</span>
+                  <ImagePlus className="w-8 h-8 text-gray-400 group-hover:text-mint-500 transition-colors mb-2" />
+                  <span className="text-sm text-gray-600 group-hover:text-mint-700">Upload Photo</span>
                 </button>
 
-                <button
-                  type="button"
-                  onClick={startCamera}
-                  className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 rounded-lg hover:border-mint-500 transition-colors"
-                >
-                  <Camera className="w-8 h-8 text-gray-400 mb-2" />
-                  <span className="text-sm text-gray-600">Take Photo</span>
-                </button>
-              </div>
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                capture={isMobile ? 'environment' : undefined}
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-
-              {streamRef.current && (
-                <div className="relative">
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    className="w-full rounded-lg"
-                  />
-                  <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-4">
-                    {isMobile && (
+                {isMobile && (
+                  <>
+                    {!isCameraActive ? (
                       <button
                         type="button"
-                        onClick={toggleCamera}
-                        className="px-4 py-2 bg-gray-800 text-white rounded-lg"
+                        onClick={startCamera}
+                        className="w-full flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 rounded-lg hover:border-mint-500 transition-colors group"
                       >
-                        Switch Camera
+                        <Camera className="w-8 h-8 text-gray-400 group-hover:text-mint-500 transition-colors mb-2" />
+                        <span className="text-sm text-gray-600 group-hover:text-mint-700">Take Photo</span>
                       </button>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="relative rounded-lg overflow-hidden bg-black">
+                          <video
+                            ref={videoRef}
+                            autoPlay
+                            playsInline
+                            className="w-full h-64 object-cover"
+                          />
+                          <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-4">
+                            <button
+                              type="button"
+                              onClick={toggleCamera}
+                              className="p-3 bg-white/90 rounded-full hover:bg-white transition-colors"
+                            >
+                              <RefreshCcw className="w-6 h-6 text-gray-700" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={capturePhoto}
+                              className="p-3 bg-mint-500 rounded-full hover:bg-mint-600 transition-colors"
+                            >
+                              <Camera className="w-6 h-6 text-white" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={stopCamera}
+                              className="p-3 bg-white/90 rounded-full hover:bg-white transition-colors"
+                            >
+                              <CameraOff className="w-6 h-6 text-gray-700" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     )}
-                    <button
-                      type="button"
-                      onClick={capturePhoto}
-                      className="px-4 py-2 bg-mint-500 text-white rounded-lg hover:bg-mint-600 transition-colors"
-                    >
-                      Capture
-                    </button>
-                    <button
-                      type="button"
-                      onClick={stopCamera}
-                      className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="relative">
+                  <img
+                    src={preview}
+                    alt="Preview"
+                    className="w-full h-64 object-cover rounded-lg"
+                  />
+                  <button
+                    type="button"
+                    onClick={clearSelection}
+                    className="absolute top-2 right-2 p-2 bg-white/90 rounded-full hover:bg-white transition-colors"
+                  >
+                    <X className="w-5 h-5 text-gray-700" />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Add notes about your progress..."
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mint-500 focus:border-transparent"
+                    rows={3}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    className="w-full py-3 bg-mint-500 text-white rounded-lg hover:bg-mint-600 transition-colors font-medium"
+                  >
+                    Save Progress
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Calendar Section */}
+          <div className="bg-white rounded-xl shadow-sm p-6 space-y-6">
+            <h2 className="text-xl font-semibold text-gray-900">Progress Calendar</h2>
+            <div className="calendar-container">
+              <Calendar
+                onChange={handleDateClick}
+                value={selectedDate}
+                tileContent={tileContent}
+                tileClassName={tileClassName}
+                locale="en-US"
+                onActiveStartDateChange={handleActiveStartDateChange}
+              />
+            </div>
+            <div className="mt-4">
+              <h3 className="text-lg font-semibold mb-2">
+                {selectedDate 
+                  ? `Photos from ${format(selectedDate, 'MMMM d, yyyy')}`
+                  : calendarView === 'month'
+                    ? `Photos from ${format(activeStartDate, 'MMMM yyyy')}`
+                    : `Photos from ${format(activeStartDate, 'yyyy')}`}
+              </h3>
+            </div>
+            <style jsx>{`
+              .calendar-container {
+                width: 100%;
+                max-width: 400px;
+                margin: 0 auto;
+              }
+              :global(.react-calendar) {
+                width: 100%;
+                border: none;
+                border-radius: 0.75rem;
+                padding: 1rem;
+                background: transparent;
+                font-family: inherit;
+              }
+              :global(.dot-container) {
+                position: absolute;
+                bottom: 4px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 100%;
+                display: flex;
+                justify-content: center;
+              }
+              :global(.dot) {
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                background-color: #10b981;
+                margin: 0 1px;
+              }
+              :global(.react-calendar__tile--active .dot) {
+                background-color: white;
+              }
+              :global(.has-entries) {
+                font-weight: 500;
+                position: relative;
+              }
+            `}</style>
+          </div>
+        </div>
+
+        {/* Progress Gallery Section */}
+        <div className="lg:col-span-2">
+          <div className="bg-white rounded-xl shadow-sm p-6 space-y-6">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-4">
+                <h2 className="text-xl font-semibold text-gray-900">Progress Timeline</h2>
+                {selectedDate && (
+                  <span className="text-sm text-gray-600">
+                    {format(selectedDate, 'MMMM d, yyyy')}
+                  </span>
+                )}
+              </div>
+              {entries.length > 0 && (
+                <div className="flex items-center space-x-4">
+                  {selectedEntries.length > 0 && (
+                    <>
+                      <button
+                        onClick={() => setSelectedEntries([])}
+                        className="text-sm text-gray-600 hover:text-gray-900"
+                      >
+                        Clear Selection ({selectedEntries.length})
+                      </button>
+                      {selectedEntries.length >= 2 && (
+                        <button
+                          onClick={startComparison}
+                          className="px-4 py-2 bg-mint-500 text-white rounded-lg hover:bg-mint-600 transition-colors text-sm font-medium"
+                        >
+                          Compare Selected
+                        </button>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
             </div>
-          ) : (
-            <div className="relative">
-              <img
-                src={preview}
-                alt="Preview"
-                className="w-full rounded-lg"
-              />
-              <button
-                type="button"
-                onClick={clearSelection}
-                className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          )}
 
-          {preview && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Notes
-                </label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-mint-500"
-                  rows={3}
-                  placeholder="Add any notes about your progress..."
-                />
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-mint-500 mx-auto"></div>
+                <p className="mt-4 text-gray-600">Loading progress...</p>
               </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full px-4 py-2 bg-mint-500 text-white rounded-lg hover:bg-mint-600 transition-colors disabled:opacity-50 flex items-center justify-center"
-              >
-                {loading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                    Saving...
-                  </>
-                ) : 'Save Progress'}
-              </button>
-            </>
-          )}
-        </form>
-      </div>
-
-      {/* Progress Gallery */}
-      <div className="space-y-6">
-        <h2 className="text-2xl font-semibold text-gray-900">Progress Timeline</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {entries.map((entry) => (
-            <div key={entry.id} className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all">
-              <div className="aspect-w-4 aspect-h-3">
-                <img 
-                  src={entry.image_url} 
-                  alt={`Progress from ${format(new Date(entry.created_at), 'PPP')}`}
-                  className="w-full h-full object-cover"
-                />
+            ) : filteredEntries.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-600">
+                  {selectedDate 
+                    ? `No progress entries for ${format(selectedDate, 'MMMM d, yyyy')}`
+                    : calendarView === 'month'
+                      ? `No progress entries for ${format(activeStartDate, 'MMMM yyyy')}`
+                      : `No progress entries for ${format(activeStartDate, 'yyyy')}`}
+                </p>
               </div>
-              <div className="p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <time className="text-sm text-gray-600">
-                    {format(new Date(entry.created_at), 'PPP')}
-                  </time>
+            ) : isComparing ? (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-medium text-gray-900">Photo Comparison</h3>
                   <button
-                    onClick={() => handleDeleteProgress(entry.id)}
-                    disabled={isDeleting}
-                    className="p-1 text-red-600 hover:text-red-700 disabled:opacity-50"
-                    title="Delete photo"
+                    onClick={() => {
+                      setIsComparing(false);
+                      setSelectedEntries([]);
+                    }}
+                    className="text-sm text-gray-600 hover:text-gray-900"
                   >
-                    <Trash2 className="w-5 h-5" />
+                    Exit Comparison
                   </button>
                 </div>
-                {entry.notes && (
-                  <p className="text-gray-700 text-sm">{entry.notes}</p>
-                )}
+                <div className="grid grid-cols-2 gap-4">
+                  {entries
+                    .filter(entry => selectedEntries.includes(entry.id))
+                    .map((entry) => (
+                      <div key={entry.id} className="space-y-2">
+                        <div className="aspect-w-4 aspect-h-3">
+                          <img
+                            src={entry.image_url}
+                            alt={`Progress from ${format(new Date(entry.created_at), 'PPP')}`}
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600">
+                          <CalendarIcon className="w-4 h-4 mr-2" />
+                          <time>{format(new Date(entry.created_at), 'PPP')}</time>
+                        </div>
+                        {entry.notes && (
+                          <p className="text-sm text-gray-700">{entry.notes}</p>
+                        )}
+                      </div>
+                    ))}
+                </div>
               </div>
-            </div>
-          ))}
-
-          {entries.length === 0 && (
-            <div className="col-span-full text-center py-12 bg-gray-50 rounded-lg">
-              <p className="text-gray-500">No progress photos yet. Start tracking your journey today!</p>
-            </div>
-          )}
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {filteredEntries.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className={`relative group rounded-xl overflow-hidden border-2 transition-all ${
+                      selectedEntries.includes(entry.id)
+                        ? 'border-mint-500 shadow-lg'
+                        : 'border-transparent hover:border-gray-200'
+                    }`}
+                  >
+                    <div
+                      onClick={() => toggleEntrySelection(entry.id)}
+                      className="cursor-pointer"
+                    >
+                      <div className="aspect-w-4 aspect-h-3">
+                        <img
+                          src={entry.image_url}
+                          alt={`Progress from ${format(new Date(entry.created_at), 'PPP')}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="p-4 space-y-2">
+                        <div className="flex items-center text-gray-600">
+                          <CalendarIcon className="w-4 h-4 mr-2" />
+                          <time>{format(new Date(entry.created_at), 'PPP')}</time>
+                        </div>
+                        {entry.notes && (
+                          <p className="text-sm text-gray-700">{entry.notes}</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <button
+                      onClick={() => handleDeleteProgress(entry.id)}
+                      className="absolute top-2 right-2 p-2 bg-white/90 rounded-full opacity-0 group-hover:opacity-100 hover:bg-white transition-all"
+                    >
+                      <Trash2 className="w-5 h-5 text-red-500" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
