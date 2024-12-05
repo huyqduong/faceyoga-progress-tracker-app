@@ -38,3 +38,5 @@ All images are sourced from Unsplash (https://unsplash.com) under their free-to-
 - Credit: Unsplash
 
 Note: Please ensure to download and optimize these images for web use before deploying to production.
+
+- courses.jpg: Photo by Christin Hume on Unsplash

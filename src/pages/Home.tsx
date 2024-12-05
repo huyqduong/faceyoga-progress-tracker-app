@@ -26,6 +26,13 @@ function Home() {
       color: 'from-teal-500'
     },
     {
+      path: '/courses',
+      image: '/images/tiles/courses.jpg',
+      label: 'Courses',
+      description: 'Learn structured face yoga programs',
+      color: 'from-rose-500'
+    },
+    {
       path: '/exercises',
       image: '/images/tiles/exercises.jpg',
       label: 'Exercises',
