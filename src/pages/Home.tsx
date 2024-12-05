@@ -35,8 +35,15 @@ function Home() {
       path: '/dashboard',
       icon: LayoutDashboard,
       label: 'Dashboard',
-      description: 'View your progress and daily exercises',
+      description: 'View your stats and daily exercises',
       color: 'bg-teal-500'
+    },
+    {
+      path: '/my-courses',
+      icon: Book,
+      label: 'My Courses',
+      description: 'View your enrolled courses and progress',
+      color: 'bg-blue-500'
     },
     {
       path: '/exercises',

@@ -57,7 +57,8 @@ function App() {
                   user ? <AuthGuard><Home /></AuthGuard> : <Landing />
                 } />
                 {/* User Routes */}
-                <Route path="/dashboard" element={<AuthGuard><UserDashboard /></AuthGuard>} />
+                <Route path="/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
+                <Route path="/my-courses" element={<AuthGuard><UserDashboard /></AuthGuard>} />
                 <Route path="/profile" element={<AuthGuard><Profile /></AuthGuard>} />
                 <Route path="/exercises" element={<AuthGuard><Exercises /></AuthGuard>} />
                 <Route path="/exercises/:exerciseId" element={<AuthGuard><ExerciseDetails /></AuthGuard>} />
@@ -76,11 +77,11 @@ function App() {
                   <Route path="courses" element={<CourseManager />} />
                   <Route path="settings" element={<SettingsManager />} />
                   <Route path="users" element={<UserManager />} />
+                  <Route path="test-payment" element={<StripeTestPayment />} />
                 </Route>
 
                 {/* Course Routes */}
                 <Route path="/course/:courseId" element={<CourseDetailsPage />} />
-                <Route path="/test-payment" element={<AuthGuard><StripeTestPayment /></AuthGuard>} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </main>

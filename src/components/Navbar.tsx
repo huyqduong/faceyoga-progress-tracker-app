@@ -105,34 +105,21 @@ function Navbar() {
                 }`}
             >
               <Layout className="w-4 h-4" />
-              <span>My Courses</span>
+              <span>Dashboard</span>
             </Link>
 
             {isAdmin && (
-              <>
-                <Link
-                  to="/admin"
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors
-                    ${location.pathname === '/admin'
-                      ? 'text-mint-600 bg-mint-50'
-                      : 'text-gray-600 hover:text-mint-600 hover:bg-mint-50'
-                    }`}
-                >
-                  <Settings className="w-4 h-4" />
-                  <span>Admin Panel</span>
-                </Link>
-                <Link
-                  to="/test-payment"
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors
-                    ${location.pathname === '/test-payment'
-                      ? 'text-mint-600 bg-mint-50'
-                      : 'text-gray-600 hover:text-mint-600 hover:bg-mint-50'
-                    }`}
-                >
-                  <CreditCard className="w-4 h-4" />
-                  <span>Test Payment</span>
-                </Link>
-              </>
+              <Link
+                to="/admin"
+                className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors
+                  ${location.pathname === '/admin'
+                    ? 'text-mint-600 bg-mint-50'
+                    : 'text-gray-600 hover:text-mint-600 hover:bg-mint-50'
+                  }`}
+              >
+                <Settings className="w-4 h-4" />
+                <span>Admin Panel</span>
+              </Link>
             )}
 
             {/* Desktop Profile Menu */}
@@ -236,26 +223,17 @@ function Navbar() {
                   className="block px-4 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-mint-50"
                   onClick={closeAllMenus}
                 >
-                  My Courses
+                  Dashboard
                 </Link>
 
                 {isAdmin && (
-                  <>
-                    <Link
-                      to="/admin"
-                      className="block px-4 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-mint-50"
-                      onClick={closeAllMenus}
-                    >
-                      Admin Panel
-                    </Link>
-                    <Link
-                      to="/test-payment"
-                      className="block px-4 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-mint-50"
-                      onClick={closeAllMenus}
-                    >
-                      Test Payment
-                    </Link>
-                  </>
+                  <Link
+                    to="/admin"
+                    className="block px-4 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-mint-50"
+                    onClick={closeAllMenus}
+                  >
+                    Admin Panel
+                  </Link>
                 )}
                 <button
                   onClick={handleSignOut}
