@@ -118,40 +118,43 @@ Format the response in a clear, encouraging way.`;
   };
 
   return (
-    <div className="min-h-screen bg-mint-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-mint-50 to-white py-16 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto space-y-10">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Welcome to Face Yoga</h1>
-          <p className="text-lg text-gray-600">
+          <h1 className="text-5xl font-bold text-gray-900 mb-6 tracking-tight">Welcome to Face Yoga</h1>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Let's personalize your experience by understanding your goals and preferences.
           </p>
         </div>
 
         {aiRecommendation ? (
-          <div className="bg-white rounded-xl shadow-sm p-8 space-y-8">
+          <div className="bg-white rounded-2xl shadow-lg p-10 space-y-10 transform transition-all duration-500 hover:shadow-xl">
             <div className="flex items-center space-x-4">
               <button
                 onClick={handleBack}
-                className="p-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100"
+                className="p-3 text-gray-600 hover:text-gray-900 rounded-xl hover:bg-mint-50 transition-all duration-300"
               >
                 <ArrowLeft className="w-6 h-6" />
               </button>
-              <h2 className="text-2xl font-semibold text-gray-900">Your Personalized Plan</h2>
+              <h2 className="text-3xl font-bold text-gray-900">Your Personalized Plan</h2>
             </div>
 
-            <div className="bg-mint-50 rounded-lg p-6">
-              <p className="text-gray-800 whitespace-pre-wrap">{aiRecommendation}</p>
+            <div className="bg-gradient-to-br from-mint-50 to-white rounded-xl p-8 border border-mint-100">
+              <div className="prose prose-lg max-w-none">
+                <p className="text-gray-800 whitespace-pre-wrap leading-relaxed">{aiRecommendation}</p>
+              </div>
             </div>
 
             <div className="flex justify-end">
               <button
                 onClick={handleSaveGoals}
                 disabled={savingGoals}
-                className="px-6 py-3 bg-mint-500 text-white rounded-lg hover:bg-mint-600 transition-colors disabled:opacity-50 flex items-center"
+                className="px-8 py-4 bg-mint-500 text-white text-lg font-medium rounded-xl hover:bg-mint-600 
+                  transition-all duration-300 disabled:opacity-50 flex items-center gap-3 hover:shadow-lg transform hover:-translate-y-0.5"
               >
                 {savingGoals ? (
                   <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                     Saving Goals...
                   </>
                 ) : (
@@ -161,11 +164,11 @@ Format the response in a clear, encouraging way.`;
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-xl shadow-sm p-8 space-y-8">
+          <div className="bg-white rounded-2xl shadow-lg p-10 space-y-12 transform transition-all duration-500 hover:shadow-xl">
             {/* Goals Selection */}
             <div>
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">What are your goals?</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <h2 className="text-3xl font-bold text-gray-900 mb-6">What are your goals?</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {goals.map(({ id, label, icon: Icon }) => (
                   <button
                     key={id}
@@ -176,16 +179,24 @@ Format the response in a clear, encouraging way.`;
                           : [...prev, id]
                       );
                     }}
-                    className={`p-6 rounded-xl border-2 transition-colors ${
+                    className={`group p-8 rounded-xl border-2 transition-all duration-300 transform hover:-translate-y-1 ${
                       selectedGoals.includes(id)
-                        ? 'border-mint-500 bg-mint-50'
-                        : 'border-gray-200 hover:border-mint-300'
+                        ? 'border-mint-500 bg-gradient-to-br from-mint-50 to-white shadow-lg'
+                        : 'border-gray-200 hover:border-mint-300 hover:shadow-md'
                     }`}
                   >
-                    <Icon className={`w-8 h-8 mb-4 ${
-                      selectedGoals.includes(id) ? 'text-mint-600' : 'text-gray-400'
-                    }`} />
-                    <h3 className="font-medium text-gray-900">{label}</h3>
+                    <div className={`p-4 rounded-xl mb-6 transition-all duration-300 ${
+                      selectedGoals.includes(id) 
+                        ? 'bg-white shadow-md' 
+                        : 'bg-gray-50 group-hover:bg-white group-hover:shadow-sm'
+                    }`}>
+                      <Icon className={`w-10 h-10 transition-colors duration-300 ${
+                        selectedGoals.includes(id) ? 'text-mint-600' : 'text-gray-400 group-hover:text-mint-400'
+                      }`} />
+                    </div>
+                    <h3 className={`text-xl font-semibold transition-colors duration-300 ${
+                      selectedGoals.includes(id) ? 'text-mint-700' : 'text-gray-900'
+                    }`}>{label}</h3>
                   </button>
                 ))}
               </div>
@@ -193,22 +204,22 @@ Format the response in a clear, encouraging way.`;
 
             {/* Time Commitment */}
             <div>
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+              <h2 className="text-3xl font-bold text-gray-900 mb-6">
                 How much time can you commit daily?
               </h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 {timeOptions.map(({ value, label }) => (
                   <button
                     key={value}
                     onClick={() => setTimeCommitment(value)}
-                    className={`p-4 rounded-lg border-2 transition-colors ${
+                    className={`group p-6 rounded-xl border-2 transition-all duration-300 transform hover:-translate-y-1 ${
                       timeCommitment === value
-                        ? 'border-mint-500 bg-mint-50'
-                        : 'border-gray-200 hover:border-mint-300'
+                        ? 'border-mint-500 bg-gradient-to-br from-mint-50 to-white shadow-lg'
+                        : 'border-gray-200 hover:border-mint-300 hover:shadow-md'
                     }`}
                   >
-                    <span className={`font-medium ${
-                      timeCommitment === value ? 'text-mint-600' : 'text-gray-600'
+                    <span className={`text-lg font-semibold transition-colors duration-300 ${
+                      timeCommitment === value ? 'text-mint-700' : 'text-gray-700'
                     }`}>
                       {label}
                     </span>
@@ -219,14 +230,15 @@ Format the response in a clear, encouraging way.`;
 
             {/* Concerns */}
             <div>
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+              <h2 className="text-3xl font-bold text-gray-900 mb-6">
                 Any specific concerns?
               </h2>
               <textarea
                 value={concerns}
                 onChange={(e) => setConcerns(e.target.value)}
                 placeholder="E.g., dark circles, fine lines, asymmetry..."
-                className="w-full p-4 border rounded-lg focus:ring-2 focus:ring-mint-500 focus:border-transparent"
+                className="w-full p-6 text-lg border-2 rounded-xl focus:ring-2 focus:ring-mint-500 focus:border-transparent
+                  placeholder:text-gray-400 transition-shadow duration-300 hover:shadow-md"
                 rows={4}
               />
             </div>
@@ -235,15 +247,20 @@ Format the response in a clear, encouraging way.`;
             <button
               onClick={handleGetRecommendation}
               disabled={loading || selectedGoals.length === 0}
-              className="w-full py-3 px-4 bg-mint-500 text-white rounded-lg hover:bg-mint-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              className="w-full py-6 px-8 bg-mint-500 text-white text-xl font-medium rounded-xl hover:bg-mint-600 
+                transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 
+                hover:shadow-lg transform hover:-translate-y-1"
             >
               {loading ? (
                 <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                  <div className="animate-spin rounded-full h-6 w-6 border-3 border-white border-t-transparent"></div>
                   Getting AI Recommendations...
                 </>
               ) : (
-                'Get Personalized Plan'
+                <>
+                  <Sparkles className="w-6 h-6" />
+                  Get Personalized Plan
+                </>
               )}
             </button>
           </div>
