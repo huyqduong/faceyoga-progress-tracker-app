@@ -24,6 +24,17 @@ export const courseApi = {
     const { data, error } = await supabase
       .from('courses')
       .select('*')
+      .eq('is_published', true)  // Only fetch published courses by default
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async fetchAllCourses(): Promise<Course[]> {
+    const { data, error } = await supabase
+      .from('courses')
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (error) throw error;

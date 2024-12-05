@@ -12,7 +12,7 @@ function CourseManager() {
     courses, 
     loading, 
     error, 
-    fetchCourses, 
+    fetchAllCourses, 
     createCourse, 
     updateCourse, 
     deleteCourse,
@@ -32,7 +32,7 @@ function CourseManager() {
       if (dataLoaded) return;
       try {
         await Promise.all([
-          fetchCourses(),
+          fetchAllCourses(),
           fetchExercises()
         ]);
         setDataLoaded(true);
@@ -42,14 +42,14 @@ function CourseManager() {
       }
     };
     loadData();
-  }, [fetchCourses, fetchExercises, dataLoaded]);
+  }, [fetchAllCourses, fetchExercises, dataLoaded]);
 
   const handleCreateCourse = async (data: any) => {
     try {
       await createCourse(data);
       toast.success('Course created successfully');
       setIsEditing(false);
-      fetchCourses(); // Refresh the courses list
+      fetchAllCourses(); // Refresh the courses list
     } catch (err) {
       console.error('Create course error:', err);
       toast.error('Failed to create course');
@@ -66,7 +66,7 @@ function CourseManager() {
       toast.success('Course updated successfully');
       setIsEditing(false);
       setSelectedCourse(null);
-      fetchCourses(); // Refresh the courses list
+      fetchAllCourses(); // Refresh the courses list
     } catch (err) {
       console.error('Update course error:', err);
       toast.error('Failed to update course');

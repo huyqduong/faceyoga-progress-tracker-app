@@ -27,6 +27,7 @@ interface CourseState {
   loading: boolean;
   error: string | null;
   fetchCourses: () => Promise<void>;
+  fetchAllCourses: () => Promise<void>;
   fetchCourseSections: (courseId: string) => Promise<void>;
   fetchSectionExercises: (sectionId: string) => Promise<void>;
   createCourse: (data: CreateCourseData) => Promise<Course>;
@@ -56,6 +57,22 @@ export const useCourseStore = create<CourseState>((set, get) => ({
       set(state => ({ 
         error: message,
         loading: state.loading // Preserve loading state
+      }));
+    }
+  },
+
+  fetchAllCourses: async () => {
+    try {
+      const courses = await courseApi.fetchAllCourses();
+      set(state => ({ 
+        courses,
+        loading: state.loading
+      }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch courses';
+      set(state => ({ 
+        error: message,
+        loading: state.loading
       }));
     }
   },
