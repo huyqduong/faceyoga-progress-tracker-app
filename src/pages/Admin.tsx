@@ -1,101 +1,124 @@
-import React, { useState, useEffect } from 'react';
-import { Dumbbell, BookOpen, Settings, CreditCard } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
-import ExerciseManager from './Admin/ExerciseManager';
-import CourseManager from './Admin/CourseManager';
-import SettingsManager from './Admin/SettingsManager';
-import AppSettings from './Admin/AppSettings';
-import { CoursePurchaseTest } from '../components/CoursePurchaseTest';
+import React from 'react';
+import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Settings, Users, BarChart, FileText, Menu, X, Dumbbell, GraduationCap } from 'lucide-react';
+import { useState } from 'react';
 
-type Tab = 'exercises' | 'courses' | 'settings' | 'purchases' | 'app-settings';
+export default function Admin() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const location = useLocation();
 
-function Admin() {
-  const [searchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState<Tab>('exercises');
-
-  useEffect(() => {
-    const tab = searchParams.get('tab');
-    if (tab && (tab === 'exercises' || tab === 'courses' || tab === 'settings' || tab === 'purchases' || tab === 'app-settings')) {
-      setActiveTab(tab);
-    }
-  }, [searchParams]);
+  const navigation = [
+    {
+      name: 'Dashboard',
+      href: '/admin',
+      icon: BarChart,
+      current: location.pathname === '/admin',
+    },
+    {
+      name: 'Exercise Management',
+      href: '/admin/exercises',
+      icon: Dumbbell,
+      current: location.pathname === '/admin/exercises',
+    },
+    {
+      name: 'Course Management',
+      href: '/admin/courses',
+      icon: GraduationCap,
+      current: location.pathname === '/admin/courses',
+    },
+    {
+      name: 'Website Settings',
+      href: '/admin/settings',
+      icon: Settings,
+      current: location.pathname === '/admin/settings',
+    },
+    {
+      name: 'Users',
+      href: '/admin/users',
+      icon: Users,
+      current: location.pathname === '/admin/users',
+    },
+  ];
 
   return (
-    <div className="space-y-8">
-      <header className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">Admin Dashboard</h1>
-        <p className="text-lg text-gray-600">
-          Manage your exercises, courses, and website settings
-        </p>
-      </header>
-
-      <div className="flex justify-center space-x-4 border-b border-gray-200">
-        <button
-          onClick={() => setActiveTab('exercises')}
-          className={`flex items-center px-6 py-3 border-b-2 font-medium text-sm transition-colors
-            ${activeTab === 'exercises'
-              ? 'border-mint-500 text-mint-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-        >
-          <Dumbbell className="w-5 h-5 mr-2" />
-          Exercises
-        </button>
-        <button
-          onClick={() => setActiveTab('courses')}
-          className={`flex items-center px-6 py-3 border-b-2 font-medium text-sm transition-colors
-            ${activeTab === 'courses'
-              ? 'border-mint-500 text-mint-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-        >
-          <BookOpen className="w-5 h-5 mr-2" />
-          Courses
-        </button>
-        <button
-          onClick={() => setActiveTab('settings')}
-          className={`flex items-center px-6 py-3 border-b-2 font-medium text-sm transition-colors
-            ${activeTab === 'settings'
-              ? 'border-mint-500 text-mint-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-        >
-          <Settings className="w-5 h-5 mr-2" />
-          Settings
-        </button>
-        <button
-          onClick={() => setActiveTab('purchases')}
-          className={`flex items-center px-6 py-3 border-b-2 font-medium text-sm transition-colors
-            ${activeTab === 'purchases'
-              ? 'border-mint-500 text-mint-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-        >
-          <CreditCard className="w-5 h-5 mr-2" />
-          Test Purchases
-        </button>
-        <button
-          onClick={() => setActiveTab('app-settings')}
-          className={`flex items-center px-6 py-3 border-b-2 font-medium text-sm transition-colors
-            ${activeTab === 'app-settings'
-              ? 'border-mint-500 text-mint-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-        >
-          <Settings className="w-5 h-5 mr-2" />
-          App Settings
-        </button>
+    <div className="min-h-screen bg-gradient-to-br from-mint-50 to-mint-100">
+      {/* Mobile menu button */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-sm border-b border-mint-100 md:hidden">
+        <div className="px-4 py-3 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="p-2 rounded-lg text-mint-600 hover:bg-mint-100"
+          >
+            {isMenuOpen ? (
+              <X className="h-6 w-6" />
+            ) : (
+              <Menu className="h-6 w-6" />
+            )}
+          </button>
+          <h1 className="text-lg font-semibold text-mint-900">Admin Panel</h1>
+          <div className="w-10" /> {/* Spacer for centering */}
+        </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        {activeTab === 'exercises' && <ExerciseManager />}
-        {activeTab === 'courses' && <CourseManager />}
-        {activeTab === 'settings' && <SettingsManager />}
-        {activeTab === 'purchases' && <CoursePurchaseTest />}
-        {activeTab === 'app-settings' && <AppSettings />}
+      {/* Mobile menu */}
+      {isMenuOpen && (
+        <div className="fixed inset-0 z-40 bg-white/95 backdrop-blur-sm md:hidden pt-16">
+          <nav className="px-4 py-6 space-y-2">
+            {navigation.map((item) => (
+              <Link
+                key={item.name}
+                to={item.href}
+                onClick={() => setIsMenuOpen(false)}
+                className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                  item.current
+                    ? 'bg-mint-100 text-mint-900'
+                    : 'text-mint-600 hover:bg-mint-50 hover:text-mint-900'
+                }`}
+              >
+                <item.icon className="h-5 w-5" />
+                <span>{item.name}</span>
+              </Link>
+            ))}
+          </nav>
+        </div>
+      )}
+
+      {/* Desktop sidebar */}
+      <div className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col">
+        <div className="flex min-h-0 flex-1 flex-col bg-white/80 backdrop-blur-sm border-r border-mint-100">
+          <div className="flex flex-1 flex-col overflow-y-auto pt-5 pb-4">
+            <div className="flex flex-shrink-0 items-center px-4">
+              <h1 className="text-xl font-bold text-mint-900">Admin Panel</h1>
+            </div>
+            <nav className="mt-8 flex-1 space-y-2 px-4">
+              {navigation.map((item) => (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                    item.current
+                      ? 'bg-mint-100 text-mint-900'
+                      : 'text-mint-600 hover:bg-mint-50 hover:text-mint-900'
+                  }`}
+                >
+                  <item.icon className="h-5 w-5" />
+                  <span>{item.name}</span>
+                </Link>
+              ))}
+            </nav>
+          </div>
+        </div>
+      </div>
+
+      {/* Main content */}
+      <div className="md:pl-64 flex flex-col min-h-screen">
+        <main className="flex-1 pt-16 md:pt-0">
+          <div className="py-6">
+            <Outlet />
+          </div>
+        </main>
       </div>
     </div>
   );
 }
-
-export default Admin;

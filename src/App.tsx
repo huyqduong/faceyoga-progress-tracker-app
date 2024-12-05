@@ -25,6 +25,10 @@ import Dashboard from './pages/Dashboard';
 import Courses from './pages/Courses';
 import CourseDetails from './pages/CourseDetails';
 import Landing from './pages/Landing';
+import AdminDashboard from './pages/AdminDashboard';
+import ExerciseManager from './pages/Admin/ExerciseManager';
+import SettingsManager from './pages/Admin/SettingsManager';
+import UserManager from './pages/Admin/UserManager';
 
 function App() {
   const { user, profile, loading } = useAuth();
@@ -64,8 +68,16 @@ function App() {
                 <Route path="/coaching" element={<AuthGuard><Coaching /></AuthGuard>} />
                 <Route path="/resources" element={<AuthGuard><Resources /></AuthGuard>} />
                 <Route path="/goals" element={<AuthGuard><Goals /></AuthGuard>} />
-                <Route path="/admin" element={<AdminGuard><Admin /></AdminGuard>} />
-                <Route path="/admin/courses" element={<AdminGuard><CourseManager /></AdminGuard>} />
+                
+                {/* Admin Routes */}
+                <Route path="/admin/*" element={<AdminGuard><Admin /></AdminGuard>}>
+                  <Route index element={<AdminDashboard />} />
+                  <Route path="exercises" element={<ExerciseManager />} />
+                  <Route path="courses" element={<CourseManager />} />
+                  <Route path="settings" element={<SettingsManager />} />
+                  <Route path="users" element={<UserManager />} />
+                </Route>
+
                 {/* Course Routes */}
                 <Route path="/course/:courseId" element={<CourseDetailsPage />} />
                 <Route path="/test-payment" element={<AuthGuard><StripeTestPayment /></AuthGuard>} />

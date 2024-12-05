@@ -98,6 +98,13 @@ function Home() {
 
   const adminTiles: MenuTile[] = [
     {
+      path: '/admin',
+      icon: LayoutDashboard,
+      label: 'Admin Dashboard',
+      description: 'Access main admin dashboard',
+      color: 'bg-purple-500'
+    },
+    {
       path: '/admin?tab=exercises',
       icon: Settings,
       label: 'Exercise Manager',
@@ -121,62 +128,77 @@ function Home() {
   ];
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-8">
-      <header className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          {settings?.home_title || 'Face Yoga'}
-        </h1>
-        <p className="text-lg text-gray-600">
-          Welcome back{profile?.full_name ? `, ${profile.full_name}` : ''}! What would you like to do today?
-        </p>
-      </header>
+    <div className="min-h-screen bg-gradient-to-br from-mint-50 to-mint-100 p-4 md:p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-mint-900">
+            Welcome back, {profile?.full_name || 'User'}
+          </h1>
+          <p className="text-mint-600 mt-1">
+            Continue your face yoga journey
+          </p>
+        </div>
 
-      {/* Main Menu Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {mainTiles.map(({ path, icon: Icon, label, description, color }) => (
-          <button
-            key={path}
-            onClick={() => navigate(path)}
-            className="flex flex-col items-center text-center p-6 bg-white rounded-xl shadow-sm hover:shadow-md transition-all border border-gray-100 space-y-4"
-          >
-            <div className={`p-3 rounded-full ${color} text-white`}>
-              <Icon className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900">{label}</h3>
-              <p className="text-sm text-gray-600 mt-1 hidden md:block">
-                {description}
-              </p>
-            </div>
-          </button>
-        ))}
-      </div>
-
-      {/* Admin Section */}
-      {profile?.role === 'admin' && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900 mt-8">Admin Tools</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {adminTiles.map(({ path, icon: Icon, label, description, color }) => (
-              <button
-                key={path}
-                onClick={() => navigate(path)}
-                className="flex flex-col items-center text-center p-6 bg-white rounded-xl shadow-sm hover:shadow-md transition-all border border-gray-100 space-y-4"
-              >
-                <div className={`p-3 rounded-full ${color} text-white`}>
-                  <Icon className="w-6 h-6" />
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {mainTiles.map((tile) => (
+            <button
+              key={tile.path}
+              onClick={() => navigate(tile.path)}
+              className="group relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-mint-100 hover:shadow-md transition-all duration-200 text-left"
+            >
+              <div className="flex items-start space-x-4">
+                <div className={`p-3 rounded-xl ${tile.color} bg-opacity-10 group-hover:bg-opacity-20 transition-colors`}>
+                  {React.createElement(tile.icon, {
+                    className: `w-6 h-6 ${tile.color.replace('bg-', 'text-').replace('-500', '-600')}`
+                  })}
                 </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">{label}</h3>
-                  <p className="text-sm text-gray-600 mt-1 hidden md:block">
-                    {description}
+                <div className="flex-1">
+                  <h3 className="font-semibold text-mint-900 mb-1 group-hover:text-mint-700 transition-colors">
+                    {tile.label}
+                  </h3>
+                  <p className="text-mint-600 text-sm">
+                    {tile.description}
                   </p>
                 </div>
-              </button>
-            ))}
-          </div>
+              </div>
+            </button>
+          ))}
         </div>
-      )}
+
+        {/* Admin Section */}
+        {profile?.is_admin && (
+          <div className="mt-8">
+            <h2 className="text-xl font-semibold text-mint-900 mb-4">Admin Controls</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {adminTiles.map((tile) => (
+                <button
+                  key={tile.path}
+                  onClick={() => navigate(tile.path)}
+                  className="group relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-mint-100 hover:shadow-md transition-all duration-200 text-left"
+                >
+                  <div className="flex items-start space-x-4">
+                    <div className={`p-3 rounded-xl ${tile.color} bg-opacity-10 group-hover:bg-opacity-20 transition-colors`}>
+                      {React.createElement(tile.icon, {
+                        className: `w-6 h-6 ${tile.color.replace('bg-', 'text-').replace('-500', '-600')}`
+                      })}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-mint-900 mb-1 group-hover:text-mint-700 transition-colors">
+                        {tile.label}
+                      </h3>
+                      <p className="text-mint-600 text-sm">
+                        {tile.description}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
