@@ -10,7 +10,8 @@ import {
   X,
   GraduationCap,
   CreditCard,
-  Layout
+  Layout,
+  Book
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useSettingsStore } from '../store/settingsStore';
@@ -86,39 +87,59 @@ function Navbar() {
           <div className="hidden md:flex items-center space-x-4">
             <Link
               to="/"
-              className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors
-                ${location.pathname === '/'
-                  ? 'text-mint-600 bg-mint-50'
-                  : 'text-gray-600 hover:text-mint-600 hover:bg-mint-50'
-                }`}
+              className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                location.pathname === '/' 
+                  ? 'text-mint-600 bg-mint-50' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
             >
-              <Home className="w-4 h-4" />
-              <span>Home</span>
+              <span className="flex items-center space-x-2">
+                <Home className="w-4 h-4" />
+                <span>Home</span>
+              </span>
+            </Link>
+
+            <Link
+              to="/my-courses"
+              className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                location.pathname === '/my-courses' 
+                  ? 'text-mint-600 bg-mint-50' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <span className="flex items-center space-x-2">
+                <Book className="w-4 h-4" />
+                <span>My Courses</span>
+              </span>
             </Link>
 
             <Link
               to="/dashboard"
-              className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors
-                ${location.pathname === '/dashboard'
+              className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                location.pathname === '/dashboard'
                   ? 'text-mint-600 bg-mint-50'
-                  : 'text-gray-600 hover:text-mint-600 hover:bg-mint-50'
-                }`}
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
             >
-              <Layout className="w-4 h-4" />
-              <span>Dashboard</span>
+              <span className="flex items-center space-x-2">
+                <Layout className="w-4 h-4" />
+                <span>Dashboard</span>
+              </span>
             </Link>
 
             {isAdmin && (
               <Link
                 to="/admin"
-                className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors
-                  ${location.pathname === '/admin'
+                className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                  location.pathname === '/admin'
                     ? 'text-mint-600 bg-mint-50'
-                    : 'text-gray-600 hover:text-mint-600 hover:bg-mint-50'
-                  }`}
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
               >
-                <Settings className="w-4 h-4" />
-                <span>Admin Panel</span>
+                <span className="flex items-center space-x-2">
+                  <Settings className="w-4 h-4" />
+                  <span>Admin Panel</span>
+                </span>
               </Link>
             )}
 
@@ -216,6 +237,14 @@ function Navbar() {
                   onClick={closeAllMenus}
                 >
                   Home
+                </Link>
+
+                <Link
+                  to="/my-courses"
+                  className="block px-4 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-mint-50"
+                  onClick={closeAllMenus}
+                >
+                  My Courses
                 </Link>
 
                 <Link

@@ -39,13 +39,6 @@ function Home() {
       color: 'bg-teal-500'
     },
     {
-      path: '/my-courses',
-      icon: Book,
-      label: 'My Courses',
-      description: 'View your enrolled courses and progress',
-      color: 'bg-blue-500'
-    },
-    {
       path: '/exercises',
       icon: Dumbbell,
       label: 'Exercises',
