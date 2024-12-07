@@ -6,6 +6,7 @@ import { CoursePurchaseButton } from '../components/CoursePurchaseButton';
 import { useAuthStore } from '../store/authStore';
 import { courseApi } from '../lib/courses';
 import toast from 'react-hot-toast';
+import { supabase } from '../lib/supabase';
 
 function CourseDetails() {
   const { courseId } = useParams();
@@ -77,8 +78,13 @@ function CourseDetails() {
         return;
       }
       try {
-        const access = await courseApi.hasAccessToCourse(user.id, courseId);
-        setHasAccess(access);
+        const { data } = await supabase
+          .from('course_access')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('course_id', courseId);
+
+        setHasAccess(data && data.length > 0);
       } catch (error) {
         console.error('Error checking course access:', error);
         setHasAccess(false);

@@ -195,23 +195,33 @@ export const courseApi = {
     return data || [];
   },
 
-  async hasAccessToCourse(userId: string, courseId: string): Promise<boolean> {
-    const { data, error } = await supabase
-      .from('course_access')
-      .select('id, expires_at')
-      .eq('user_id', userId)
-      .eq('course_id', courseId)
-      .maybeSingle();
+  async hasAccessToCourse(userId: string | null | undefined, courseId: string): Promise<boolean> {
+    // If no user ID is provided, they don't have access
+    if (!userId) return false;
 
-    if (error) throw error;
-    
-    if (!data) return false;
-    
-    // If expires_at is null, it's a lifetime access
-    if (!data.expires_at) return true;
-    
-    // Check if access hasn't expired
-    return new Date(data.expires_at) > new Date();
+    try {
+      const { data, error } = await supabase
+        .from('course_access')
+        .select('id, expires_at')
+        .eq('user_id', userId)
+        .eq('course_id', courseId)
+        .single();
+
+      if (error) {
+        // PGRST116 means no rows found, which is expected for courses without access
+        if (error.code === 'PGRST116') return false;
+        throw error;
+      }
+      
+      // If expires_at is null, it's a lifetime access
+      if (!data.expires_at) return true;
+      
+      // Check if access hasn't expired
+      return new Date(data.expires_at) > new Date();
+    } catch (error) {
+      console.error('Error checking course access:', error);
+      return false;
+    }
   },
 
   async hasAccessToExercise(userId: string, exerciseId: string): Promise<boolean> {

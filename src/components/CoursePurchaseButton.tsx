@@ -30,17 +30,16 @@ export const CoursePurchaseButton: React.FC<CoursePurchaseButtonProps> = ({
       if (!user) return;
 
       try {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('course_access')
           .select('*')
           .eq('user_id', user.id)
-          .eq('course_id', course.id)
-          .single();
+          .eq('course_id', course.id);
 
-        if (error) throw error;
-        setPurchased(!!data);
+        setPurchased(data && data.length > 0);
       } catch (error) {
         console.error('Error checking purchase status:', error);
+        setPurchased(false);
       }
     };
 
@@ -86,8 +85,7 @@ export const CoursePurchaseButton: React.FC<CoursePurchaseButtonProps> = ({
         .from('course_access')
         .select('*')
         .eq('user_id', user!.id)
-        .eq('course_id', course.id)
-        .single();
+        .eq('course_id', course.id);
 
       if (accessCheckError && accessCheckError.code !== 'PGRST116') {
         // PGRST116 means no rows returned, which is what we want

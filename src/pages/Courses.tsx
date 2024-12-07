@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { courseApi } from '../lib/courses';
 import PublicCourseCard from '../components/PublicCourseCard';
 import type { Course } from '../lib/supabase-types';
+import { supabase } from '../lib/supabase';
 
 type AccessFilter = 'all' | 'free' | 'owned' | 'premium';
 
@@ -28,12 +29,28 @@ function Courses() {
         return;
       }
 
-      const access: Record<string, boolean> = {};
-      for (const course of courses) {
-        access[course.id] = await courseApi.hasAccessToCourse(user.id, course.id);
+      try {
+        // Get all course access in a single query
+        const { data, error } = await supabase
+          .from('course_access')
+          .select('course_id')
+          .eq('user_id', user.id)
+          .in('course_id', courses.map(c => c.id));
+
+        if (error) throw error;
+
+        // Create a map of course_id to access status
+        const access: Record<string, boolean> = {};
+        courses.forEach(course => {
+          access[course.id] = data?.some(a => a.course_id === course.id) ?? false;
+        });
+
+        setCourseAccess(access);
+      } catch (error) {
+        console.error('Error checking course access:', error);
+      } finally {
+        setCheckingAccess(false);
       }
-      setCourseAccess(access);
-      setCheckingAccess(false);
     };
 
     checkCoursesAccess();
