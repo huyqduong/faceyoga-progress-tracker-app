@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import type { Database } from './database.types';
+import type { Database } from '../types/database.types';
 import type { Profile, Exercise, Progress } from './supabase-types';
 import toast from 'react-hot-toast';
 
