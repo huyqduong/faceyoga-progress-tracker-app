@@ -8,7 +8,7 @@ interface ExerciseGridProps {
   hasAccessToExercise: (exercise: Exercise) => boolean;
 }
 
-export const ExerciseGrid: React.FC<ExerciseGridProps> = ({
+const ExerciseGrid: React.FC<ExerciseGridProps> = ({
   exercises,
   onStartExercise,
   hasAccessToExercise
@@ -41,3 +41,5 @@ export const ExerciseGrid: React.FC<ExerciseGridProps> = ({
     </div>
   );
 };
+
+export default ExerciseGrid;

@@ -3,7 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Play } from 'lucide-react';
 import { useExerciseStore } from '../store/exerciseStore';
 import { useAuth } from '../hooks/useAuth';
-import { courseApi } from '../lib/courses';
+import { supabase } from '../lib/supabase';
+import { Exercise } from '../types';
 import ExerciseSearch from '../components/ExerciseSearch';
 import ExerciseFilter from '../components/ExerciseFilter';
 import ExerciseGrid from '../components/ExerciseGrid';
@@ -38,35 +39,42 @@ function Exercises() {
     }
   }, [searchParams, navigate]);
 
-  const handleStartExercise = async (id: string) => {
+  const handleStartExercise = async (exercise: Exercise) => {
     if (!user) {
       navigate('/login');
       return;
     }
 
-    // Check if exercise is locked
-    const hasAccess = await courseApi.hasAccessToExercise(user.id, id);
-    if (!hasAccess) {
-      // Get course info
-      const { data: sectionExercise } = await courseApi
+    // If the exercise is premium and user doesn't have active subscription
+    if (exercise.is_premium && user.subscription_status !== 'active') {
+      // Get course info using supabase client
+      const { data: sectionExercises, error } = await supabase
         .from('section_exercises')
         .select(`
           section:course_sections(
             course_id
           )
         `)
-        .eq('exercise_id', id)
-        .single();
+        .eq('exercise_id', exercise.id);
 
-      if (sectionExercise?.section?.course_id) {
-        navigate(`/courses/${sectionExercise.section.course_id}`);
+      if (error) {
+        console.error('Error finding exercise courses:', error);
+        return;
+      }
+
+      // Find first section with a valid course_id
+      const courseSection = sectionExercises?.find(se => se.section?.course_id);
+      
+      if (courseSection?.section?.course_id) {
+        navigate(`/courses/${courseSection.section.course_id}`);
       } else {
         navigate('/courses');
       }
       return;
     }
 
-    navigate(`/exercises/${id}`);
+    // User has access (either free exercise or premium user)
+    navigate(`/exercises/${exercise.id}`);
   };
 
   // Add intersection observer for infinite scroll
@@ -186,6 +194,7 @@ function Exercises() {
                   return matchesSearch && matchesAccess;
                 })}
                 onStartExercise={handleStartExercise}
+                hasAccessToExercise={(exercise) => !exercise.is_premium || (user?.subscription_status === 'active')}
               />
             </>
           )}
