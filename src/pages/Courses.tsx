@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { BookOpen, Filter } from 'lucide-react';
 import { useCourseStore } from '../store/courseStore';
 import { useAuth } from '../hooks/useAuth';
@@ -12,6 +12,7 @@ type AccessFilter = 'all' | 'free' | 'owned' | 'premium';
 
 function Courses() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { courses, loading, error, fetchCourses } = useCourseStore();
   const { user } = useAuth();
   const [accessFilter, setAccessFilter] = useState<AccessFilter>('all');
@@ -22,39 +23,50 @@ function Courses() {
     fetchCourses();
   }, [fetchCourses]);
 
+  // Force refresh when coming back from purchase
   useEffect(() => {
-    const checkCoursesAccess = async () => {
-      if (!user || courses.length === 0) {
-        setCheckingAccess(false);
-        return;
-      }
+    if (location.state?.refreshAccess) {
+      // Clear the state so we don't keep refreshing
+      navigate('/courses', { replace: true });
+      // Trigger a refresh of course access
+      checkCoursesAccess();
+    }
+  }, [location.state, navigate]);
 
-      try {
-        // Get all course access in a single query
-        const { data, error } = await supabase
-          .from('course_access')
-          .select('course_id')
-          .eq('user_id', user.id)
-          .in('course_id', courses.map(c => c.id));
+  const checkCoursesAccess = async () => {
+    if (!user || courses.length === 0) {
+      setCourseAccess({});
+      setCheckingAccess(false);
+      return;
+    }
 
-        if (error) throw error;
+    setCheckingAccess(true);
+    try {
+      // Get all course access in a single query
+      const { data } = await supabase
+        .from('course_access')
+        .select('course_id')
+        .eq('user_id', user.id);
 
-        // Create a map of course_id to access status
-        const access: Record<string, boolean> = {};
-        courses.forEach(course => {
-          access[course.id] = data?.some(a => a.course_id === course.id) ?? false;
-        });
+      // Create a map of course_id to access status
+      const access: Record<string, boolean> = {};
+      courses.forEach(course => {
+        access[course.id] = data?.some(a => a.course_id === course.id) ?? false;
+      });
 
-        setCourseAccess(access);
-      } catch (error) {
-        console.error('Error checking course access:', error);
-      } finally {
-        setCheckingAccess(false);
-      }
-    };
+      setCourseAccess(access);
+    } catch (error) {
+      console.error('Error checking course access:', error);
+      setCourseAccess({});
+    } finally {
+      setCheckingAccess(false);
+    }
+  };
 
+  // Run course access check when user or courses change
+  useEffect(() => {
     checkCoursesAccess();
-  }, [user, courses]);
+  }, [user?.id, courses]);
 
   const filteredCourses = courses.filter(course => {
     if (accessFilter === 'all') return true;

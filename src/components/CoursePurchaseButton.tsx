@@ -7,6 +7,7 @@ import { formatDisplayPrice } from '../stripe/config';
 import { toast } from 'react-hot-toast';
 import { stripeService } from '../stripe/stripeService';
 import { StripePaymentForm } from './StripePaymentForm';
+import { CheckCircle } from 'lucide-react';
 
 interface CoursePurchaseButtonProps {
   course: Course;
@@ -44,7 +45,7 @@ export const CoursePurchaseButton: React.FC<CoursePurchaseButtonProps> = ({
     };
 
     checkPurchaseStatus();
-  }, [user, course.id]);
+  }, [user?.id, course.id]);
 
   const handlePurchase = async () => {
     if (!user) {
@@ -81,18 +82,13 @@ export const CoursePurchaseButton: React.FC<CoursePurchaseButtonProps> = ({
   const handlePaymentSuccess = async (paymentIntentId: string) => {
     try {
       // Check if user already has access
-      const { data: existingAccess, error: accessCheckError } = await supabase
+      const { data: existingAccess } = await supabase
         .from('course_access')
         .select('*')
         .eq('user_id', user!.id)
         .eq('course_id', course.id);
 
-      if (accessCheckError && accessCheckError.code !== 'PGRST116') {
-        // PGRST116 means no rows returned, which is what we want
-        throw accessCheckError;
-      }
-
-      if (existingAccess) {
+      if (existingAccess && existingAccess.length > 0) {
         setPurchased(true);
         setShowPaymentForm(false);
         toast.success('You already have access to this course!');
@@ -119,14 +115,18 @@ export const CoursePurchaseButton: React.FC<CoursePurchaseButtonProps> = ({
       if (!purchase) throw new Error('Failed to create purchase record');
 
       // Then create the course access record using the purchase ID
+      // Use upsert instead of insert to handle potential race conditions
       const { error: accessError } = await supabase
         .from('course_access')
-        .insert({
+        .upsert({
           user_id: user!.id,
           course_id: course.id,
           access_type: 'lifetime',
           purchase_id: purchase.id,
           starts_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,course_id',
+          ignoreDuplicates: true
         });
 
       if (accessError) throw accessError;
@@ -137,6 +137,14 @@ export const CoursePurchaseButton: React.FC<CoursePurchaseButtonProps> = ({
       onPurchaseComplete?.();
     } catch (error: any) {
       console.error('Error recording course access:', error);
+      // If it's a duplicate key error, the user already has access
+      if (error.code === '23505') {
+        setPurchased(true);
+        setShowPaymentForm(false);
+        toast.success('You already have access to this course!');
+        onPurchaseComplete?.();
+        return;
+      }
       toast.error('Purchase recorded but access not granted. Please contact support.');
     }
   };
@@ -149,12 +157,12 @@ export const CoursePurchaseButton: React.FC<CoursePurchaseButtonProps> = ({
 
   if (purchased) {
     return (
-      <button
-        className="w-full px-4 py-2 bg-green-600 text-white rounded-md font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-        onClick={onPurchaseComplete}
-      >
-        Start Learning
-      </button>
+      <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between">
+        <div className="flex items-center text-green-700">
+          <CheckCircle className="h-5 w-5 mr-2" />
+          <span>You have access to this course</span>
+        </div>
+      </div>
     );
   }
 

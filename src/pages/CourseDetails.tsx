@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, Target, BookOpen, AlertCircle, Lock } from 'lucide-react';
+import { ArrowLeft, Clock, Target, BookOpen, AlertCircle, Lock, ArrowRight } from 'lucide-react';
 import { useCourseStore } from '../store/courseStore';
 import { CoursePurchaseButton } from '../components/CoursePurchaseButton';
 import { useAuthStore } from '../store/authStore';
@@ -28,6 +28,10 @@ function CourseDetails() {
   const [dataLoaded, setDataLoaded] = useState(false);
   const [hasAccess, setHasAccess] = useState<boolean>(false);
 
+  // Get course data
+  const course = courses.find(c => c.id === courseId);
+  const courseSections = sections[courseId] || [];
+
   useEffect(() => {
     const loadCourseData = async () => {
       if (!courseId) return;
@@ -48,28 +52,20 @@ function CourseDetails() {
         const courseSections = sections[courseId] || [];
         
         // Fetch exercises for all sections
-        const exercisePromises = courseSections.map(section => {
-          // Only fetch if we don't already have the exercises
-          if (!sectionExercises[section.id]) {
-            return fetchSectionExercises(section.id);
-          }
-          return Promise.resolve();
-        });
-        
-        // Wait for ALL exercises to be loaded
-        await Promise.all(exercisePromises);
-        
+        await Promise.all(courseSections.map(section => 
+          fetchSectionExercises(section.id)
+        ));
+
         setDataLoaded(true);
-      } catch (err) {
-        console.error('Error loading course data:', err);
-        toast.error('Failed to load course details');
+      } catch (error) {
+        console.error('Error loading course data:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
     loadCourseData();
-  }, [courseId, courses.length, fetchCourses, fetchCourseSections, fetchSectionExercises, sections, sectionExercises, dataLoaded]);
+  }, [courseId, courses.length, dataLoaded, fetchCourses, fetchCourseSections, fetchSectionExercises, sections]);
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -92,95 +88,36 @@ function CourseDetails() {
     };
 
     checkAccess();
-  }, [user, courseId]);
+  }, [user?.id, courseId]);
 
   const getEmbedUrl = (url: string): string | null => {
     if (!url) return null;
-    
     try {
-      if (url.includes('vimeo.com')) {
-        let videoId = '';
-        if (url.includes('player.vimeo.com/video/')) {
-          videoId = url.split('player.vimeo.com/video/')[1]?.split('?')[0] || '';
-        } else {
-          videoId = url.split('vimeo.com/')[1]?.split('?')[0] || '';
-        }
-        
-        if (!videoId) {
-          throw new Error('Invalid Vimeo URL');
-        }
-        
-        return `https://player.vimeo.com/video/${videoId}?autoplay=0&title=0&byline=0&portrait=0&dnt=1`;
+      const videoUrl = new URL(url);
+      
+      // Handle YouTube URLs
+      if (videoUrl.hostname.includes('youtube.com') || videoUrl.hostname.includes('youtu.be')) {
+        const videoId = videoUrl.hostname.includes('youtu.be')
+          ? videoUrl.pathname.slice(1)
+          : new URLSearchParams(videoUrl.search).get('v');
+        return `https://www.youtube.com/embed/${videoId}`;
       }
       
-      let videoId = '';
-      const urlObj = new URL(url);
-      
-      if (url.includes('youtube.com/watch')) {
-        videoId = urlObj.searchParams.get('v') || '';
-      } else if (url.includes('youtu.be/')) {
-        videoId = url.split('youtu.be/')[1]?.split('?')[0] || '';
-      } else if (url.includes('youtube.com/embed/')) {
-        videoId = url.split('youtube.com/embed/')[1]?.split('?')[0] || '';
-      } else if (url.includes('youtube.com/shorts/')) {
-        videoId = url.split('youtube.com/shorts/')[1]?.split('?')[0] || '';
+      // Handle Vimeo URLs
+      if (videoUrl.hostname.includes('vimeo.com')) {
+        const videoId = videoUrl.pathname.split('/').pop();
+        if (videoId) {
+          return `https://player.vimeo.com/video/${videoId}`;
+        }
       }
 
-      if (!videoId && url.trim().length === 11) {
-        videoId = url.trim();
-      }
-
-      if (!videoId) {
-        throw new Error('Invalid video URL');
-      }
-
-      return `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1`;
+      return url;
     } catch (error) {
-      setVideoError('Invalid video URL. Please check the URL and try again.');
+      console.error('Invalid URL:', error);
+      setVideoError('Invalid video URL format');
       return null;
     }
   };
-
-  if (!courseId) {
-    return <div>Course not found</div>;
-  }
-
-  const course = courses.find(c => c.id === courseId);
-  const courseSections = sections[courseId] || [];
-
-  if (error) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-center text-red-500 space-x-2">
-          <AlertCircle className="w-5 h-5" />
-          <p>Error loading course details</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (isLoading || storeLoading) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-          <div className="h-64 bg-gray-200 rounded"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!course) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-center text-gray-500 space-x-2">
-          <AlertCircle className="w-5 h-5" />
-          <p>Course not found</p>
-        </div>
-      </div>
-    );
-  }
 
   const handleExerciseClick = async (exerciseId: string) => {
     if (!user) {
@@ -196,6 +133,40 @@ function CourseDetails() {
     navigate(`/exercises/${exerciseId}`, { state: { fromCourse: courseId } });
   };
 
+  const handlePurchaseComplete = () => {
+    setHasAccess(true);
+    // Force a refresh of courses data when navigating back
+    navigate('/courses', { state: { refreshAccess: true } });
+  };
+
+  // Show loading state while fetching data
+  if (isLoading || storeLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-mint-500"></div>
+      </div>
+    );
+  }
+
+  // Show error state if course not found
+  if (!course) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Course Not Found</h1>
+          <p className="text-gray-600 mb-4">The course you're looking for doesn't exist or has been removed.</p>
+          <button
+            onClick={() => navigate('/courses')}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-mint-600 hover:bg-mint-700"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Courses
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const welcomeEmbedUrl = course.welcome_video ? getEmbedUrl(course.welcome_video) : null;
 
   return (
@@ -203,123 +174,142 @@ function CourseDetails() {
       {/* Back button */}
       <button
         onClick={() => navigate('/courses')}
-        className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+        className="inline-flex items-center text-gray-600 hover:text-gray-900"
       >
-        <ArrowLeft className="w-5 h-5 mr-2" />
+        <ArrowLeft className="mr-2 h-4 w-4" />
         Back to Courses
       </button>
 
       {/* Course header */}
-      <div className="space-y-4">
-        <h1 className="text-4xl font-bold text-gray-900">{course.title}</h1>
-        <p className="text-lg text-gray-600">{course.description}</p>
-
-        {/* Course metadata */}
-        <div className="flex flex-wrap gap-4">
-          <div className="flex items-center text-gray-600">
-            <Clock className="w-5 h-5 mr-2" />
-            <span>{course.duration}</span>
-          </div>
-          <div className="flex items-center text-gray-600">
-            <Target className="w-5 h-5 mr-2" />
-            <span>{course.difficulty}</span>
-          </div>
-          <div className="flex items-center text-gray-600">
-            <BookOpen className="w-5 h-5 mr-2" />
-            <span>{courseSections.length} sections</span>
-          </div>
+      <div className="space-y-6">
+        {/* Course image */}
+        <div className="relative max-h-[400px] h-[40vh] rounded-lg overflow-hidden">
+          {course.image_url ? (
+            <img
+              src={course.image_url}
+              alt={course.title}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+              <BookOpen className="w-12 h-12 text-gray-400" />
+            </div>
+          )}
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
         </div>
 
-        {/* Purchase button */}
-        <div className="max-w-sm">
-          <CoursePurchaseButton 
-            course={course} 
-            onPurchaseComplete={() => {
-              // Optionally refresh the page or course data
-              toast.success('Course unlocked! You can now access all content.');
-            }} 
-          />
+        <div className="space-y-4">
+          <h1 className="text-3xl font-bold text-gray-900">{course.title}</h1>
+          <p className="text-lg text-gray-600">{course.description}</p>
+
+          {/* Course stats */}
+          <div className="flex flex-wrap gap-4 text-gray-600">
+            <div className="flex items-center">
+              <Clock className="mr-2 h-4 w-4" />
+              <span>{course.duration} minutes</span>
+            </div>
+            <div className="flex items-center">
+              <Target className="mr-2 h-4 w-4" />
+              <span>{course.level}</span>
+            </div>
+            <div className="flex items-center">
+              <BookOpen className="mr-2 h-4 w-4" />
+              <span>{courseSections.length} sections</span>
+            </div>
+          </div>
+
+          {/* Welcome video */}
+          {welcomeEmbedUrl && (
+            <div className="aspect-w-16 aspect-h-9">
+              <iframe
+                src={welcomeEmbedUrl}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="rounded-lg shadow-lg"
+                onError={() => setVideoError('Failed to load video')}
+              />
+            </div>
+          )}
+          {videoError && (
+            <div className="text-red-500 flex items-center">
+              <AlertCircle className="mr-2 h-4 w-4" />
+              {videoError}
+            </div>
+          )}
+
+          {/* Purchase button */}
+          <div className="max-w-sm">
+            <CoursePurchaseButton 
+              course={course} 
+              onPurchaseComplete={handlePurchaseComplete}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Welcome video */}
-      {welcomeEmbedUrl && (
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-gray-900">Course Introduction</h2>
-          <div className="relative pb-[56.25%] h-0">
-            <iframe
-              src={welcomeEmbedUrl}
-              className="absolute top-0 left-0 w-full h-full rounded-lg"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              onError={() => setVideoError('Failed to load video')}
-            />
-          </div>
-          {videoError && (
-            <div className="text-red-500 text-sm">{videoError}</div>
-          )}
-        </div>
-      )}
-
-      {/* Course sections */}
+      {/* Course content */}
       <div className="space-y-6">
         <h2 className="text-2xl font-bold text-gray-900">Course Content</h2>
-        {courseSections.map((section, index) => (
-          <div key={section.id} className="bg-white rounded-lg shadow-sm p-6 space-y-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="text-xl font-semibold text-gray-900">
+        {!hasAccess && (
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex items-center text-gray-600">
+            <Lock className="mr-2 h-4 w-4" />
+            Purchase this course to access all content
+          </div>
+        )}
+        <div className="space-y-4">
+          {courseSections.map((section, index) => (
+            <div key={section.id} className="border border-gray-200 rounded-lg overflow-hidden">
+              <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900">
                   Section {index + 1}: {section.title}
                 </h3>
-                <p className="text-gray-600">{section.description}</p>
+                {section.description && (
+                  <p className="mt-1 text-sm text-gray-500">{section.description}</p>
+                )}
               </div>
-            </div>
-
-            {/* Section exercises */}
-            <div className="space-y-2">
-              {sectionExercises[section.id]?.map((exercise, exerciseIndex) => (
-                exercise.exercise && (
-                  <div 
+              <div className="divide-y divide-gray-200">
+                {sectionExercises[section.id]?.map((exercise) => (
+                  <button
                     key={exercise.id}
                     onClick={() => handleExerciseClick(exercise.exercise_id)}
-                    className={`flex items-center p-3 rounded-md transition-colors ${
-                      hasAccess 
-                        ? 'bg-gray-50 hover:bg-gray-100 cursor-pointer' 
-                        : 'bg-gray-100 cursor-not-allowed'
-                    }`}
+                    className={`w-full px-4 py-3 flex items-center justify-between text-left transition-colors
+                      ${hasAccess 
+                        ? 'hover:bg-gray-50 cursor-pointer' 
+                        : 'cursor-not-allowed text-gray-400'
+                      }`}
                   >
-                    {/* Exercise image */}
-                    {exercise.exercise.image_url && (
-                      <div className="w-12 h-12 rounded-md overflow-hidden flex-shrink-0 mr-4">
-                        <img 
-                          src={exercise.exercise.image_url} 
-                          alt={exercise.exercise.title}
-                          className="w-full h-full object-cover"
-                        />
+                    <div className="flex items-center space-x-3">
+                      {exercise.exercise?.image_url && (
+                        <div className="w-10 h-10 rounded overflow-hidden flex-shrink-0">
+                          <img
+                            src={exercise.exercise.image_url}
+                            alt={exercise.exercise.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      <div>
+                        <div className="font-medium">{exercise.exercise?.title}</div>
+                        <div className="text-sm text-gray-500">
+                          <span className="flex items-center">
+                            <Clock className="h-4 w-4 mr-1" />
+                            {exercise.exercise?.duration}
+                          </span>
+                        </div>
                       </div>
+                    </div>
+                    {!hasAccess ? (
+                      <Lock className="h-4 w-4" />
+                    ) : (
+                      <ArrowRight className="h-4 w-4 text-mint-600" />
                     )}
-                    
-                    {/* Exercise info */}
-                    <div className="flex-grow">
-                      <div className="font-medium text-gray-900">
-                        {exercise.exercise.title}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {exercise.exercise.duration}
-                      </div>
-                    </div>
-
-                    {/* Lock icon and difficulty */}
-                    <div className="flex items-center gap-3 text-gray-400">
-                      <span className="text-sm">{exercise.exercise.difficulty}</span>
-                      {!hasAccess && <Lock className="w-4 h-4" />}
-                    </div>
-                  </div>
-                )
-              ))}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
