@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Play, Pause, RotateCcw, CheckCircle, AlertCircle, X, ImageOff, Lock } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useLessonStore } from '../store/lessonStore';
 import { useProfileStore } from '../store/profileStore';
+import { useProgressStore } from '../store/progressStore';
+import { useLessonHistoryStore } from '../store/lessonHistoryStore';
 import { courseApi } from '../lib/courses';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
@@ -16,6 +18,8 @@ function LessonDetails() {
   const { user } = useAuth();
   const { profile, updateProfile } = useProfileStore();
   const { lessons, fetchLessons } = useLessonStore();
+  const { fetchProgress } = useProgressStore();
+  const { fetchHistory } = useLessonHistoryStore();
   
   const [isStarted, setIsStarted] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -41,6 +45,28 @@ function LessonDetails() {
       }
 
       try {
+        // First check if this is a standalone lesson
+        const { data: lessonData, error: lessonError } = await supabase
+          .from('lessons')
+          .select('*')
+          .eq('id', lessonId)
+          .single();
+
+        if (lessonError) {
+          console.error('Error fetching lesson:', lessonError);
+          setHasAccess(false);
+          setCheckingAccess(false);
+          return;
+        }
+
+        if (lessonData) {
+          // If it's a standalone lesson, grant access
+          setHasAccess(true);
+          setCheckingAccess(false);
+          return;
+        }
+
+        // If not found as standalone, check course access
         const access = await courseApi.hasAccessToLesson(user.id, lessonId);
         setHasAccess(access);
       } catch (error) {
@@ -54,7 +80,72 @@ function LessonDetails() {
     checkAccess();
   }, [user, lessonId]);
 
-  const lesson = lessons.find(l => l.id === lessonId);
+  const lesson = useMemo(() => {
+    if (!lessonId) return null;
+    return lessons.find(l => l.id === lessonId);
+  }, [lessons, lessonId]);
+
+  useEffect(() => {
+    const fetchLessonData = async () => {
+      if (!lessonId) return;
+
+      try {
+        // Try to fetch from standalone lessons first
+        const { data: lessonData, error: lessonError } = await supabase
+          .from('lessons')
+          .select('*')
+          .eq('id', lessonId)
+          .single();
+
+        if (!lessonError && lessonData) {
+          useLessonStore.setState(state => ({
+            ...state,
+            lessons: state.lessons.some(l => l.id === lessonData.id)
+              ? state.lessons
+              : [...state.lessons, lessonData]
+          }));
+          return;
+        }
+
+        // If not found, try to fetch from course lessons
+        const { data: courseLessonData, error: courseLessonError } = await supabase
+          .from('course_lessons')
+          .select(`
+            id,
+            title,
+            description,
+            image_url,
+            video_url,
+            difficulty,
+            target_area,
+            duration,
+            instructions,
+            benefits,
+            category
+          `)
+          .eq('id', lessonId)
+          .single();
+
+        if (courseLessonError) {
+          console.error('Error fetching course lesson:', courseLessonError);
+          return;
+        }
+
+        if (courseLessonData) {
+          useLessonStore.setState(state => ({
+            ...state,
+            lessons: state.lessons.some(l => l.id === courseLessonData.id)
+              ? state.lessons
+              : [...state.lessons, courseLessonData]
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching lesson data:', error);
+      }
+    };
+
+    fetchLessonData();
+  }, [lessonId]);
 
   useEffect(() => {
     if (lesson) {
@@ -137,29 +228,96 @@ function LessonDetails() {
     if (!user || !lesson) return;
 
     try {
-      const { error } = await supabase
+      // Record lesson completion in lesson_history
+      const { error: historyError } = await supabase
         .from('lesson_history')
-        .insert([
-          {
+        .insert({
+          user_id: user.id,
+          lesson_id: lesson.id,
+          practice_time: lesson.duration ? parseInt(lesson.duration.split(' ')[0]) : 0,
+          completed_at: new Date().toISOString()
+        });
+
+      if (historyError) {
+        console.error('Error recording lesson history:', historyError);
+        toast.error('Failed to record lesson completion');
+        return;
+      }
+
+      toast.success('Lesson completed!');
+
+      // Update profile stats
+      if (user) {
+        try {
+          // First get current values and lesson history
+          const [profileResult, historyResult] = await Promise.all([
+            supabase
+              .from('profiles')
+              .select('completed_lessons, exercises_done, total_practice_time, last_lesson_completed_at')
+              .eq('user_id', user.id)
+              .single(),
+            supabase
+              .from('lesson_history')
+              .select('completed_at')
+              .eq('user_id', user.id)
+              .order('completed_at', { ascending: false })
+          ]);
+
+          const currentProfile = profileResult.data;
+          const lessonHistory = historyResult.data || [];
+
+          // Calculate streak
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          const lastCompletedDate = currentProfile?.last_lesson_completed_at 
+            ? new Date(currentProfile.last_lesson_completed_at)
+            : null;
+          
+          let streak = currentProfile?.streak || 0;
+          
+          if (lastCompletedDate) {
+            lastCompletedDate.setHours(0, 0, 0, 0);
+            const diffDays = Math.floor((today.getTime() - lastCompletedDate.getTime()) / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 0) {
+              // Same day, keep streak
+              streak = currentProfile?.streak || 1;
+            } else if (diffDays === 1) {
+              // Next day, increment streak
+              streak = (currentProfile?.streak || 0) + 1;
+            } else {
+              // More than one day gap, reset streak
+              streak = 1;
+            }
+          } else {
+            // First ever lesson
+            streak = 1;
+          }
+
+          const updatedProfile = {
+            ...profile,
+            completed_lessons: currentProfile?.completed_lessons 
+              ? [...new Set([...currentProfile.completed_lessons, lesson.id])]
+              : [lesson.id],
+            exercises_done: (currentProfile?.exercises_done || 0) + 1,
+            total_practice_time: (currentProfile?.total_practice_time || 0) + (lesson.duration ? parseInt(lesson.duration.split(' ')[0]) : 0),
+            last_lesson_completed_at: new Date().toISOString(),
+            streak,
             user_id: user.id,
-            lesson_id: lesson.id,
-            completed_at: new Date().toISOString(),
-          },
-        ]);
+          };
 
-      if (error) throw error;
+          await updateProfile(updatedProfile);
 
-      setIsCompleted(true);
-      toast.success('Lesson completed! Great job!');
-
-      // Update user's progress
-      if (profile) {
-        const updatedProfile = {
-          ...profile,
-          completed_lessons: [lesson.id], // Pass as array with lesson UUID
-          user_id: user.id, // Make sure to include user_id
-        };
-        await updateProfile(updatedProfile);
+          // Refresh both progress and lesson history
+          if (user) {
+            await fetchProgress(user.id);
+            await fetchHistory(user.id);
+          }
+        } catch (error) {
+          console.error('Error updating profile:', error);
+          toast.error('Error updating profile stats');
+        }
       }
     } catch (error) {
       console.error('Error recording lesson completion:', error);

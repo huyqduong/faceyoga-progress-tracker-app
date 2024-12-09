@@ -49,8 +49,7 @@ export const lessonApi = {
           id,
           lesson_id,
           completed_at,
-          duration,
-          notes,
+          practice_time,
           created_at,
           updated_at
         `)

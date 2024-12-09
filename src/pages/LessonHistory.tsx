@@ -9,17 +9,16 @@ import BackButton from '../components/BackButton';
 
 interface LessonHistoryEntry {
   id: string;
-  lessons: {
+  lesson: {
     id: string;
     title: string;
     image_url: string;
     target_area: string;
     difficulty: string;
     description: string;
-    is_premium: boolean;
   };
   completed_at: string;
-  duration: number;
+  practice_time: number;
 }
 
 function LessonHistory() {
@@ -38,24 +37,24 @@ function LessonHistory() {
           .select(`
             id,
             completed_at,
-            duration,
-            lessons!fk_lesson_history_lesson (
+            practice_time,
+            lesson:lessons (
               id,
               title,
               image_url,
               target_area,
               difficulty,
-              description,
-              is_premium
+              description
             )
           `)
           .eq('user_id', user.id)
           .order('completed_at', { ascending: false });
 
         if (error) throw error;
+
         setHistory(data || []);
-      } catch (err) {
-        console.error('Error fetching lesson history:', err);
+      } catch (error) {
+        console.error('Error fetching lesson history:', error);
         toast.error('Failed to load lesson history');
       } finally {
         setLoading(false);
@@ -65,85 +64,90 @@ function LessonHistory() {
     fetchHistory();
   }, [user]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-mint-500"></div>
-      </div>
-    );
-  }
+  const formatDuration = (minutes: number) => {
+    if (minutes < 60) {
+      return `${minutes} min${minutes === 1 ? '' : 's'}`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return `${hours}h ${remainingMinutes}m`;
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Lesson History</h1>
-            <p className="mt-2 text-gray-600">Track your face yoga journey and progress</p>
-          </div>
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center space-x-4">
+          <BackButton />
+          <h1 className="text-3xl font-bold text-gray-900">Lesson History</h1>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mint-500" />
+        </div>
+      ) : history.length === 0 ? (
+        <div className="text-center py-12">
+          <h2 className="text-xl font-medium text-gray-900 mb-4">
+            No lessons completed yet
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Start practicing face yoga to track your progress!
+          </p>
           <button
             onClick={() => navigate('/lessons')}
-            className="mt-4 md:mt-0 inline-flex items-center px-4 py-2 rounded-lg font-medium bg-mint-500 text-white hover:bg-mint-600 transition-colors"
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-mint-600 hover:bg-mint-700"
           >
-            Start New Lesson
-            <ArrowRight className="w-5 h-5 ml-2" />
+            Browse Lessons
           </button>
         </div>
-
-        {history.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm p-6 text-center">
-            <p className="text-gray-600">You haven't completed any lessons yet.</p>
-            <button
-              onClick={() => navigate('/lessons')}
-              className="mt-4 text-mint-600 hover:text-mint-700 font-medium"
+      ) : (
+        <div className="space-y-4">
+          {history.map((entry) => (
+            <div
+              key={entry.id}
+              className="bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow border border-gray-100"
             >
-              Browse Lessons
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {history.map((entry) => (
-              <div
-                key={entry.id}
-                className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow"
-              >
-                <div className="p-6">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{entry.lessons.title}</h3>
-                      <p className="text-sm text-gray-600 mt-1">{entry.lessons.description}</p>
-                    </div>
-                    {entry.lessons.is_premium && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-amber-500 to-amber-600 text-white">
-                        Premium
-                      </span>
-                    )}
+              <div className="flex items-start space-x-4">
+                <img
+                  src={entry.lesson.image_url}
+                  alt={entry.lesson.title}
+                  className="w-24 h-24 rounded-lg object-cover"
+                />
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                    {entry.lesson.title}
+                  </h3>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                      {entry.lesson.target_area}
+                    </span>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-mint-100 text-mint-800">
+                      {entry.lesson.difficulty}
+                    </span>
                   </div>
-
-                  <div className="mt-4 flex items-center gap-6 text-sm text-gray-600">
-                    <div className="flex items-center">
-                      <Calendar className="w-4 h-4 mr-1.5" />
+                  <div className="flex items-center space-x-4 text-sm text-gray-500">
+                    <span className="flex items-center">
+                      <Calendar className="w-4 h-4 mr-1" />
                       {formatDistanceToNow(new Date(entry.completed_at), { addSuffix: true })}
-                    </div>
-                    <div className="flex items-center">
-                      <Clock className="w-4 h-4 mr-1.5" />
-                      {entry.duration} minutes
-                    </div>
+                    </span>
+                    <span className="flex items-center">
+                      <Clock className="w-4 h-4 mr-1" />
+                      {formatDuration(entry.practice_time)}
+                    </span>
                   </div>
-
-                  <button
-                    onClick={() => navigate(`/lessons/${entry.lessons.id}`)}
-                    className="mt-4 inline-flex items-center text-mint-600 hover:text-mint-700"
-                  >
-                    Practice Again
-                    <ArrowRight className="w-4 h-4 ml-1.5" />
-                  </button>
                 </div>
+                <button
+                  onClick={() => navigate(`/lesson/${entry.lesson.id}`)}
+                  className="text-mint-600 hover:text-mint-700"
+                >
+                  <ArrowRight className="w-5 h-5" />
+                </button>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

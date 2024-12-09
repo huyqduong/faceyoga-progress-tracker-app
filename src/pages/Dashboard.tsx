@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Calendar, 
@@ -17,14 +17,68 @@ import { useAuth } from '../hooks/useAuth';
 import { useExerciseStore } from '../store/exerciseStore';
 import { useCourseStore } from '../store/courseStore';
 import { useProgressStore } from '../store/progressStore';
-import { format } from 'date-fns';
+import { useProfileStore } from '../store/profileStore';
+import { useLessonHistoryStore } from '../store/lessonHistoryStore';
+import { format, subDays, eachDayOfInterval } from 'date-fns';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer
+} from 'recharts';
 
 function Dashboard() {
   const navigate = useNavigate();
-  const { profile } = useAuth();
-  const { exercises } = useExerciseStore();
-  const { courses } = useCourseStore();
-  const { entries: progressEntries } = useProgressStore();
+  const { user } = useAuth();
+  const { profile, fetchProfile } = useProfileStore();
+  const { exercises, fetchExercises } = useExerciseStore();
+  const { courses, fetchAllCourses } = useCourseStore();
+  const { entries: progressEntries, fetchProgress } = useProgressStore();
+  const { history, fetchHistory } = useLessonHistoryStore();
+
+  const formatPracticeTime = (minutes: number) => {
+    if (minutes < 60) {
+      return `${minutes} min${minutes === 1 ? '' : 's'}`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return `${hours}h ${remainingMinutes}m`;
+  };
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchExercises();
+      fetchAllCourses();
+      fetchProgress(user.id);
+      fetchProfile(user.id);
+      fetchHistory(user.id);
+    }
+  }, [user?.id, fetchExercises, fetchAllCourses, fetchProgress, fetchProfile, fetchHistory]);
+
+  // Prepare data for the practice time chart
+  const chartData = useMemo(() => {
+    const today = new Date();
+    const last7Days = eachDayOfInterval({
+      start: subDays(today, 6),
+      end: today
+    });
+
+    return last7Days.map(date => {
+      const dayEntries = history.filter(entry => 
+        format(new Date(entry.completed_at), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
+      );
+      
+      const totalMinutes = dayEntries.reduce((sum, entry) => sum + (entry.practice_time || 0), 0);
+      
+      return {
+        date: format(date, 'MMM d'),
+        minutes: totalMinutes
+      };
+    });
+  }, [history]);
 
   const stats = [
     { 
@@ -36,24 +90,24 @@ function Dashboard() {
     },
     { 
       icon: Trophy, 
-      title: 'Exercises Done', 
+      title: 'Lessons Completed', 
       value: `${profile?.exercises_done || 0}`,
       color: 'bg-green-100 text-green-600',
-      onClick: () => navigate('/exercise-history')
+      onClick: () => navigate('/lesson-history')
     },
     { 
       icon: Clock, 
       title: 'Practice Time', 
-      value: `${profile?.practice_time || 0} mins`,
+      value: formatPracticeTime(profile?.total_practice_time || 0),
       color: 'bg-purple-100 text-purple-600',
       onClick: undefined
     },
     { 
       icon: Target, 
-      title: 'Available Exercises', 
+      title: 'Available Lessons', 
       value: exercises.length.toString(),
       color: 'bg-mint-100 text-mint-600',
-      onClick: () => navigate('/exercises')
+      onClick: () => navigate('/lessons')
     }
   ];
 
@@ -105,15 +159,15 @@ function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Today's Suggested Exercises */}
+        {/* Today's Suggested Lessons */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center space-x-3">
               <Dumbbell className="w-6 h-6 text-mint-600" />
-              <h2 className="text-xl font-semibold text-gray-900">Today's Exercises</h2>
+              <h2 className="text-xl font-semibold text-gray-900">Today's Lessons</h2>
             </div>
             <button 
-              onClick={() => navigate('/exercises')}
+              onClick={() => navigate('/lessons')}
               className="text-mint-600 hover:text-mint-700 flex items-center text-sm font-medium"
             >
               View All
@@ -139,7 +193,7 @@ function Dashboard() {
                   </div>
                 </div>
                 <button
-                  onClick={() => navigate(`/exercises/${exercise.id}`)}
+                  onClick={() => navigate(`/lesson/${exercise.id}`)}
                   className="flex items-center space-x-1 px-4 py-2 bg-mint-500 text-white rounded-lg text-sm font-medium hover:bg-mint-600 transition-colors"
                 >
                   <Play className="w-4 h-4" />
@@ -154,8 +208,8 @@ function Dashboard() {
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center space-x-3">
-              <Camera className="w-6 h-6 text-purple-600" />
-              <h2 className="text-xl font-semibold text-gray-900">Recent Progress</h2>
+              <TrendingUp className="w-6 h-6 text-purple-600" />
+              <h2 className="text-xl font-semibold text-gray-900">Latest Progress</h2>
             </div>
             <button 
               onClick={() => navigate('/progress')}
@@ -166,37 +220,76 @@ function Dashboard() {
             </button>
           </div>
 
-          {latestProgress.length > 0 ? (
-            <div className="grid grid-cols-2 gap-4">
-              {latestProgress.map((entry) => (
-                <div key={entry.id} className="relative group">
-                  <div className="aspect-w-4 aspect-h-3 rounded-lg overflow-hidden">
-                    <img 
-                      src={entry.image_url} 
-                      alt={`Progress from ${format(new Date(entry.created_at), 'PPP')}`}
-                      className="w-full h-full object-cover"
+          <div className="space-y-4">
+            {latestProgress.map((entry) => (
+              <div 
+                key={entry.id}
+                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+              >
+                <div className="flex items-center space-x-4">
+                  {entry.image_url ? (
+                    <img
+                      src={entry.image_url}
+                      alt="Progress"
+                      className="w-12 h-12 rounded-lg object-cover"
                     />
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/50 to-transparent text-white">
-                    <time className="text-sm">
+                  ) : (
+                    <Camera className="w-6 h-6 text-gray-400" />
+                  )}
+                  <div>
+                    <p className="text-sm text-gray-500">
                       {format(new Date(entry.created_at), 'MMM d, yyyy')}
-                    </time>
+                    </p>
+                    <h3 className="font-medium text-gray-900">Progress Photo</h3>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 bg-gray-50 rounded-lg">
-              <Camera className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-600">No progress photos yet.</p>
-              <button
-                onClick={() => navigate('/progress')}
-                className="mt-4 text-purple-600 hover:text-purple-700 font-medium"
-              >
-                Add Your First Photo
-              </button>
-            </div>
-          )}
+                <button
+                  onClick={() => navigate(`/progress/entry/${entry.id}`)}
+                  className="text-purple-600 hover:text-purple-700"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Practice Time Chart */}
+      <div className="mt-8">
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Practice Time (Last 7 Days)</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="date" 
+                  tick={{ fontSize: 12 }}
+                  tickMargin={10}
+                />
+                <YAxis
+                  tick={{ fontSize: 12 }}
+                  tickMargin={10}
+                  label={{ 
+                    value: 'Minutes', 
+                    angle: -90, 
+                    position: 'insideLeft',
+                    style: { textAnchor: 'middle' }
+                  }}
+                />
+                <Tooltip />
+                <Line
+                  type="monotone"
+                  dataKey="minutes"
+                  stroke="#10B981"
+                  strokeWidth={2}
+                  dot={{ fill: '#10B981', strokeWidth: 2 }}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
 

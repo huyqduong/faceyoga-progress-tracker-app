@@ -62,12 +62,14 @@ function App() {
                 <Route path="/my-courses" element={<AuthGuard><UserDashboard /></AuthGuard>} />
                 <Route path="/profile" element={<AuthGuard><Profile /></AuthGuard>} />
                 <Route path="/lessons" element={<AuthGuard><Lessons /></AuthGuard>} />
+                <Route path="/lesson/:lessonId" element={<AuthGuard><LessonDetails /></AuthGuard>} />
                 <Route path="/lesson-history" element={<AuthGuard><LessonHistory /></AuthGuard>} />
                 <Route path="/courses" element={<AuthGuard><Courses /></AuthGuard>} />
                 <Route path="/courses/:courseId" element={<AuthGuard><CourseDetails /></AuthGuard>} />
                 <Route path="/courses/:courseId/lessons/:lessonId" element={<AuthGuard><LessonDetails /></AuthGuard>} />
                 <Route path="/courses/free/lessons/:lessonId" element={<AuthGuard><LessonDetails /></AuthGuard>} />
                 <Route path="/progress" element={<AuthGuard><Progress /></AuthGuard>} />
+                <Route path="/progress/entry/:entryId" element={<AuthGuard><Progress /></AuthGuard>} />
                 <Route path="/coaching" element={<AuthGuard><Coaching /></AuthGuard>} />
                 <Route path="/resources" element={<AuthGuard><Resources /></AuthGuard>} />
                 <Route path="/goals" element={<AuthGuard><Goals /></AuthGuard>} />

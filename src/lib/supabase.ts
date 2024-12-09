@@ -107,9 +107,57 @@ export const supabaseApi = {
 
       if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
 
-      // Merge current profile with updates
+      // If updating completed_lessons, update streak
+      if ('completed_lessons' in profile && profile.completed_lessons?.length) {
+        const completedLessons = currentProfile?.completed_lessons || [];
+        const newLessons = profile.completed_lessons.filter(
+          lesson => !completedLessons.includes(lesson)
+        );
+        
+        if (newLessons.length > 0) {
+          // Get completion dates from lesson_history
+          const { data: lessonHistory } = await supabase
+            .from('lesson_history')
+            .select('completed_at')
+            .eq('user_id', profile.user_id)
+            .order('completed_at', { ascending: false });
+
+          if (lessonHistory?.length) {
+            const dates = lessonHistory.map(h => new Date(h.completed_at));
+            dates.sort((a, b) => b.getTime() - a.getTime());
+
+            let streak = 1;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            // If there are previous completions, check for streak
+            if (dates.length > 1) {
+              const lastCompletion = new Date(dates[1]);
+              lastCompletion.setHours(0, 0, 0, 0);
+
+              // If last completion was yesterday, increment streak
+              const diffDays = (today.getTime() - lastCompletion.getTime()) / (24 * 60 * 60 * 1000);
+              if (diffDays === 1) {
+                streak = (currentProfile?.streak || 0) + 1;
+              } else if (diffDays > 1) {
+                // Streak broken if last completion was more than a day ago
+                streak = 1;
+              } else {
+                // Same day, keep current streak
+                streak = currentProfile?.streak || 1;
+              }
+            }
+
+            profile.streak = streak;
+          }
+        }
+      }
+
+      // Handle missing columns with default values
       const updatedProfile = {
         ...currentProfile,
+        exercises_done: currentProfile?.exercises_done || 0,
+        total_practice_time: currentProfile?.total_practice_time || 0,
         ...profile,
         updated_at: new Date().toISOString()
       };
