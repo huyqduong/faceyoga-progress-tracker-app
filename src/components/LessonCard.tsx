@@ -1,18 +1,18 @@
 import { Card, CardContent, CardMedia, Typography, Button, Chip, Stack } from '@mui/material';
-import { Exercise } from '../types';
+import { Lesson } from '../types';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import TargetIcon from '@mui/icons-material/GpsFixed';
 
-interface ExerciseCardProps {
-  exercise: Exercise;
-  onStartExercise: (exercise: Exercise) => void;
+interface LessonCardProps {
+  lesson: Lesson;
+  onStartLesson: (lesson: Lesson) => void;
   isLocked?: boolean;
   courseTitle?: string;
 }
 
-export default function ExerciseCard({ exercise, onStartExercise, isLocked, courseTitle }: ExerciseCardProps) {
-  const { title, duration, target_area, difficulty, description, image_url } = exercise;
+export default function LessonCard({ lesson, onStartLesson, isLocked, courseTitle }: LessonCardProps) {
+  const { title, duration, target_area, difficulty, description, image_url } = lesson;
 
   return (
     <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -66,11 +66,11 @@ export default function ExerciseCard({ exercise, onStartExercise, isLocked, cour
           {description}
         </Typography>
 
-        {exercise.benefits && exercise.benefits.length > 0 && (
+        {lesson.benefits && lesson.benefits.length > 0 && (
           <div className="mt-2">
             <p className="font-semibold">Benefits:</p>
             <ul className="list-disc pl-5">
-              {exercise.benefits.map((benefit, index) => (
+              {lesson.benefits.map((benefit, index) => (
                 <li key={index}>{benefit}</li>
               ))}
             </ul>
@@ -80,11 +80,11 @@ export default function ExerciseCard({ exercise, onStartExercise, isLocked, cour
         <Button
           variant="contained"
           color="primary"
-          onClick={() => onStartExercise(exercise)}
+          onClick={() => onStartLesson(lesson)}
           disabled={isLocked}
           sx={{ mt: 'auto' }}
         >
-          {isLocked ? 'Unlock Exercise' : 'Start Exercise'}
+          {isLocked ? 'Unlock Lesson' : 'Start Lesson'}
         </Button>
       </CardContent>
     </Card>

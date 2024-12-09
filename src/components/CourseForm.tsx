@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Save, X, Plus, Trash2, Upload, Image } from 'lucide-react';
 import { useCourseStore } from '../store/courseStore';
 import type { Course } from '../lib/supabase-types';
-import ExerciseSelector from './ExerciseSelector';
+import LessonSelector from './LessonSelector';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 
@@ -583,11 +583,11 @@ function CourseForm({ initialData, onSubmit, onCancel, isSubmitting }: CourseFor
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Exercises
+                  Lessons
                 </label>
-                <ExerciseSelector
-                  selectedExercises={section.exercises}
-                  onChange={(exercises) => handleSectionChange(index, 'exercises', exercises)}
+                <LessonSelector
+                  selectedLessons={section.exercises}
+                  onChange={(lessons) => handleSectionChange(index, 'exercises', lessons)}
                 />
               </div>
             </div>

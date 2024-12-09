@@ -12,6 +12,8 @@ export interface Profile {
   exercises_done: number;
   practice_time: number;
   onboarding_completed: boolean;
+  completed_lessons: string[];
+  last_lesson_completed?: string;
   created_at: string;
   updated_at: string;
 }
@@ -79,6 +81,30 @@ export interface SectionExercise {
   order_index: number;
   created_at: string;
   exercise?: Exercise;
+}
+
+export interface SectionLesson {
+  id: string;
+  section_id: string;
+  lesson_id: string;
+  order_id: number;
+  created_at: string;
+  updated_at: string;
+  lesson?: {
+    id: string;
+    title: string;
+    duration: string;
+    description: string;
+    image_url: string;
+    video_url?: string;
+    difficulty: string;
+    instructions: string[];
+    benefits: string[];
+    category: string;
+    target_area: string;
+    created_at: string;
+    updated_at: string;
+  };
 }
 
 export interface Progress {

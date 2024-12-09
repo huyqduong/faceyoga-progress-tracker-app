@@ -13,9 +13,9 @@ import LoadingScreen from './components/LoadingScreen';
 import { StripeTestPayment } from './components/StripeTestPayment';
 import { CourseDetailsPage } from './pages/CourseDetailsPage';
 import UserDashboard from './pages/UserDashboard';
-import Exercises from './pages/Exercises';
-import ExerciseDetails from './pages/ExerciseDetails';
-import ExerciseHistory from './pages/ExerciseHistory';
+import Lessons from './pages/Lessons';
+import LessonDetails from './pages/LessonDetails';
+import LessonHistory from './pages/LessonHistory';
 import Progress from './pages/Progress';
 import Coaching from './pages/Coaching';
 import Resources from './pages/Resources';
@@ -26,7 +26,7 @@ import Courses from './pages/Courses';
 import CourseDetails from './pages/CourseDetails';
 import Landing from './pages/Landing';
 import AdminDashboard from './pages/AdminDashboard';
-import ExerciseManager from './pages/Admin/ExerciseManager';
+import LessonManager from './pages/Admin/LessonManager';
 import SettingsManager from './pages/Admin/SettingsManager';
 import UserManager from './pages/Admin/UserManager';
 import AdminGoals from './pages/Admin/Goals';
@@ -61,11 +61,12 @@ function App() {
                 <Route path="/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
                 <Route path="/my-courses" element={<AuthGuard><UserDashboard /></AuthGuard>} />
                 <Route path="/profile" element={<AuthGuard><Profile /></AuthGuard>} />
-                <Route path="/exercises" element={<AuthGuard><Exercises /></AuthGuard>} />
-                <Route path="/exercises/:exerciseId" element={<AuthGuard><ExerciseDetails /></AuthGuard>} />
-                <Route path="/exercise-history" element={<AuthGuard><ExerciseHistory /></AuthGuard>} />
+                <Route path="/lessons" element={<AuthGuard><Lessons /></AuthGuard>} />
+                <Route path="/lesson-history" element={<AuthGuard><LessonHistory /></AuthGuard>} />
                 <Route path="/courses" element={<AuthGuard><Courses /></AuthGuard>} />
                 <Route path="/courses/:courseId" element={<AuthGuard><CourseDetails /></AuthGuard>} />
+                <Route path="/courses/:courseId/lessons/:lessonId" element={<AuthGuard><LessonDetails /></AuthGuard>} />
+                <Route path="/courses/free/lessons/:lessonId" element={<AuthGuard><LessonDetails /></AuthGuard>} />
                 <Route path="/progress" element={<AuthGuard><Progress /></AuthGuard>} />
                 <Route path="/coaching" element={<AuthGuard><Coaching /></AuthGuard>} />
                 <Route path="/resources" element={<AuthGuard><Resources /></AuthGuard>} />
@@ -74,7 +75,7 @@ function App() {
                 {/* Admin Routes */}
                 <Route path="/admin/*" element={<AdminGuard><Admin /></AdminGuard>}>
                   <Route index element={<AdminDashboard />} />
-                  <Route path="exercises" element={<ExerciseManager />} />
+                  <Route path="lessons" element={<LessonManager />} />
                   <Route path="courses" element={<CourseManager />} />
                   <Route path="goals" element={<AdminGoals />} />
                   <Route path="settings" element={<SettingsManager />} />
@@ -82,8 +83,6 @@ function App() {
                   <Route path="test-payment" element={<StripeTestPayment />} />
                 </Route>
 
-                {/* Course Routes */}
-                <Route path="/course/:courseId" element={<CourseDetailsPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </main>

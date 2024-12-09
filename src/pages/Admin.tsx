@@ -15,10 +15,10 @@ export default function Admin() {
       current: location.pathname === '/admin',
     },
     {
-      name: 'Exercise Management',
-      href: '/admin/exercises',
+      name: 'Lesson Management',
+      href: '/admin/lessons',
       icon: Dumbbell,
-      current: location.pathname === '/admin/exercises',
+      current: location.pathname === '/admin/lessons',
     },
     {
       name: 'Course Management',

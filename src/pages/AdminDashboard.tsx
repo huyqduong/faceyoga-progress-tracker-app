@@ -7,10 +7,10 @@ export default function AdminDashboard() {
 
   const adminCards = [
     {
-      title: 'Exercise Management',
-      description: 'Manage face yoga exercises and routines',
+      title: 'Lesson Management',
+      description: 'Manage face yoga lessons and routines',
       icon: Dumbbell,
-      path: '/admin/exercises',
+      path: '/admin/lessons',
       color: 'bg-purple-100 text-purple-600',
     },
     {

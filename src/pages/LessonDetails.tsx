@@ -1,0 +1,364 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { Play, Pause, RotateCcw, CheckCircle, AlertCircle, X, ImageOff, Lock } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+import { useLessonStore } from '../store/lessonStore';
+import { useProfileStore } from '../store/profileStore';
+import { courseApi } from '../lib/courses';
+import { supabase } from '../lib/supabase';
+import toast from 'react-hot-toast';
+import BackButton from '../components/BackButton';
+
+function LessonDetails() {
+  const { lessonId } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
+  const { profile, updateProfile } = useProfileStore();
+  const { lessons, fetchLessons } = useLessonStore();
+  
+  const [isStarted, setIsStarted] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [videoError, setVideoError] = useState<string | null>(null);
+  const [imageLoading, setImageLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [hasAccess, setHasAccess] = useState<boolean>(false);
+  const [checkingAccess, setCheckingAccess] = useState(true);
+
+  useEffect(() => {
+    fetchLessons();
+  }, [fetchLessons]);
+
+  useEffect(() => {
+    const checkAccess = async () => {
+      if (!user || !lessonId) {
+        setHasAccess(false);
+        setCheckingAccess(false);
+        return;
+      }
+
+      try {
+        const access = await courseApi.hasAccessToLesson(user.id, lessonId);
+        setHasAccess(access);
+      } catch (error) {
+        console.error('Error checking lesson access:', error);
+        setHasAccess(false);
+      } finally {
+        setCheckingAccess(false);
+      }
+    };
+
+    checkAccess();
+  }, [user, lessonId]);
+
+  const lesson = lessons.find(l => l.id === lessonId);
+
+  useEffect(() => {
+    if (lesson) {
+      const minutes = parseInt(lesson.duration.split(' ')[0]);
+      setTimeLeft(minutes * 60);
+    }
+  }, [lesson]);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+
+    if (isStarted && !isPaused && timeLeft > 0) {
+      timer = setInterval(() => {
+        setTimeLeft((prev) => prev - 1);
+      }, 1000);
+    }
+
+    return () => clearInterval(timer);
+  }, [isStarted, isPaused, timeLeft]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const getEmbedUrl = (url: string): string | null => {
+    if (!url) return null;
+    
+    try {
+      if (url.includes('vimeo.com')) {
+        let videoId = '';
+        if (url.includes('player.vimeo.com/video/')) {
+          videoId = url.split('player.vimeo.com/video/')[1]?.split('?')[0] || '';
+        } else {
+          videoId = url.split('vimeo.com/')[1]?.split('?')[0] || '';
+        }
+        
+        if (!videoId) {
+          throw new Error('Invalid Vimeo URL');
+        }
+        
+        return `https://player.vimeo.com/video/${videoId}?autoplay=0&title=0&byline=0&portrait=0&dnt=1`;
+      }
+      
+      if (url.includes('youtube.com') || url.includes('youtu.be')) {
+        let videoId = '';
+        if (url.includes('youtube.com/watch')) {
+          videoId = new URL(url).searchParams.get('v') || '';
+        } else if (url.includes('youtu.be/')) {
+          videoId = url.split('youtu.be/')[1]?.split('?')[0] || '';
+        } else if (url.includes('youtube.com/embed/')) {
+          videoId = url.split('youtube.com/embed/')[1]?.split('?')[0] || '';
+        }
+        
+        if (!videoId) {
+          throw new Error('Invalid YouTube URL');
+        }
+        
+        return `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1`;
+      }
+      
+      throw new Error('Unsupported video platform');
+    } catch (error) {
+      console.error('Error parsing video URL:', error);
+      setVideoError((error as Error).message);
+      return null;
+    }
+  };
+
+  const handleReset = () => {
+    if (lesson) {
+      const minutes = parseInt(lesson.duration.split(' ')[0]);
+      setTimeLeft(minutes * 60);
+      setIsPaused(false);
+    }
+  };
+
+  const handleComplete = async () => {
+    if (!user || !lesson) return;
+
+    try {
+      const { error } = await supabase
+        .from('lesson_history')
+        .insert([
+          {
+            user_id: user.id,
+            lesson_id: lesson.id,
+            completed_at: new Date().toISOString(),
+          },
+        ]);
+
+      if (error) throw error;
+
+      setIsCompleted(true);
+      toast.success('Lesson completed! Great job!');
+
+      // Update user's progress
+      if (profile) {
+        const updatedProfile = {
+          ...profile,
+          completed_lessons: [lesson.id], // Pass as array with lesson UUID
+          user_id: user.id, // Make sure to include user_id
+        };
+        await updateProfile(updatedProfile);
+      }
+    } catch (error) {
+      console.error('Error recording lesson completion:', error);
+      toast.error('Failed to record lesson completion');
+    }
+  };
+
+  if (checkingAccess) {
+    return <div>Checking access...</div>;
+  }
+
+  if (!lesson) {
+    return <div>Lesson not found</div>;
+  }
+
+  if (!hasAccess) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <BackButton />
+        <div className="mt-8 text-center">
+          <Lock className="mx-auto h-16 w-16 text-gray-400" />
+          <h2 className="mt-4 text-2xl font-bold text-gray-900">
+            This lesson is locked
+          </h2>
+          <p className="mt-2 text-gray-600">
+            Purchase the course to access this lesson
+          </p>
+          <button
+            onClick={() => navigate('/courses')}
+            className="mt-4 px-4 py-2 bg-mint-500 text-white rounded-lg hover:bg-mint-600 transition-colors"
+          >
+            View Courses
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <BackButton />
+      
+      <div className="mt-8 max-w-4xl mx-auto">
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+          <div className="relative">
+            {lesson.video_url ? (
+              <div className="aspect-w-16 aspect-h-9">
+                {videoError ? (
+                  <div className="flex items-center justify-center bg-gray-100">
+                    <div className="text-center">
+                      <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
+                      <p className="mt-2 text-gray-600">{videoError}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <iframe
+                    src={getEmbedUrl(lesson.video_url) || ''}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="w-full h-full"
+                  ></iframe>
+                )}
+              </div>
+            ) : (
+              <div
+                className="relative aspect-w-16 aspect-h-9 bg-gray-100 cursor-pointer"
+                onClick={() => setShowImageModal(true)}
+              >
+                <img
+                  src={lesson.image_url}
+                  alt={lesson.title}
+                  className={`w-full h-full object-cover transition-opacity duration-300 ${
+                    imageLoading ? 'opacity-0' : 'opacity-100'
+                  }`}
+                  onLoad={() => setImageLoading(false)}
+                  onError={() => {
+                    setImageLoading(false);
+                    setImageError(true);
+                  }}
+                />
+                {imageError && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <ImageOff className="h-12 w-12 text-gray-400" />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="p-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold text-gray-900">{lesson.title}</h1>
+              <div className="flex items-center space-x-4">
+                <div className="text-2xl font-bold text-mint-600">
+                  {formatTime(timeLeft)}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => {
+                      if (!isStarted) setIsStarted(true);
+                      setIsPaused(!isPaused);
+                    }}
+                    className="p-2 rounded-full hover:bg-mint-50"
+                  >
+                    {isPaused || !isStarted ? (
+                      <Play className="h-6 w-6 text-mint-600" />
+                    ) : (
+                      <Pause className="h-6 w-6 text-mint-600" />
+                    )}
+                  </button>
+                  <button
+                    onClick={handleReset}
+                    className="p-2 rounded-full hover:bg-mint-50"
+                  >
+                    <RotateCcw className="h-6 w-6 text-mint-600" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-6">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Description</h2>
+                <p className="mt-2 text-gray-600">{lesson.description}</p>
+              </div>
+
+              {lesson.instructions && lesson.instructions.length > 0 && (
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Instructions</h2>
+                  <ol className="mt-2 space-y-2">
+                    {lesson.instructions.map((instruction, index) => (
+                      <li key={index} className="flex items-start">
+                        <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-mint-100 text-mint-600 rounded-full text-sm font-medium mr-2">
+                          {index + 1}
+                        </span>
+                        <span className="text-gray-600">{instruction}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+
+              {lesson.benefits && lesson.benefits.length > 0 && (
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Benefits</h2>
+                  <ul className="mt-2 space-y-2">
+                    {lesson.benefits.map((benefit, index) => (
+                      <li key={index} className="flex items-center text-gray-600">
+                        <div className="w-2 h-2 bg-mint-400 rounded-full mr-2"></div>
+                        {benefit}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-8">
+              <button
+                onClick={handleComplete}
+                disabled={isCompleted}
+                className={`w-full py-3 px-4 rounded-lg flex items-center justify-center space-x-2 ${
+                  isCompleted
+                    ? 'bg-green-100 text-green-700 cursor-not-allowed'
+                    : 'bg-mint-500 text-white hover:bg-mint-600'
+                } transition-colors`}
+              >
+                <CheckCircle className="h-5 w-5" />
+                <span>{isCompleted ? 'Completed!' : 'Mark as Complete'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {showImageModal && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
+          onClick={() => setShowImageModal(false)}
+        >
+          <div className="max-w-4xl w-full mx-4">
+            <div className="relative">
+              <img
+                src={lesson.image_url}
+                alt={lesson.title}
+                className="w-full h-auto rounded-lg"
+              />
+              <button
+                onClick={() => setShowImageModal(false)}
+                className="absolute top-4 right-4 p-2 bg-black bg-opacity-50 rounded-full hover:bg-opacity-75 transition-opacity"
+              >
+                <X className="h-6 w-6 text-white" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default LessonDetails;

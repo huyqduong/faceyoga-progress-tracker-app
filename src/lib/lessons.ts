@@ -1,0 +1,161 @@
+import { supabase } from './supabase';
+import type { Lesson, LessonHistory } from '../types';
+
+export const lessonApi = {
+  getLessons: async (page = 1, limit = 10) => {
+    const start = (page - 1) * limit;
+    const end = start + limit - 1;
+
+    try {
+      const { data, error } = await supabase
+        .from('lessons')
+        .select()
+        .range(start, end)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data as Lesson[];
+    } catch (error) {
+      console.error('Error fetching lessons:', error);
+      throw error;
+    }
+  },
+
+  getLessonsByCategory: async (category: string, page = 1, limit = 10) => {
+    const start = (page - 1) * limit;
+    const end = start + limit - 1;
+
+    try {
+      const { data, error } = await supabase
+        .from('lessons')
+        .select()
+        .eq('target_area', category)
+        .range(start, end)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data as Lesson[];
+    } catch (error) {
+      console.error('Error fetching lessons by category:', error);
+      throw error;
+    }
+  },
+
+  getLessonHistory: async (userId: string): Promise<LessonHistory[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('lesson_history')
+        .select(`
+          id,
+          lesson_id,
+          completed_at,
+          duration,
+          notes,
+          created_at,
+          updated_at
+        `)
+        .eq('user_id', userId)
+        .order('completed_at', { ascending: false });
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error fetching lesson history:', error);
+      throw error;
+    }
+  },
+
+  createLesson: async (lessonData: Partial<Lesson>) => {
+    try {
+      const { data, error } = await supabase
+        .from('lessons')
+        .insert([lessonData])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating lesson:', error);
+      throw error;
+    }
+  },
+
+  updateLesson: async (id: string, lessonData: Partial<Lesson>) => {
+    try {
+      const { data, error } = await supabase
+        .from('lessons')
+        .update(lessonData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error updating lesson:', error);
+      throw error;
+    }
+  },
+
+  deleteLesson: async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('lessons')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting lesson:', error);
+      throw error;
+    }
+  },
+
+  createLessonHistory: async (historyData: Partial<LessonHistory>) => {
+    try {
+      const { data, error } = await supabase
+        .from('lesson_history')
+        .insert([historyData])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating lesson history:', error);
+      throw error;
+    }
+  },
+
+  updateLessonHistory: async (id: string, historyData: Partial<LessonHistory>) => {
+    try {
+      const { data, error } = await supabase
+        .from('lesson_history')
+        .update(historyData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error updating lesson history:', error);
+      throw error;
+    }
+  },
+
+  deleteLessonHistory: async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('lesson_history')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting lesson history:', error);
+      throw error;
+    }
+  }
+};

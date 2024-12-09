@@ -15,12 +15,12 @@ function CourseDetails() {
   const { 
     courses, 
     sections, 
-    exercises: sectionExercises,
+    lessons: sectionLessons,
     loading: storeLoading,
     error,
     fetchCourses,
     fetchCourseSections,
-    fetchSectionExercises
+    fetchSectionLessons
   } = useCourseStore();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -51,9 +51,9 @@ function CourseDetails() {
         // Get sections after they're loaded
         const courseSections = sections[courseId] || [];
         
-        // Fetch exercises for all sections
+        // Fetch lessons for all sections
         await Promise.all(courseSections.map(section => 
-          fetchSectionExercises(section.id)
+          fetchSectionLessons(section.id)
         ));
 
         setDataLoaded(true);
@@ -65,7 +65,7 @@ function CourseDetails() {
     };
 
     loadCourseData();
-  }, [courseId, courses.length, dataLoaded, fetchCourses, fetchCourseSections, fetchSectionExercises, sections]);
+  }, [courseId, courses.length, dataLoaded, fetchCourses, fetchCourseSections, fetchSectionLessons, sections]);
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -119,18 +119,18 @@ function CourseDetails() {
     }
   };
 
-  const handleExerciseClick = async (exerciseId: string) => {
+  const handleLessonClick = async (lessonId: string) => {
     if (!user) {
-      toast.error('Please sign in to access exercises');
+      toast.error('Please sign in to access lessons');
       return;
     }
     
     if (!hasAccess) {
-      toast.error('Please purchase this course to access exercises');
+      toast.error('Please purchase this course to access lessons');
       return;
     }
 
-    navigate(`/exercises/${exerciseId}`, { state: { fromCourse: courseId } });
+    navigate(`/courses/${courseId}/lessons/${lessonId}`);
   };
 
   const handlePurchaseComplete = () => {
@@ -269,10 +269,10 @@ function CourseDetails() {
                 )}
               </div>
               <div className="divide-y divide-gray-200">
-                {sectionExercises[section.id]?.map((exercise) => (
+                {sectionLessons[section.id]?.map((item) => (
                   <button
-                    key={exercise.id}
-                    onClick={() => handleExerciseClick(exercise.exercise_id)}
+                    key={item.id}
+                    onClick={() => handleLessonClick(item.lesson_id)}
                     className={`w-full px-4 py-3 flex items-center justify-between text-left transition-colors
                       ${hasAccess 
                         ? 'hover:bg-gray-50 cursor-pointer' 
@@ -280,21 +280,21 @@ function CourseDetails() {
                       }`}
                   >
                     <div className="flex items-center space-x-3">
-                      {exercise.exercise?.image_url && (
+                      {item.lesson?.image_url && (
                         <div className="w-10 h-10 rounded overflow-hidden flex-shrink-0">
                           <img
-                            src={exercise.exercise.image_url}
-                            alt={exercise.exercise.title}
+                            src={item.lesson.image_url}
+                            alt={item.lesson.title}
                             className="w-full h-full object-cover"
                           />
                         </div>
                       )}
                       <div>
-                        <div className="font-medium">{exercise.exercise?.title}</div>
+                        <div className="font-medium">{item.lesson?.title}</div>
                         <div className="text-sm text-gray-500">
                           <span className="flex items-center">
                             <Clock className="h-4 w-4 mr-1" />
-                            {exercise.exercise?.duration}
+                            {item.lesson?.duration}
                           </span>
                         </div>
                       </div>

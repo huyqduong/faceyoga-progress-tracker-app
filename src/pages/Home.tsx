@@ -22,7 +22,7 @@ function Home() {
       path: '/dashboard',
       image: '/images/tiles/dashboard.jpg',
       label: 'Dashboard',
-      description: 'View your stats and daily exercises',
+      description: 'View your stats and daily lessons',
       color: 'from-teal-500'
     },
     {
@@ -33,10 +33,10 @@ function Home() {
       color: 'from-rose-500'
     },
     {
-      path: '/exercises',
-      image: '/images/tiles/exercises.jpg',
-      label: 'Exercises',
-      description: 'Browse and practice face yoga exercises',
+      path: '/lessons',
+      image: '/images/tiles/lessons.jpg',
+      label: 'Lessons',
+      description: 'Browse and practice face yoga lessons',
       color: 'from-mint-500'
     },
     {
@@ -54,10 +54,10 @@ function Home() {
       color: 'from-orange-500'
     },
     {
-      path: '/exercise-history',
+      path: '/lesson-history',
       image: '/images/tiles/history.jpg',
       label: 'History',
-      description: 'Review completed exercises',
+      description: 'Review completed lessons',
       color: 'from-indigo-500'
     },
     {

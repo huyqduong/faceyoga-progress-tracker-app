@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Course, CourseSection, SectionExercise, CoursePurchase, CourseAccess } from './supabase-types';
+import type { Course, CourseSection, SectionExercise, CoursePurchase, CourseAccess, SectionLesson } from './supabase-types';
 
 interface CreateCourseWithSections {
   title: string;
@@ -64,6 +64,23 @@ export const courseApi = {
       `)
       .eq('section_id', sectionId)
       .order('order_index');
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async fetchSectionLessons(sectionId: string): Promise<SectionLesson[]> {
+    const { data, error } = await supabase
+      .from('section_lessons')
+      .select(`
+        id,
+        section_id,
+        lesson_id,
+        order_id,
+        lesson:lessons (*)
+      `)
+      .eq('section_id', sectionId)
+      .order('order_id');
 
     if (error) throw error;
     return data || [];
@@ -200,24 +217,38 @@ export const courseApi = {
     if (!userId) return false;
 
     try {
-      const { data, error } = await supabase
+      // First check course_access table
+      const { data: accessData, error: accessError } = await supabase
         .from('course_access')
         .select('id, expires_at')
         .eq('user_id', userId)
         .eq('course_id', courseId)
-        .single();
+        .maybeSingle();
 
-      if (error) {
-        // PGRST116 means no rows found, which is expected for courses without access
-        if (error.code === 'PGRST116') return false;
-        throw error;
+      // If there's a valid access record, check expiry
+      if (accessData) {
+        // If expires_at is null, it's a lifetime access
+        if (!accessData.expires_at) return true;
+        
+        // Check if access hasn't expired
+        return new Date(accessData.expires_at) > new Date();
       }
-      
-      // If expires_at is null, it's a lifetime access
-      if (!data.expires_at) return true;
-      
-      // Check if access hasn't expired
-      return new Date(data.expires_at) > new Date();
+
+      // If no access record found, check purchases
+      const { data: purchaseData, error: purchaseError } = await supabase
+        .from('course_purchases')
+        .select('id, status')
+        .eq('user_id', userId)
+        .eq('course_id', courseId)
+        .eq('status', 'completed')
+        .maybeSingle();
+
+      // If there's a completed purchase, user has access
+      if (purchaseData) {
+        return true;
+      }
+
+      return false;
     } catch (error) {
       console.error('Error checking course access:', error);
       return false;
@@ -265,6 +296,38 @@ export const courseApi = {
       return false;
     } catch (error) {
       console.error('Error checking exercise access:', error);
+      return false;
+    }
+  },
+
+  async hasAccessToLesson(userId: string, lessonId: string): Promise<boolean> {
+    try {
+      // Get the lesson's section info
+      const { data: sectionLessons, error } = await supabase
+        .from('section_lessons')
+        .select(`
+          section_id,
+          section:course_sections (
+            course_id
+          )
+        `)
+        .eq('lesson_id', lessonId);
+
+      if (error) throw error;
+
+      // If lesson belongs to no course sections, it's considered free
+      if (!sectionLessons || sectionLessons.length === 0) return true;
+
+      // Check if user has access to any of the courses containing this lesson
+      for (const sectionLesson of sectionLessons) {
+        if (sectionLesson.section && await this.hasAccessToCourse(userId, sectionLesson.section.course_id)) {
+          return true;
+        }
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Error checking lesson access:', error);
       return false;
     }
   },

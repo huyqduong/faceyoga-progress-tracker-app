@@ -57,6 +57,29 @@ export const useProfileStore = create<ProfileState>((set) => ({
 
     set({ loading: true, error: null });
     try {
+      // If updating completed_lessons, ensure it's a valid UUID array
+      if ('completed_lessons' in profile && profile.completed_lessons) {
+        const currentProfile = await supabaseApi.getProfile(profile.user_id);
+        if (!currentProfile) throw new Error('Profile not found');
+
+        // Ensure completed_lessons is a UUID array
+        const completedLessons = currentProfile.completed_lessons || [];
+        const newLesson = profile.completed_lessons[0];
+        
+        // Validate UUID format
+        const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!newLesson || !uuidPattern.test(newLesson)) {
+          throw new Error('Invalid lesson ID format');
+        }
+        
+        // Add the new lesson if it's not already in the array
+        if (!completedLessons.includes(newLesson)) {
+          profile.completed_lessons = [...completedLessons, newLesson];
+        } else {
+          profile.completed_lessons = completedLessons;
+        }
+      }
+
       const updatedProfile = await supabaseApi.updateProfile(profile);
       set((state) => ({
         profile: {
