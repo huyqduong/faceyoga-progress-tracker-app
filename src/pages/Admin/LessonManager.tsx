@@ -11,9 +11,10 @@ const emptyLesson: Omit<Lesson, 'id'> = {
   description: '',
   duration: '',
   difficulty: '',
-  thumbnail_url: '',
+  image_url: '',
   video_url: '',
   category: '',
+  target_area: '',
   instructions: [''],
   benefits: [''],
   is_premium: false,
@@ -40,10 +41,11 @@ function LessonManager() {
     if (!data.duration.trim()) return 'Duration is required';
     if (!data.description.trim()) return 'Description is required';
     if (!data.category) return 'Category is required';
+    if (!data.target_area) return 'Target area is required';
     if (!data.difficulty) return 'Difficulty is required';
     if (!data.instructions?.length || !data.instructions.some(i => i.trim())) return 'At least one instruction is required';
     if (!data.benefits?.length || !data.benefits.some(b => b.trim())) return 'At least one benefit is required';
-    if (!imageFile && !data.thumbnail_url) return 'Image is required';
+    if (!imageFile && !data.image_url) return 'Image is required';
     if (data.video_url && !isValidVideoUrl(data.video_url)) return 'Invalid video URL';
     return null;
   };
@@ -84,7 +86,7 @@ function LessonManager() {
     try {
       setIsSubmitting(true);
 
-      let imageUrl = formData.thumbnail_url;
+      let imageUrl = formData.image_url;
 
       if (imageFile) {
         imageUrl = await supabaseApi.uploadFile(imageFile, 'lessons');
@@ -94,7 +96,7 @@ function LessonManager() {
         ...formData,
         instructions: formData.instructions?.filter(i => i.trim()) || [],
         benefits: formData.benefits?.filter(b => b.trim()) || [],
-        thumbnail_url: imageUrl,
+        image_url: imageUrl,
         video_url: formData.video_url?.trim() || null,
       };
 
@@ -111,11 +113,10 @@ function LessonManager() {
       setImageFile(null);
       setImagePreview('');
       fetchLessons();
-    } catch (err) {
-      console.error('Error saving lesson:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to save lesson';
-      toast.error(errorMessage);
-      setError(errorMessage);
+    } catch (error) {
+      console.error('Error saving lesson:', error);
+      setError(error instanceof Error ? error.message : 'Failed to save lesson');
+      toast.error('Failed to save lesson');
     } finally {
       setIsSubmitting(false);
     }
@@ -127,15 +128,16 @@ function LessonManager() {
       title: lesson.title,
       duration: lesson.duration,
       description: lesson.description,
-      thumbnail_url: lesson.thumbnail_url,
+      image_url: lesson.image_url,
       video_url: lesson.video_url || '',
       category: lesson.category,
+      target_area: lesson.target_area,
       difficulty: lesson.difficulty,
       instructions: lesson.instructions || [''],
       benefits: lesson.benefits || [''],
       is_premium: lesson.is_premium,
     });
-    setImagePreview(lesson.thumbnail_url);
+    setImagePreview(lesson.image_url);
     setIsEditing(true);
     setError(null);
   };
@@ -264,6 +266,21 @@ function LessonManager() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
+                Target Area
+              </label>
+              <input
+                type="text"
+                value={formData.target_area}
+                onChange={(e) =>
+                  setFormData({ ...formData, target_area: e.target.value })
+                }
+                className="w-full px-4 py-2 border rounded-lg"
+                placeholder="Enter target area"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Difficulty
               </label>
               <select
@@ -379,12 +396,12 @@ function LessonManager() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Thumbnail Image
+              Image
             </label>
             <div className="flex items-center gap-4">
-              {(imagePreview || formData.thumbnail_url) && (
+              {(imagePreview || formData.image_url) && (
                 <img
-                  src={imagePreview || formData.thumbnail_url}
+                  src={imagePreview || formData.image_url}
                   alt="Preview"
                   className="w-24 h-24 rounded-lg object-cover"
                 />
@@ -478,7 +495,7 @@ function LessonManager() {
                   >
                     <div className="flex items-center space-x-4">
                       <img
-                        src={lesson.thumbnail_url}
+                        src={lesson.image_url}
                         alt={lesson.title}
                         className="w-12 h-12 rounded-lg object-cover"
                       />

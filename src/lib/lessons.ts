@@ -65,7 +65,7 @@ export const lessonApi = {
     }
   },
 
-  createLesson: async (lessonData: Partial<Lesson>) => {
+  createLesson: async (lessonData: Omit<Lesson, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       const { data, error } = await supabase
         .from('lessons')
@@ -85,7 +85,20 @@ export const lessonApi = {
     try {
       const { data, error } = await supabase
         .from('lessons')
-        .update(lessonData)
+        .update({
+          title: lessonData.title,
+          description: lessonData.description,
+          duration: lessonData.duration,
+          difficulty: lessonData.difficulty,
+          image_url: lessonData.image_url,
+          video_url: lessonData.video_url,
+          category: lessonData.category,
+          target_area: lessonData.target_area,
+          instructions: lessonData.instructions,
+          benefits: lessonData.benefits,
+          is_premium: lessonData.is_premium,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', id)
         .select()
         .single();
