@@ -48,7 +48,7 @@ The app will be available at `http://localhost:5173`
 
 ## Project Structure
 
-```
+```bash
 src/
 ├── components/        # Reusable UI components
 ├── hooks/            # Custom React hooks
@@ -62,7 +62,11 @@ src/
 
 - User authentication with Supabase
 - Face yoga exercise management
-- Progress tracking with photo uploads
+- Progress tracking with:
+  - Practice time tracking
+  - Daily streak calculation
+  - Lesson completion history
+  - Visual progress charts
 - AI-powered coaching
 - Course management system
 - Admin dashboard
@@ -88,7 +92,22 @@ CREATE TABLE profiles (
     role TEXT DEFAULT 'user',
     streak INTEGER DEFAULT 0,
     exercises_done INTEGER DEFAULT 0,
-    practice_time FLOAT DEFAULT 0
+    total_practice_time INTEGER DEFAULT 0,
+    last_lesson_completed_at TIMESTAMP WITH TIME ZONE,
+    completed_lessons UUID[] DEFAULT '{}'::UUID[]
+);
+```
+
+### Lesson History
+```sql
+CREATE TABLE lesson_history (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users ON DELETE CASCADE,
+    lesson_id UUID REFERENCES lessons ON DELETE CASCADE,
+    completed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    practice_time INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 ```
 
@@ -141,6 +160,34 @@ CREATE TABLE section_exercises (
     order_index INTEGER
 );
 ```
+
+## Progress Tracking
+
+The app includes comprehensive progress tracking features:
+
+### Practice Time
+- Tracks time spent on each lesson
+- Accumulates total practice time in user profile
+- Displays practice time in hours and minutes format
+- Shows daily practice time in an interactive chart
+
+### Daily Streak
+- Tracks consecutive days of practice
+- Maintains streak for multiple lessons in one day
+- Increments streak for consecutive days
+- Resets streak after missed days
+- Shows current streak on dashboard
+
+### Lesson History
+- Records each completed lesson
+- Stores practice time per lesson
+- Maintains completion timestamps
+- Used for progress visualization and stats
+
+### Progress Charts
+- Visual representation of practice time
+- Last 7 days practice history
+- Interactive tooltips with daily stats
 
 ## Authentication
 
