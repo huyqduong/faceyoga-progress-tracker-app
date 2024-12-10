@@ -80,6 +80,11 @@ const Landing = () => {
     }
   };
 
+  const scrollToSignup = () => {
+    const signupForm = document.querySelector('#signup-form');
+    signupForm?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-mint-50 to-mint-100">
       {/* Navigation */}
@@ -149,7 +154,7 @@ const Landing = () => {
                 transition={{ delay: 0.4, duration: 0.8 }}
                 className="mt-10"
               >
-                <form onSubmit={handleSignup} className="flex flex-col sm:flex-row gap-4">
+                <form onSubmit={handleSignup} className="flex flex-col sm:flex-row gap-4" id="signup-form">
                   <input
                     type="email"
                     value={email}
@@ -290,9 +295,9 @@ const Landing = () => {
                 alt="Face Yoga Method" 
                 className="h-24 mx-auto object-contain"
               />
-              <p className="text-mint-600 font-medium mt-2">
+              {/* <p className="text-mint-600 font-medium mt-2">
                 In partnership with Face Yoga Method
-              </p>
+              </p> */}
             </div>
           </motion.div>
 
@@ -323,6 +328,7 @@ const Landing = () => {
           </p>
           <motion.button
             whileHover={{ y: -2 }}
+            onClick={scrollToSignup}
             className="rounded-xl bg-gradient-to-r from-mint-600 to-mint-700 px-8 py-4 font-semibold text-white shadow-lg hover:shadow-xl transition-all duration-300"
           >
             Get Started Now
