@@ -155,15 +155,15 @@ function LessonDetails() {
   }, [lesson]);
 
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: number;
 
     if (isStarted && !isPaused && timeLeft > 0) {
-      timer = setInterval(() => {
+      timer = window.setInterval(() => {
         setTimeLeft((prev) => prev - 1);
       }, 1000);
     }
 
-    return () => clearInterval(timer);
+    return () => window.clearInterval(timer);
   }, [isStarted, isPaused, timeLeft]);
 
   const formatTime = (seconds: number) => {
@@ -220,7 +220,17 @@ function LessonDetails() {
     if (lesson) {
       const minutes = parseInt(lesson.duration.split(' ')[0]);
       setTimeLeft(minutes * 60);
+      setIsStarted(false);
       setIsPaused(false);
+    }
+  };
+
+  const handlePlayPause = () => {
+    if (!isStarted) {
+      setIsStarted(true);
+      setIsPaused(false);
+    } else {
+      setIsPaused(!isPaused);
     }
   };
 
@@ -416,10 +426,7 @@ function LessonDetails() {
                 </div>
                 <div className="flex items-center space-x-2">
                   <button
-                    onClick={() => {
-                      if (!isStarted) setIsStarted(true);
-                      setIsPaused(!isPaused);
-                    }}
+                    onClick={handlePlayPause}
                     className="p-2 rounded-full hover:bg-mint-50"
                   >
                     {isPaused || !isStarted ? (
