@@ -1,0 +1,1 @@
+This directory contains before/after transformation images for the face yoga app.
