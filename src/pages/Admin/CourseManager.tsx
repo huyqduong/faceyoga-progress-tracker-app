@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, X } from 'lucide-react';
 import { useCourseStore } from '../../store/courseStore';
-import { useExerciseStore } from '../../store/exerciseStore';
+import { useLessonStore } from '../../store/lessonStore';
 import toast from 'react-hot-toast';
 import CourseForm from '../../components/CourseForm';
 import CourseCard from '../../components/CourseCard';
@@ -17,11 +17,11 @@ function CourseManager() {
     updateCourse, 
     deleteCourse,
     fetchCourseSections,
-    fetchSectionExercises,
+    fetchSectionLessons,
     sections,
-    exercises: sectionExercises
+    lessons: sectionLessons
   } = useCourseStore();
-  const { exercises, fetchExercises } = useExerciseStore();
+  const { lessons, fetchLessons } = useLessonStore();
   const [isEditing, setIsEditing] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
@@ -33,7 +33,7 @@ function CourseManager() {
       try {
         await Promise.all([
           fetchAllCourses(),
-          fetchExercises()
+          fetchLessons()
         ]);
         setDataLoaded(true);
       } catch (err) {
@@ -42,84 +42,79 @@ function CourseManager() {
       }
     };
     loadData();
-  }, [fetchAllCourses, fetchExercises, dataLoaded]);
+  }, [fetchAllCourses, fetchLessons, dataLoaded]);
 
   const handleCreateCourse = async (data: any) => {
     try {
       await createCourse(data);
       toast.success('Course created successfully');
       setIsEditing(false);
-      fetchAllCourses(); // Refresh the courses list
     } catch (err) {
-      console.error('Create course error:', err);
+      console.error('Error creating course:', err);
       toast.error('Failed to create course');
     }
   };
 
-  const handleUpdateCourse = async (data: any) => {
-    if (!selectedCourse) return;
+  const handleUpdateCourse = async (id: string, data: any) => {
     try {
-      await updateCourse(selectedCourse.id, {
-        id: selectedCourse.id,
-        ...data
-      });
+      await updateCourse(id, data);
       toast.success('Course updated successfully');
       setIsEditing(false);
       setSelectedCourse(null);
-      fetchAllCourses(); // Refresh the courses list
     } catch (err) {
-      console.error('Update course error:', err);
+      console.error('Error updating course:', err);
       toast.error('Failed to update course');
     }
   };
 
+  const handleDeleteCourse = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this course?')) {
+      return;
+    }
+    try {
+      await deleteCourse(id);
+      toast.success('Course deleted successfully');
+    } catch (err) {
+      console.error('Error deleting course:', err);
+      toast.error('Failed to delete course');
+    }
+  };
+
   const handleEditCourse = async (course: Course) => {
+    setSelectedCourse(course);
+    setIsEditing(true);
     setIsLoadingDetails(true);
     try {
-      // Only fetch if we don't already have the data
-      if (!sections[course.id]) {
-        await fetchCourseSections(course.id);
-      }
-      
-      // Get the sections for this course
-      const courseSections = sections[course.id] || [];
-      
-      // Only fetch exercises for sections we don't have
-      const exercisePromises = courseSections.map(section => {
-        if (!sectionExercises[section.id]) {
-          return fetchSectionExercises(section.id);
-        }
-        return Promise.resolve();
-      });
-      
-      await Promise.all(exercisePromises);
-      
-      setSelectedCourse(course);
-      setIsEditing(true);
+      await Promise.all([
+        fetchCourseSections(course.id),
+        fetchSectionLessons(course.id)
+      ]);
     } catch (err) {
-      console.error('Error fetching course details:', err);
+      console.error('Error loading course details:', err);
       toast.error('Failed to load course details');
     } finally {
       setIsLoadingDetails(false);
     }
   };
 
-  const handleDeleteCourse = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this course?')) return;
-    try {
-      await deleteCourse(id);
-      toast.success('Course deleted successfully');
-    } catch (err) {
-      console.error('Delete course error:', err);
-      toast.error('Failed to delete course');
-    }
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mint-500"></div>
+      </div>
+    );
+  }
 
-  if (loading && !isEditing) {
+  if (error) {
     return (
       <div className="text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-mint-500 mx-auto"></div>
-        <p className="mt-4 text-gray-600">Loading courses...</p>
+        <p className="text-red-500 mb-4">{error}</p>
+        <button
+          onClick={() => fetchAllCourses()}
+          className="px-4 py-2 bg-mint-500 text-white rounded-lg hover:bg-mint-600 transition-colors"
+        >
+          Retry
+        </button>
       </div>
     );
   }
@@ -129,71 +124,54 @@ function CourseManager() {
       <header className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold text-gray-900">Course Management</h2>
         <button
-          onClick={() => {
-            setIsEditing(!isEditing);
-            setSelectedCourse(null);
-          }}
+          onClick={() => setIsEditing(true)}
           className="px-4 py-2 bg-mint-500 text-white rounded-lg hover:bg-mint-600 transition-colors"
+          disabled={isEditing}
         >
-          {isEditing ? (
-            <>
-              <X className="w-5 h-5 inline-block mr-2" />
-              Cancel
-            </>
-          ) : (
-            <>
-              <Plus className="w-5 h-5 inline-block mr-2" />
-              New Course
-            </>
-          )}
+          <Plus className="w-5 h-5 inline-block mr-2" />
+          New Course
         </button>
       </header>
 
-      {error && (
-        <div className="p-4 bg-red-50 text-red-600 rounded-lg">
-          {error}
-        </div>
-      )}
-
-      {isEditing ? (
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          {isLoadingDetails ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mint-500 mx-auto"></div>
-              <p className="mt-2 text-gray-600">Loading course details...</p>
+      {isEditing && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-semibold">
+                {selectedCourse ? 'Edit Course' : 'New Course'}
+              </h3>
+              <button
+                onClick={() => {
+                  setIsEditing(false);
+                  setSelectedCourse(null);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-6 h-6" />
+              </button>
             </div>
-          ) : (
             <CourseForm
-              initialData={selectedCourse || undefined}
+              course={selectedCourse}
               onSubmit={selectedCourse ? handleUpdateCourse : handleCreateCourse}
-              onCancel={() => {
-                setIsEditing(false);
-                setSelectedCourse(null);
-              }}
-              isSubmitting={loading}
               sections={sections[selectedCourse?.id || '']}
-              sectionExercises={sectionExercises}
+              sectionLessons={sectionLessons}
+              allLessons={lessons}
+              loading={isLoadingDetails}
             />
-          )}
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {courses.map((course) => (
-            <CourseCard
-              key={course.id}
-              course={course}
-              onEdit={handleEditCourse}
-              onDelete={handleDeleteCourse}
-            />
-          ))}
-
-          {courses.length === 0 && (
-            <div className="text-center py-12 bg-white rounded-xl shadow-sm">
-              <p className="text-gray-500">No courses yet. Click "New Course" to create one.</p>
-            </div>
-          )}
+          </div>
         </div>
       )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {courses.map((course) => (
+          <CourseCard
+            key={course.id}
+            course={course}
+            onEdit={() => handleEditCourse(course)}
+            onDelete={() => handleDeleteCourse(course.id)}
+          />
+        ))}
+      </div>
     </div>
   );
 }

@@ -2,14 +2,28 @@ import { supabase } from './supabase';
 import type { Lesson, LessonHistory } from '../types';
 
 export const lessonApi = {
-  getLessons: async (page = 1, limit = 10) => {
+  getLessons: async (page = 1, limit = 50) => {
     const start = (page - 1) * limit;
     const end = start + limit - 1;
 
     try {
       const { data, error } = await supabase
         .from('lessons')
-        .select()
+        .select(`
+          id,
+          title,
+          description,
+          duration,
+          difficulty,
+          image_url,
+          video_url,
+          category,
+          target_area,
+          instructions,
+          benefits,
+          created_at,
+          updated_at
+        `)
         .range(start, end)
         .order('created_at', { ascending: false });
 
@@ -21,14 +35,28 @@ export const lessonApi = {
     }
   },
 
-  getLessonsByCategory: async (category: string, page = 1, limit = 10) => {
+  getLessonsByCategory: async (category: string, page = 1, limit = 50) => {
     const start = (page - 1) * limit;
     const end = start + limit - 1;
 
     try {
       const { data, error } = await supabase
         .from('lessons')
-        .select()
+        .select(`
+          id,
+          title,
+          description,
+          duration,
+          difficulty,
+          image_url,
+          video_url,
+          category,
+          target_area,
+          instructions,
+          benefits,
+          created_at,
+          updated_at
+        `)
         .eq('target_area', category)
         .range(start, end)
         .order('created_at', { ascending: false });
@@ -95,7 +123,6 @@ export const lessonApi = {
           target_area: lessonData.target_area,
           instructions: lessonData.instructions,
           benefits: lessonData.benefits,
-          is_premium: lessonData.is_premium,
           updated_at: new Date().toISOString()
         })
         .eq('id', id)

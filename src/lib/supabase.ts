@@ -80,8 +80,8 @@ export const supabaseApi = {
       full_name: '',
       role: 'user',
       streak: 0,
-      exercises_done: 0,
-      practice_time: 0
+      lessons_completed: 0,
+      total_practice_time: 0
     };
 
     const { data, error } = await supabase
@@ -156,7 +156,7 @@ export const supabaseApi = {
       // Handle missing columns with default values
       const updatedProfile = {
         ...currentProfile,
-        exercises_done: currentProfile?.exercises_done || 0,
+        lessons_completed: currentProfile?.lessons_completed || 0,
         total_practice_time: currentProfile?.total_practice_time || 0,
         ...profile,
         updated_at: new Date().toISOString()

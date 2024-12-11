@@ -6,20 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
 import BackButton from '../components/BackButton';
-
-interface LessonHistoryEntry {
-  id: string;
-  lesson: {
-    id: string;
-    title: string;
-    image_url: string;
-    target_area: string;
-    difficulty: string;
-    description: string;
-  };
-  completed_at: string;
-  practice_time: number;
-}
+import { LessonHistoryEntry } from '../types';
 
 function LessonHistory() {
   const navigate = useNavigate();

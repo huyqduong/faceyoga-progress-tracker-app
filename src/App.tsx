@@ -20,6 +20,7 @@ import Progress from './pages/Progress';
 import Coaching from './pages/Coaching';
 import Resources from './pages/Resources';
 import Goals from './pages/Goals';
+import GoalAnalytics from './pages/GoalAnalytics';
 import Onboarding from './pages/Onboarding';
 import Dashboard from './pages/Dashboard';
 import Courses from './pages/Courses';
@@ -41,7 +42,7 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-mint-50 pattern-bg flex flex-col">
-        {user && !profile?.onboarding_completed ? (
+        {user && !loading && !profile?.onboarding_completed ? (
           <Routes>
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="*" element={<Navigate to="/onboarding" replace />} />
@@ -73,6 +74,7 @@ function App() {
                 <Route path="/coaching" element={<AuthGuard><Coaching /></AuthGuard>} />
                 <Route path="/resources" element={<AuthGuard><Resources /></AuthGuard>} />
                 <Route path="/goals" element={<AuthGuard><Goals /></AuthGuard>} />
+                <Route path="/goals/analytics" element={<AuthGuard><GoalAnalytics /></AuthGuard>} />
                 
                 {/* Admin Routes */}
                 <Route path="/admin/*" element={<AdminGuard><Admin /></AdminGuard>}>

@@ -14,7 +14,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { useExerciseStore } from '../store/exerciseStore';
+import { useLessonStore } from '../store/lessonStore';
 import { useCourseStore } from '../store/courseStore';
 import { useProgressStore } from '../store/progressStore';
 import { useProfileStore } from '../store/profileStore';
@@ -29,12 +29,13 @@ import {
   Tooltip,
   ResponsiveContainer
 } from 'recharts';
+import { LessonHistory } from '../types';
 
 function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { profile, fetchProfile } = useProfileStore();
-  const { exercises, fetchExercises } = useExerciseStore();
+  const { lessons, fetchLessons } = useLessonStore();
   const { courses, fetchAllCourses } = useCourseStore();
   const { entries: progressEntries, fetchProgress } = useProgressStore();
   const { history, fetchHistory } = useLessonHistoryStore();
@@ -49,314 +50,318 @@ function Dashboard() {
   };
 
   useEffect(() => {
-    if (user?.id) {
-      fetchExercises();
-      fetchAllCourses();
-      fetchProgress(user.id);
-      fetchProfile(user.id);
-      fetchHistory(user.id);
+    if (user) {
+      Promise.all([
+        fetchProfile(user.id),
+        fetchLessons(),
+        fetchAllCourses(),
+        fetchProgress(user.id),
+        fetchHistory(user.id)
+      ]).catch(console.error);
     }
-  }, [user?.id, fetchExercises, fetchAllCourses, fetchProgress, fetchProfile, fetchHistory]);
+  }, [user, fetchProfile, fetchLessons, fetchAllCourses, fetchProgress, fetchHistory]);
 
-  // Prepare data for the practice time chart
-  const chartData = useMemo(() => {
+  const stats = useMemo(() => {
+    // Use profile's total_practice_time instead of calculating from history
+    const totalPracticeTime = profile?.total_practice_time || 0;
+    const totalLessons = history.length;
+    const completedCourses = new Set(history.map(entry => entry.course_id)).size;
+    const streakDays = history.reduce((acc, entry) => {
+      const date = format(new Date(entry.completed_at), 'yyyy-MM-dd');
+      acc.add(date);
+      return acc;
+    }, new Set<string>()).size;
+
+    return {
+      totalPracticeTime,
+      totalLessons,
+      completedCourses,
+      streakDays
+    };
+  }, [history, profile]);
+
+  // Get practice data for the last 7 days
+  const practiceData = useMemo(() => {
     const today = new Date();
     const last7Days = eachDayOfInterval({
       start: subDays(today, 6),
       end: today
     });
 
-    return last7Days.map(date => {
-      const dayEntries = history.filter(entry => 
-        format(new Date(entry.completed_at), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
-      );
-      
-      const totalMinutes = dayEntries.reduce((sum, entry) => sum + (entry.practice_time || 0), 0);
-      
+    const dailyPractice = last7Days.map(date => {
+      const dateStr = format(date, 'yyyy-MM-dd');
+      const practiceTime = history
+        .filter(entry => format(new Date(entry.completed_at), 'yyyy-MM-dd') === dateStr)
+        .reduce((acc, entry) => acc + (entry.practice_time || 0), 0);
+
       return {
         date: format(date, 'MMM d'),
-        minutes: totalMinutes
+        minutes: practiceTime
       };
     });
+
+    return dailyPractice;
   }, [history]);
 
-  const stats = [
-    { 
-      icon: Calendar, 
-      title: 'Daily Streak', 
-      value: `${profile?.streak || 0} days`,
-      color: 'bg-blue-100 text-blue-600',
-      onClick: undefined
-    },
-    { 
-      icon: Trophy, 
-      title: 'Lessons Completed', 
-      value: `${profile?.exercises_done || 0}`,
-      color: 'bg-green-100 text-green-600',
-      onClick: () => navigate('/lesson-history')
-    },
-    { 
-      icon: Clock, 
-      title: 'Practice Time', 
-      value: formatPracticeTime(profile?.total_practice_time || 0),
-      color: 'bg-purple-100 text-purple-600',
-      onClick: undefined
-    },
-    { 
-      icon: Target, 
-      title: 'Available Lessons', 
-      value: exercises.length.toString(),
-      color: 'bg-mint-100 text-mint-600',
-      onClick: () => navigate('/lessons')
-    }
-  ];
+  const recentLessons = useMemo(() => {
+    return history
+      .slice(0, 3)
+      .map(entry => {
+        const lesson = lessons.find(l => l.id === entry.lesson_id);
+        const course = courses.find(c => c.id === entry.course_id);
+        return {
+          ...entry,
+          lesson,
+          course
+        };
+      });
+  }, [history, lessons, courses]);
 
-  // Get 3 random exercises for today's suggested routine
-  const suggestedExercises = exercises
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 3);
-
-  // Get latest courses
-  const latestCourses = courses
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 3);
-
-  // Get latest progress entries
-  const latestProgress = progressEntries.slice(0, 2);
+  const progressImages = useMemo(() => {
+    return progressEntries.slice(0, 3);
+  }, [progressEntries]);
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
-      {/* Welcome Section */}
-      <header className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          Welcome{profile?.full_name ? `, ${profile.full_name}` : ' Back'}!
-        </h1>
-        <p className="text-lg text-gray-600">
-          Track your progress, follow personalized routines, and achieve your facial fitness goals.
-        </p>
-      </header>
-
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map(({ icon: Icon, title, value, color, onClick }) => (
-          <div
-            key={title}
-            onClick={onClick}
-            className={`bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-all border border-gray-100 
-              ${onClick ? 'cursor-pointer' : ''}`}
-          >
-            <div className="flex items-center space-x-4">
-              <div className={`p-3 rounded-lg ${color}`}>
-                <Icon className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-gray-600">{title}</h3>
-                <p className="text-2xl font-bold text-gray-900">{value}</p>
-              </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-500 text-sm">Total Practice Time</p>
+              <h3 className="text-2xl font-bold text-gray-900">
+                {formatPracticeTime(stats.totalPracticeTime)}
+              </h3>
             </div>
+            <Clock className="w-10 h-10 text-mint-500" />
           </div>
-        ))}
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-500 text-sm">Completed Lessons</p>
+              <h3 className="text-2xl font-bold text-gray-900">{stats.totalLessons}</h3>
+            </div>
+            <Play className="w-10 h-10 text-rose-500" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-500 text-sm">Completed Courses</p>
+              <h3 className="text-2xl font-bold text-gray-900">{stats.completedCourses}</h3>
+            </div>
+            <Trophy className="w-10 h-10 text-yellow-500" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-500 text-sm">Practice Streak</p>
+              <h3 className="text-2xl font-bold text-gray-900">{stats.streakDays} days</h3>
+            </div>
+            <Calendar className="w-10 h-10 text-purple-500" />
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Today's Suggested Lessons */}
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center space-x-3">
-              <Dumbbell className="w-6 h-6 text-mint-600" />
-              <h2 className="text-xl font-semibold text-gray-900">Today's Lessons</h2>
-            </div>
-            <button 
-              onClick={() => navigate('/lessons')}
-              className="text-mint-600 hover:text-mint-700 flex items-center text-sm font-medium"
-            >
-              View All
-              <ArrowRight className="w-4 h-4 ml-1" />
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            {suggestedExercises.map((exercise) => (
-              <div 
-                key={exercise.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <div className="flex items-center space-x-4">
-                  <img
-                    src={exercise.image_url}
-                    alt={exercise.title}
-                    className="w-12 h-12 rounded-lg object-cover"
-                  />
-                  <div>
-                    <h3 className="font-medium text-gray-900">{exercise.title}</h3>
-                    <p className="text-sm text-gray-600">{exercise.duration}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => navigate(`/lesson/${exercise.id}`)}
-                  className="flex items-center space-x-1 px-4 py-2 bg-mint-500 text-white rounded-lg text-sm font-medium hover:bg-mint-600 transition-colors"
-                >
-                  <Play className="w-4 h-4" />
-                  <span>Start</span>
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Latest Progress */}
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center space-x-3">
-              <TrendingUp className="w-6 h-6 text-purple-600" />
-              <h2 className="text-xl font-semibold text-gray-900">Latest Progress</h2>
-            </div>
-            <button 
-              onClick={() => navigate('/progress')}
-              className="text-purple-600 hover:text-purple-700 flex items-center text-sm font-medium"
-            >
-              View All
-              <ArrowRight className="w-4 h-4 ml-1" />
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            {latestProgress.map((entry) => (
-              <div 
-                key={entry.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-              >
-                <div className="flex items-center space-x-4">
-                  {entry.image_url ? (
-                    <img
-                      src={entry.image_url}
-                      alt="Progress"
-                      className="w-12 h-12 rounded-lg object-cover"
-                    />
-                  ) : (
-                    <Camera className="w-6 h-6 text-gray-400" />
-                  )}
-                  <div>
-                    <p className="text-sm text-gray-500">
-                      {format(new Date(entry.created_at), 'MMM d, yyyy')}
-                    </p>
-                    <h3 className="font-medium text-gray-900">Progress Photo</h3>
-                  </div>
-                </div>
-                <button
-                  onClick={() => navigate(`/progress/entry/${entry.id}`)}
-                  className="text-purple-600 hover:text-purple-700"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Practice Time Chart */}
-      <div className="mt-8">
+        {/* Practice Chart */}
         <div className="bg-white rounded-xl shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Practice Time (Last 7 Days)</h3>
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Practice History</h3>
+            <button
+              onClick={() => navigate('/lesson-history')}
+              className="text-mint-600 hover:text-mint-700 text-sm font-medium flex items-center"
+            >
+              View All
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </button>
+          </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
+              <LineChart data={practiceData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="date" 
-                  tick={{ fontSize: 12 }}
-                  tickMargin={10}
-                />
-                <YAxis
-                  tick={{ fontSize: 12 }}
-                  tickMargin={10}
-                  label={{ 
-                    value: 'Minutes', 
-                    angle: -90, 
-                    position: 'insideLeft',
-                    style: { textAnchor: 'middle' }
-                  }}
-                />
+                <XAxis dataKey="date" />
+                <YAxis />
                 <Tooltip />
                 <Line
                   type="monotone"
                   dataKey="minutes"
-                  stroke="#10B981"
+                  stroke="#4FD1C5"
                   strokeWidth={2}
-                  dot={{ fill: '#10B981', strokeWidth: 2 }}
-                  activeDot={{ r: 6 }}
+                  dot={{ fill: '#4FD1C5' }}
                 />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
+
+        {/* Recent Progress */}
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Recent Progress</h3>
+            <button
+              onClick={() => navigate('/progress')}
+              className="text-mint-600 hover:text-mint-700 text-sm font-medium flex items-center"
+            >
+              View All
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </button>
+          </div>
+          <div className="space-y-4">
+            {progressImages.map((entry) => (
+              <div key={entry.id} className="flex items-center space-x-4">
+                <div className="flex-shrink-0">
+                  <img
+                    src={entry.image_url}
+                    alt="Progress"
+                    className="w-16 h-16 rounded-lg object-cover"
+                  />
+                </div>
+                <div className="flex-grow">
+                  <p className="text-sm text-gray-500">
+                    {format(new Date(entry.created_at), 'MMM d, yyyy')}
+                  </p>
+                  <p className="text-sm text-gray-700 line-clamp-2">{entry.notes}</p>
+                </div>
+              </div>
+            ))}
+            {progressImages.length === 0 && (
+              <div className="text-center py-8">
+                <Camera className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                <p className="text-gray-500">No progress photos yet</p>
+                <button
+                  onClick={() => navigate('/progress')}
+                  className="mt-2 text-mint-600 hover:text-mint-700 text-sm font-medium"
+                >
+                  Add Your First Photo
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Lessons */}
+      <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-lg font-semibold text-gray-900">Recent Lessons</h3>
+          <button
+            onClick={() => navigate('/lesson-history')}
+            className="text-mint-600 hover:text-mint-700 text-sm font-medium flex items-center"
+          >
+            View All
+            <ChevronRight className="w-4 h-4 ml-1" />
+          </button>
+        </div>
+        <div className="space-y-4">
+          {recentLessons.map((entry) => (
+            <div key={entry.id} className="flex items-center space-x-4">
+              <div className="flex-shrink-0">
+                <img
+                  src={entry.lesson?.image_url || '/images/placeholder.jpg'}
+                  alt={entry.lesson?.title}
+                  className="w-16 h-16 rounded-lg object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = '/images/placeholder.jpg';
+                  }}
+                />
+              </div>
+              <div className="flex-grow">
+                <h4 className="font-medium text-gray-900">{entry.lesson?.title}</h4>
+                <p className="text-sm text-gray-500">
+                  {entry.course?.title ? `From ${entry.course.title}` : 'Free Lesson'}
+                </p>
+                <p className="text-sm text-gray-500">
+                  {format(new Date(entry.completed_at), 'MMM d, yyyy')} •{' '}
+                  {formatPracticeTime(entry.duration || 0)}
+                </p>
+              </div>
+              <button
+                onClick={() => navigate(`/lessons/${entry.lesson_id}`)}
+                className="flex-shrink-0 text-mint-600 hover:text-mint-700"
+              >
+                <Play className="w-5 h-5" />
+              </button>
+            </div>
+          ))}
+          {recentLessons.length === 0 && (
+            <div className="text-center py-8">
+              <Dumbbell className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+              <p className="text-gray-500">No completed lessons yet</p>
+              <button
+                onClick={() => navigate('/lessons')}
+                className="mt-2 text-mint-600 hover:text-mint-700 text-sm font-medium"
+              >
+                Start Your First Lesson
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Latest Courses */}
-      <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+      <div className="bg-white rounded-xl shadow-sm p-6">
         <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center space-x-3">
-            <Award className="w-6 h-6 text-blue-600" />
-            <h2 className="text-xl font-semibold text-gray-900">Latest Courses</h2>
-          </div>
-          <button 
+          <h3 className="text-lg font-semibold text-gray-900">Latest Courses</h3>
+          <button
             onClick={() => navigate('/courses')}
-            className="text-blue-600 hover:text-blue-700 flex items-center text-sm font-medium"
+            className="text-mint-600 hover:text-mint-700 text-sm font-medium flex items-center"
           >
-            Browse All Courses
-            <ArrowRight className="w-4 h-4 ml-1" />
+            View All
+            <ChevronRight className="w-4 h-4 ml-1" />
           </button>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {latestCourses.map((course) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {courses.slice(0, 3).map((course) => (
             <div
               key={course.id}
-              onClick={() => navigate(`/courses/${course.id}`)}
-              className="group cursor-pointer"
+              className="group relative bg-gray-50 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
             >
-              <div className="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden mb-4">
+              <div className="aspect-w-16 aspect-h-9">
                 <img
-                  src={course.image_url}
+                  src={course.image_url || '/images/placeholder.jpg'}
                   alt={course.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="object-cover w-full h-full"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = '/images/placeholder.jpg';
+                  }}
                 />
               </div>
-              <h3 className="font-semibold text-gray-900 group-hover:text-mint-600 transition-colors">
-                {course.title}
-              </h3>
-              <div className="flex items-center justify-between mt-2">
-                <span className="text-sm text-gray-600">{course.duration}</span>
-                <span className="text-sm font-medium px-2 py-1 rounded-full bg-blue-50 text-blue-600">
-                  {course.difficulty}
-                </span>
+              <div className="p-4">
+                <h4 className="font-medium text-gray-900 group-hover:text-mint-600 transition-colors">
+                  {course.title}
+                </h4>
+                <p className="text-sm text-gray-500 line-clamp-2 mt-1">{course.description}</p>
+                <div className="flex items-center mt-2 text-sm text-gray-500">
+                  <Clock className="w-4 h-4 mr-1" />
+                  <span>{course.duration}</span>
+                  <span className="mx-2">•</span>
+                  <Target className="w-4 h-4 mr-1" />
+                  <span>{course.difficulty}</span>
+                </div>
               </div>
+              <button
+                onClick={() => navigate(`/courses/${course.id}`)}
+                className="absolute inset-0 w-full h-full focus:outline-none"
+              >
+                <span className="sr-only">View course</span>
+              </button>
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* Goals Section */}
-      <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center space-x-3">
-            <TrendingUp className="w-6 h-6 text-green-600" />
-            <h2 className="text-xl font-semibold text-gray-900">Your Goals</h2>
-          </div>
-          <button 
-            onClick={() => navigate('/goals')}
-            className="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm font-medium"
-          >
-            <span>View Goals</span>
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div className="text-center py-4">
-          <p className="text-gray-600">
-            Track your progress and stay motivated with personalized goals.
-          </p>
+          {courses.length === 0 && (
+            <div className="col-span-full text-center py-8">
+              <Target className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+              <p className="text-gray-500">No courses available yet</p>
+              <p className="text-sm text-gray-400 mt-1">Check back soon for new courses!</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

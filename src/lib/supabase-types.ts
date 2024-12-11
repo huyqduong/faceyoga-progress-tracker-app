@@ -9,8 +9,8 @@ export interface Profile {
   avatar_url?: string;
   role: 'admin' | 'user';
   streak: number;
-  exercises_done: number;
-  practice_time: number;
+  lessons_completed: number;
+  total_practice_time: number;
   onboarding_completed: boolean;
   completed_lessons: string[];
   last_lesson_completed?: string;

@@ -1,17 +1,31 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Play, Pause, RotateCcw, CheckCircle, AlertCircle, X, ImageOff, Lock } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { useLessonStore } from '../store/lessonStore';
 import { useProfileStore } from '../store/profileStore';
 import { useProgressStore } from '../store/progressStore';
 import { useLessonHistoryStore } from '../store/lessonHistoryStore';
+import { useGoalProgressStore } from '../store/goalProgressStore';
 import { courseApi } from '../lib/courses';
-import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import BackButton from '../components/BackButton';
+import { 
+  Play, 
+  Pause, 
+  RotateCcw, 
+  ImageOff, 
+  Lock, 
+  AlertCircle, 
+  CheckCircle, 
+  X 
+} from 'lucide-react';
 
-function LessonDetails() {
+interface LessonDetailsProps {
+  onComplete?: () => void;
+}
+
+function LessonDetails({ onComplete }: LessonDetailsProps) {
   const { lessonId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -20,6 +34,7 @@ function LessonDetails() {
   const { lessons, fetchLessons } = useLessonStore();
   const { fetchProgress } = useProgressStore();
   const { fetchHistory } = useLessonHistoryStore();
+  const { trackLessonCompletion } = useGoalProgressStore();
   
   const [isStarted, setIsStarted] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -238,13 +253,20 @@ function LessonDetails() {
     if (!user || !lesson) return;
 
     try {
+      // Parse duration properly
+      const duration = lesson.duration 
+        ? typeof lesson.duration === 'string' 
+          ? parseInt(lesson.duration.split(' ')[0]) 
+          : lesson.duration
+        : 0;
+
       // Record lesson completion in lesson_history
       const { error: historyError } = await supabase
         .from('lesson_history')
         .insert({
           user_id: user.id,
           lesson_id: lesson.id,
-          practice_time: lesson.duration ? parseInt(lesson.duration.split(' ')[0]) : 0,
+          practice_time: duration,
           completed_at: new Date().toISOString()
         });
 
@@ -253,6 +275,9 @@ function LessonDetails() {
         toast.error('Failed to record lesson completion');
         return;
       }
+
+      // Update goal progress using the trackLessonCompletion function
+      await trackLessonCompletion(lesson.id, user.id);
 
       toast.success('Lesson completed!');
 
@@ -263,7 +288,7 @@ function LessonDetails() {
           const [profileResult, historyResult] = await Promise.all([
             supabase
               .from('profiles')
-              .select('completed_lessons, exercises_done, total_practice_time, last_lesson_completed_at')
+              .select('completed_lessons, lessons_completed, total_practice_time, last_lesson_completed_at, streak')
               .eq('user_id', user.id)
               .single(),
             supabase
@@ -310,8 +335,8 @@ function LessonDetails() {
             completed_lessons: currentProfile?.completed_lessons 
               ? [...new Set([...currentProfile.completed_lessons, lesson.id])]
               : [lesson.id],
-            exercises_done: (currentProfile?.exercises_done || 0) + 1,
-            total_practice_time: (currentProfile?.total_practice_time || 0) + (lesson.duration ? parseInt(lesson.duration.split(' ')[0]) : 0),
+            lessons_completed: (currentProfile?.lessons_completed || 0) + 1,
+            total_practice_time: (currentProfile?.total_practice_time || 0) + duration,
             last_lesson_completed_at: new Date().toISOString(),
             streak,
             user_id: user.id,
@@ -324,14 +349,21 @@ function LessonDetails() {
             await fetchProgress(user.id);
             await fetchHistory(user.id);
           }
-        } catch (error) {
-          console.error('Error updating profile:', error);
-          toast.error('Error updating profile stats');
+        } catch (err) {
+          console.error('Error updating profile:', err);
+          toast.error('Failed to update profile');
         }
       }
-    } catch (error) {
-      console.error('Error recording lesson completion:', error);
-      toast.error('Failed to record lesson completion');
+
+      // Navigate back or show completion message
+      if (onComplete) {
+        onComplete();
+      } else {
+        navigate(-1);
+      }
+    } catch (err) {
+      console.error('Error completing lesson:', err);
+      toast.error('Failed to complete lesson');
     }
   };
 
