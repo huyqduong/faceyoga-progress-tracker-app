@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import BackButton from '../components/BackButton';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
+import styles from './Progress.module.css';
 
 function Progress() {
   const { user } = useAuth();
@@ -248,8 +249,8 @@ function Progress() {
       const dateStr = date.toISOString().split('T')[0];
       if (photoDates.has(dateStr)) {
         return (
-          <div className="dot-container">
-            <div className="dot"></div>
+          <div className={styles.dotContainer}>
+            <div className={styles.dot}></div>
           </div>
         );
       }
@@ -260,7 +261,7 @@ function Progress() {
   const tileClassName = ({ date, view }: { date: Date; view: string }) => {
     if (view === 'month') {
       const dateStr = date.toISOString().split('T')[0];
-      return photoDates.has(dateStr) ? 'has-entries' : '';
+      return photoDates.has(dateStr) ? styles.hasEntries : '';
     }
     return '';
   };
@@ -397,7 +398,7 @@ function Progress() {
           {/* Calendar Section */}
           <div className="bg-white rounded-xl shadow-sm p-6 space-y-6">
             <h2 className="text-xl font-semibold text-gray-900">Progress Calendar</h2>
-            <div className="calendar-container">
+            <div className={styles.calendarContainer}>
               <Calendar
                 onChange={handleDateClick}
                 value={selectedDate}
@@ -416,44 +417,6 @@ function Progress() {
                     : `Photos from ${format(activeStartDate, 'yyyy')}`}
               </h3>
             </div>
-            <style jsx>{`
-              .calendar-container {
-                width: 100%;
-                max-width: 400px;
-                margin: 0 auto;
-              }
-              :global(.react-calendar) {
-                width: 100%;
-                border: none;
-                border-radius: 0.75rem;
-                padding: 1rem;
-                background: transparent;
-                font-family: inherit;
-              }
-              :global(.dot-container) {
-                position: absolute;
-                bottom: 4px;
-                left: 50%;
-                transform: translateX(-50%);
-                width: 100%;
-                display: flex;
-                justify-content: center;
-              }
-              :global(.dot) {
-                width: 6px;
-                height: 6px;
-                border-radius: 50%;
-                background-color: #10b981;
-                margin: 0 1px;
-              }
-              :global(.react-calendar__tile--active .dot) {
-                background-color: white;
-              }
-              :global(.has-entries) {
-                font-weight: 500;
-                position: relative;
-              }
-            `}</style>
           </div>
         </div>
 

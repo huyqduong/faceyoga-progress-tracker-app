@@ -15,32 +15,93 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
-    flowType: 'pkce'
+    flowType: 'pkce',
+    storageKey: 'faceyoga_auth',
+    storage: window.localStorage
+  },
+  global: {
+    headers: {
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache'
+    }
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 2
+    }
+  },
+  db: {
+    schema: 'public'
   }
 });
 
-// Retry configuration
+// Add global error handler for Supabase
+supabase.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+    // Clear all local storage data
+    for (const key in localStorage) {
+      if (key.startsWith('faceyoga_')) {
+        localStorage.removeItem(key);
+      }
+    }
+    window.location.href = '/login';
+  }
+});
+
+// Enhanced retry configuration
 const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000; // 1 second
+const INITIAL_RETRY_DELAY = 1000; // 1 second
+const MAX_RETRY_DELAY = 5000; // 5 seconds
 
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 const retryOperation = async <T>(
   operation: () => Promise<T>,
   retries = MAX_RETRIES,
-  delay = RETRY_DELAY
+  delay = INITIAL_RETRY_DELAY
 ): Promise<T> => {
   try {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
+      // Clear stale session data
+      localStorage.removeItem('faceyoga_auth');
       toast.error('Your session has expired. Please sign in again.');
+      window.location.href = '/login';
       throw new Error('No active session');
     }
-    return await operation();
+
+    try {
+      return await operation();
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message.includes('JWT expired')) {
+          const { data: { session: newSession }, error: refreshError } = await supabase.auth.refreshSession();
+          if (refreshError || !newSession) {
+            toast.error('Session refresh failed. Please sign in again.');
+            window.location.href = '/login';
+            throw new Error('Session refresh failed');
+          }
+          // Retry operation with new session
+          return await operation();
+        }
+        
+        if (error.message.includes('connection')) {
+          if (retries > 0) {
+            const nextDelay = Math.min(delay * 1.5, MAX_RETRY_DELAY);
+            toast.error(`Connection error. Retrying... (${retries} attempts left)`);
+            await wait(delay);
+            return retryOperation(operation, retries - 1, nextDelay);
+          }
+        }
+      }
+      throw error;
+    }
   } catch (error) {
-    if (retries > 0 && error instanceof Error && error.message !== 'No active session') {
-      await wait(delay);
-      return retryOperation(operation, retries - 1, delay * 2);
+    console.error('Operation failed:', error);
+    if (error instanceof Error) {
+      toast.error(error.message);
+    } else {
+      toast.error('An unexpected error occurred');
     }
     throw error;
   }

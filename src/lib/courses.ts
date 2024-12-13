@@ -332,6 +332,56 @@ export const courseApi = {
     }
   },
 
+  async checkCourseAccess(userId: string, courseId: string): Promise<boolean> {
+    try {
+      // First check if it's a free course
+      const { data: course, error: courseError } = await supabase
+        .from('courses')
+        .select('price')
+        .eq('id', courseId)
+        .single();
+
+      if (courseError) throw courseError;
+
+      // If course has no price or price is 0, it's free
+      if (!course?.price || course.price === 0) {
+        return true;
+      }
+
+      // Check course access
+      const { data: access, error: accessError } = await supabase
+        .from('course_access')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('course_id', courseId)
+        .gte('expires_at', new Date().toISOString())
+        .maybeSingle();
+
+      if (accessError) throw accessError;
+
+      // If user has valid access, return true
+      if (access) {
+        return true;
+      }
+
+      // Check purchases
+      const { data: purchase, error: purchaseError } = await supabase
+        .from('course_purchases')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('course_id', courseId)
+        .eq('status', 'completed')
+        .maybeSingle();
+
+      if (purchaseError) throw purchaseError;
+
+      return !!purchase;
+    } catch (error) {
+      console.error('Error checking course access:', error);
+      return false;
+    }
+  },
+
   async createPurchase(purchase: Omit<CoursePurchase, 'id' | 'created_at' | 'updated_at'>): Promise<CoursePurchase> {
     const { data, error } = await supabase
       .from('course_purchases')

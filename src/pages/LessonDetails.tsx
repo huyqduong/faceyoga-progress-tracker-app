@@ -102,9 +102,30 @@ function LessonDetails({ onComplete }: LessonDetailsProps) {
 
   useEffect(() => {
     const fetchLessonData = async () => {
-      if (!lessonId) return;
+      if (!lessonId || !user) return;
 
       try {
+        setCheckingAccess(true);
+        
+        // First check course access if it's a course lesson
+        if (location.pathname.includes('/courses/')) {
+          const courseId = location.pathname.split('/courses/')[1]?.split('/')[0];
+          if (courseId && courseId !== 'free') {
+            const hasAccess = await courseApi.checkCourseAccess(user.id, courseId);
+            setHasAccess(hasAccess);
+            
+            if (!hasAccess) {
+              toast.error('You do not have access to this lesson. Please purchase the course to continue.');
+              navigate('/courses');
+              return;
+            }
+          } else {
+            setHasAccess(true); // Free lessons are accessible to all
+          }
+        } else {
+          setHasAccess(true); // Standalone lessons are accessible to all
+        }
+
         // Try to fetch from standalone lessons first
         const { data: lessonData, error: lessonError } = await supabase
           .from('lessons')
@@ -119,6 +140,7 @@ function LessonDetails({ onComplete }: LessonDetailsProps) {
               ? state.lessons
               : [...state.lessons, lessonData]
           }));
+          setCheckingAccess(false);
           return;
         }
 
@@ -141,10 +163,7 @@ function LessonDetails({ onComplete }: LessonDetailsProps) {
           .eq('id', lessonId)
           .single();
 
-        if (courseLessonError) {
-          console.error('Error fetching course lesson:', courseLessonError);
-          return;
-        }
+        if (courseLessonError) throw courseLessonError;
 
         if (courseLessonData) {
           useLessonStore.setState(state => ({
@@ -156,11 +175,15 @@ function LessonDetails({ onComplete }: LessonDetailsProps) {
         }
       } catch (error) {
         console.error('Error fetching lesson data:', error);
+        toast.error('Failed to load lesson. Please try again.');
+        navigate('/');
+      } finally {
+        setCheckingAccess(false);
       }
     };
 
     fetchLessonData();
-  }, [lessonId]);
+  }, [lessonId, user, location.pathname]);
 
   useEffect(() => {
     if (lesson) {
@@ -250,120 +273,37 @@ function LessonDetails({ onComplete }: LessonDetailsProps) {
   };
 
   const handleComplete = async () => {
-    if (!user || !lesson) return;
-
+    if (!user || !lesson || !lessonId) return;
+    
     try {
-      // Parse duration properly
-      const duration = lesson.duration 
-        ? typeof lesson.duration === 'string' 
-          ? parseInt(lesson.duration.split(' ')[0]) 
-          : lesson.duration
-        : 0;
+      setIsCompleted(true);
+      
+      await Promise.all([
+        trackLessonCompletion(lessonId, user.id).catch(error => {
+          console.error('Error tracking lesson completion:', error);
+          // Don't throw here, continue with other operations
+        }),
+        
+        updateProfile({ 
+          user_id: user.id, 
+          total_practice_time: (profile?.total_practice_time || 0) + parseInt(lesson.duration)
+        }).catch(error => {
+          console.error('Error updating profile:', error);
+          // Don't throw here, continue with other operations
+        })
+      ]);
 
-      // Record lesson completion in lesson_history
-      const { error: historyError } = await supabase
-        .from('lesson_history')
-        .insert({
-          user_id: user.id,
-          lesson_id: lesson.id,
-          practice_time: duration,
-          completed_at: new Date().toISOString()
-        });
+      // Refresh data
+      await Promise.all([
+        fetchProgress(user.id),
+        fetchHistory(user.id)
+      ]).catch(console.error);
 
-      if (historyError) {
-        console.error('Error recording lesson history:', historyError);
-        toast.error('Failed to record lesson completion');
-        return;
-      }
-
-      // Update goal progress using the trackLessonCompletion function
-      await trackLessonCompletion(lesson.id, user.id);
-
-      toast.success('Lesson completed!');
-
-      // Update profile stats
-      if (user) {
-        try {
-          // First get current values and lesson history
-          const [profileResult, historyResult] = await Promise.all([
-            supabase
-              .from('profiles')
-              .select('completed_lessons, lessons_completed, total_practice_time, last_lesson_completed_at, streak')
-              .eq('user_id', user.id)
-              .single(),
-            supabase
-              .from('lesson_history')
-              .select('completed_at')
-              .eq('user_id', user.id)
-              .order('completed_at', { ascending: false })
-          ]);
-
-          const currentProfile = profileResult.data;
-          const lessonHistory = historyResult.data || [];
-
-          // Calculate streak
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          
-          const lastCompletedDate = currentProfile?.last_lesson_completed_at 
-            ? new Date(currentProfile.last_lesson_completed_at)
-            : null;
-          
-          let streak = currentProfile?.streak || 0;
-          
-          if (lastCompletedDate) {
-            lastCompletedDate.setHours(0, 0, 0, 0);
-            const diffDays = Math.floor((today.getTime() - lastCompletedDate.getTime()) / (1000 * 60 * 60 * 24));
-            
-            if (diffDays === 0) {
-              // Same day, keep streak
-              streak = currentProfile?.streak || 1;
-            } else if (diffDays === 1) {
-              // Next day, increment streak
-              streak = (currentProfile?.streak || 0) + 1;
-            } else {
-              // More than one day gap, reset streak
-              streak = 1;
-            }
-          } else {
-            // First ever lesson
-            streak = 1;
-          }
-
-          const updatedProfile = {
-            ...profile,
-            completed_lessons: currentProfile?.completed_lessons 
-              ? [...new Set([...currentProfile.completed_lessons, lesson.id])]
-              : [lesson.id],
-            lessons_completed: (currentProfile?.lessons_completed || 0) + 1,
-            total_practice_time: (currentProfile?.total_practice_time || 0) + duration,
-            last_lesson_completed_at: new Date().toISOString(),
-            streak,
-            user_id: user.id,
-          };
-
-          await updateProfile(updatedProfile);
-
-          // Refresh both progress and lesson history
-          if (user) {
-            await fetchProgress(user.id);
-            await fetchHistory(user.id);
-          }
-        } catch (err) {
-          console.error('Error updating profile:', err);
-          toast.error('Failed to update profile');
-        }
-      }
-
-      // Navigate back or show completion message
-      if (onComplete) {
-        onComplete();
-      } else {
-        navigate(-1);
-      }
-    } catch (err) {
-      console.error('Error completing lesson:', err);
-      toast.error('Failed to complete lesson');
+      toast.success('Lesson completed! Great job!');
+      onComplete?.();
+    } catch (error) {
+      console.error('Error completing lesson:', error);
+      toast.error('Failed to save progress. Please try again.');
     }
   };
 

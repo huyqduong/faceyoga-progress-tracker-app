@@ -6,7 +6,8 @@ import { toast } from 'react-hot-toast';
 interface GoalProgressState {
   progress: GoalProgress[];
   milestones: GoalMilestone[];
-  loading: boolean;
+  progressLoading: boolean;
+  milestonesLoading: boolean;
   error: string | null;
   
   // Fetch functions
@@ -31,11 +32,12 @@ interface GoalProgressState {
 export const useGoalProgressStore = create<GoalProgressState>((set, get) => ({
   progress: [],
   milestones: [],
-  loading: false,
+  progressLoading: false,
+  milestonesLoading: false,
   error: null,
 
   fetchGoalProgress: async (userId: string) => {
-    set({ loading: true, error: null });
+    set({ progressLoading: true, error: null });
     try {
       const { data, error } = await supabase
         .from('goal_progress')
@@ -44,18 +46,17 @@ export const useGoalProgressStore = create<GoalProgressState>((set, get) => ({
         .order('last_updated', { ascending: false });
 
       if (error) throw error;
-      set({ progress: data || [] });
+      set({ progress: data || [], progressLoading: false, error: null });
     } catch (err) {
       const error = err as Error;
-      set({ error: error.message });
+      console.error('Failed to fetch goal progress:', error);
+      set({ error: error.message, progressLoading: false, progress: [] });
       toast.error('Failed to fetch goal progress');
-    } finally {
-      set({ loading: false });
     }
   },
 
   fetchGoalMilestones: async (goalId: string) => {
-    set({ loading: true, error: null });
+    set({ milestonesLoading: true, error: null });
     try {
       const { data, error } = await supabase
         .from('goal_milestones')
@@ -64,13 +65,11 @@ export const useGoalProgressStore = create<GoalProgressState>((set, get) => ({
         .order('target_value', { ascending: true });
 
       if (error) throw error;
-      set({ milestones: data || [] });
+      set({ milestones: data || [], milestonesLoading: false });
     } catch (err) {
       const error = err as Error;
-      set({ error: error.message });
+      set({ error: error.message, milestonesLoading: false });
       toast.error('Failed to fetch goal milestones');
-    } finally {
-      set({ loading: false });
     }
   },
 
@@ -120,18 +119,18 @@ export const useGoalProgressStore = create<GoalProgressState>((set, get) => ({
       if (userError) throw userError;
       if (!user) throw new Error('No user found');
 
+      const timestamp = new Date().toISOString();
+      let result;
+
       // Check if a progress entry exists
       const { data: existingProgress, error: checkError } = await supabase
         .from('goal_progress')
-        .select('id')
+        .select('*')
         .eq('goal_id', goalId)
         .eq('user_id', user.id)
         .single();
 
       if (checkError && checkError.code !== 'PGRST116') throw checkError;
-
-      const timestamp = new Date().toISOString();
-      let result;
 
       if (!existingProgress) {
         // Create new progress entry
@@ -161,15 +160,13 @@ export const useGoalProgressStore = create<GoalProgressState>((set, get) => ({
 
       if (result.error) throw result.error;
 
-      // Update local state
+      // Update local state immediately without refetching
       set(state => ({
-        progress: existingProgress
-          ? state.progress.map(p =>
-              p.goal_id === goalId
-                ? { ...p, status, last_updated: timestamp }
-                : p
-            )
-          : [...state.progress, result.data]
+        progress: state.progress.map(p => 
+          p.goal_id === goalId 
+            ? { ...p, status, last_updated: timestamp }
+            : p
+        )
       }));
 
       toast.success('Goal status updated');
@@ -181,59 +178,160 @@ export const useGoalProgressStore = create<GoalProgressState>((set, get) => ({
   },
 
   trackLessonCompletion: async (lessonId: string, userId: string) => {
+    if (!lessonId || !userId) {
+      console.error('Missing lessonId or userId');
+      return;
+    }
+
+    set({ progressLoading: true, error: null });
+    
     try {
-      // Get related goals for this lesson
-      const { data: mappings, error: mappingError } = await supabase
+      // First check if this lesson was already completed today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const { data: existingEntry, error: checkError } = await supabase
+        .from('lesson_history')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('lesson_id', lessonId)
+        .gte('completed_at', today.toISOString())
+        .maybeSingle();
+
+      if (checkError) {
+        throw checkError;
+      }
+
+      // If already completed today, don't record again
+      if (existingEntry) {
+        console.log('Lesson already completed today');
+        return;
+      }
+
+      // Get the lesson details for duration
+      const { data: lessonData, error: lessonError } = await supabase
+        .from('lessons')
+        .select('duration')
+        .eq('id', lessonId)
+        .single();
+
+      if (lessonError) {
+        throw lessonError;
+      }
+
+      const duration = lessonData?.duration 
+        ? typeof lessonData.duration === 'string'
+          ? parseInt(lessonData.duration.split(' ')[0])
+          : lessonData.duration
+        : 0;
+
+      // Record lesson completion
+      const { error: historyError } = await supabase
+        .from('lesson_history')
+        .insert({
+          user_id: userId,
+          lesson_id: lessonId,
+          practice_time: duration,
+          completed_at: new Date().toISOString()
+        });
+
+      if (historyError) {
+        throw historyError;
+      }
+
+      // Update user's profile with new lesson completion
+      const { data: currentProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('lessons_completed, total_practice_time')
+        .eq('user_id', userId)
+        .single();
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          lessons_completed: (currentProfile?.lessons_completed || 0) + 1,
+          total_practice_time: (currentProfile?.total_practice_time || 0) + duration
+        })
+        .eq('user_id', userId);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Get goals associated with this lesson
+      const { data: goalMappings, error: mappingError } = await supabase
         .from('lesson_goal_mapping')
-        .select('goal_id, contribution_weight')
+        .select(`
+          goal_id,
+          contribution_weight
+        `)
         .eq('lesson_id', lessonId);
 
-      if (mappingError) throw mappingError;
+      if (mappingError) {
+        throw mappingError;
+      }
 
-      // Update progress for each related goal
-      const updatePromises = (mappings || []).map(async (mapping) => {
-        try {
-          // Get current progress in a transaction-like manner
-          const { data: progressData, error: progressError } = await supabase
-            .from('goal_progress')
-            .select('progress_value, id')
-            .eq('goal_id', mapping.goal_id)
-            .eq('user_id', userId);
+      // Update progress for each associated goal
+      for (const mapping of goalMappings || []) {
+        const { data: goalProgress, error: progressError } = await supabase
+          .from('goal_progress')
+          .select('*')
+          .eq('goal_id', mapping.goal_id)
+          .eq('user_id', userId)
+          .single();
 
-          if (progressError) {
-            throw progressError;
-          }
+        if (progressError && progressError.code !== 'PGRST116') {
+          throw progressError;
+        }
 
-          // Take the first progress record or default to 0
-          const progress = progressData && progressData.length > 0 ? progressData[0] : null;
-          const currentValue = progress?.progress_value || 0;
-          const newValue = currentValue + mapping.contribution_weight;
+        // Calculate new progress value
+        const progressIncrement = mapping.contribution_weight || 1;
+        const currentProgress = goalProgress?.progress_value || 0;
+        const newProgress = Math.min(currentProgress + progressIncrement, 100);
 
-          // Use RPC for atomic update
-          const { error: rpcError } = await supabase.rpc('update_goal_progress', {
-            p_user_id: userId,
-            p_goal_id: mapping.goal_id,
-            p_progress_value: newValue
+        // Get milestones to check if any new ones are reached
+        const { data: milestones, error: milestonesError } = await supabase
+          .from('goal_milestones')
+          .select('*')
+          .eq('goal_id', mapping.goal_id)
+          .order('target_value', { ascending: true });
+
+        if (milestonesError) {
+          throw milestonesError;
+        }
+
+        const milestonesReached = (milestones || []).filter(m => newProgress >= m.target_value).length;
+
+        // Update or create goal progress
+        const { error: updateError } = await supabase
+          .from('goal_progress')
+          .upsert({
+            user_id: userId,
+            goal_id: mapping.goal_id,
+            progress_value: newProgress,
+            milestone_reached: milestonesReached,
+            last_updated: new Date().toISOString(),
+            status: goalProgress?.status || 'in_progress'
           });
 
-          if (rpcError) throw rpcError;
-
-          return mapping.goal_id;
-        } catch (error) {
-          console.error(`Failed to update progress for goal ${mapping.goal_id}:`, error);
-          throw error;
+        if (updateError) {
+          throw updateError;
         }
-      });
+      }
 
-      // Wait for all updates to complete
-      await Promise.all(updatePromises);
-      
-      // Refresh progress data after all updates
+      // Refresh goal progress after all updates
       await get().fetchGoalProgress(userId);
-    } catch (err) {
-      const error = err as Error;
-      toast.error('Failed to track lesson completion');
-      throw error;
+
+    } catch (error) {
+      console.error('Error tracking lesson completion:', error);
+      set({ error: error instanceof Error ? error.message : 'Failed to track lesson completion' });
+      throw error; // Re-throw to handle in the component
+    } finally {
+      set({ progressLoading: false });
     }
   },
 

@@ -40,22 +40,65 @@ export default function GoalAnalytics() {
     try {
       setLoading(true);
       
-      // Fetch goals
+      // First fetch user's goals IDs
+      const { data: userGoalsData, error: userGoalsError } = await supabase
+        .from('user_goals')
+        .select('goals')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (userGoalsError) throw userGoalsError;
+      
+      // Then fetch only the goals that belong to the user
       const { data: goalsData, error: goalsError } = await supabase
         .from('goals')
-        .select('*');
+        .select('*')
+        .in('id', userGoalsData?.goals || []);
       
       if (goalsError) throw goalsError;
       setGoals(goalsData || []);
 
-      // Fetch progress data
-      await fetchGoalProgress(user.id);
-
       // Calculate analytics for each goal
       const analyticsData: Record<string, GoalAnalytics> = {};
       for (const goal of goalsData || []) {
-        const goalProgress = progress.filter(p => p.goal_id === goal.id);
-        analyticsData[goal.id] = await calculateAnalytics(goalProgress);
+        // Get goal progress
+        const { data: progressData, error: progressError } = await supabase
+          .from('goal_progress')
+          .select('*')
+          .eq('goal_id', goal.id)
+          .eq('user_id', user.id)
+          .single();
+
+        if (progressError && progressError.code !== 'PGRST116') throw progressError;
+
+        // Get lesson completions for this goal
+        const { data: lessonMappings, error: mappingError } = await supabase
+          .from('lesson_goal_mapping')
+          .select('lesson_id')
+          .eq('goal_id', goal.id);
+
+        if (mappingError) throw mappingError;
+
+        const lessonIds = lessonMappings?.map(m => m.lesson_id) || [];
+
+        const { data: completions, error: completionError } = await supabase
+          .from('lesson_completion')
+          .select('*')
+          .eq('user_id', user.id)
+          .in('lesson_id', lessonIds);
+
+        if (completionError) throw completionError;
+
+        // Calculate analytics
+        const completionRate = progressData ? (progressData.milestone_reached / 3) * 100 : 0;
+        const averageProgress = progressData ? Math.min(progressData.progress_value, 100) : 0;
+        const timeSpent = (completions?.length || 0) * 3; // 3 minutes per session
+
+        analyticsData[goal.id] = {
+          completionRate,
+          averageProgress,
+          timeSpent
+        };
       }
       setAnalytics(analyticsData);
 
@@ -65,38 +108,10 @@ export default function GoalAnalytics() {
 
     } catch (error) {
       console.error('Error fetching analytics data:', error);
+      toast.error('Failed to load analytics data');
     } finally {
       setLoading(false);
     }
-  };
-
-  const calculateAnalytics = async (goalProgress: GoalProgress[]): Promise<GoalAnalytics> => {
-    if (!goalProgress.length) {
-      return {
-        completionRate: 0,
-        averageProgress: 0,
-        timeSpent: 0
-      };
-    }
-
-    const totalProgress = goalProgress.reduce((sum, p) => sum + p.progress_value, 0);
-    const avgProgress = totalProgress / goalProgress.length;
-
-    const timeSpent = goalProgress.reduce((total, p) => {
-      const start = new Date(p.created_at);
-      const end = new Date(p.last_updated);
-      return total + (end.getTime() - start.getTime());
-    }, 0) / (1000 * 60 * 60); // Convert to hours
-
-    // Calculate completion rate based on status
-    const completed = goalProgress.filter(p => p.status === 'completed').length;
-    const completionRate = (completed / goalProgress.length) * 100;
-
-    return {
-      completionRate,
-      averageProgress: avgProgress,
-      timeSpent
-    };
   };
 
   const calculateProgressTrend = (progressData: GoalProgress[]): ProgressTrend[] => {
@@ -121,27 +136,12 @@ export default function GoalAnalytics() {
   };
 
   const getTrendIndicator = (value: number) => {
-    if (value > 0) {
-      return (
-        <div className="flex items-center text-green-600">
-          <ArrowUpRight className="w-4 h-4 mr-1" />
-          <span>+{value.toFixed(1)}%</span>
-        </div>
-      );
-    } else if (value < 0) {
-      return (
-        <div className="flex items-center text-red-600">
-          <ArrowDownRight className="w-4 h-4 mr-1" />
-          <span>{value.toFixed(1)}%</span>
-        </div>
-      );
+    if (value > 70) {
+      return <ArrowUpRight className="text-green-500" />;
+    } else if (value < 30) {
+      return <ArrowDownRight className="text-red-500" />;
     }
-    return (
-      <div className="flex items-center text-gray-600">
-        <Minus className="w-4 h-4 mr-1" />
-        <span>0%</span>
-      </div>
-    );
+    return <Minus className="text-gray-500" />;
   };
 
   if (loading) {
@@ -213,15 +213,15 @@ export default function GoalAnalytics() {
 
                   <div className="flex justify-between items-center">
                     <div>
-                      <p className="text-gray-600">Average Progress</p>
+                      <p className="text-gray-600">Progress</p>
                       <p className="text-2xl font-semibold">
-                        {Math.round(goalAnalytics.averageProgress)}
+                        {Math.round(goalAnalytics.averageProgress)}%
                       </p>
                     </div>
                     <div>
-                      <p className="text-gray-600">Time Spent</p>
+                      <p className="text-gray-600">Practice Time</p>
                       <p className="text-2xl font-semibold">
-                        {Math.round(goalAnalytics.timeSpent)}h
+                        {Math.floor(goalAnalytics.timeSpent / 3)} sessions ({goalAnalytics.timeSpent}m)
                       </p>
                     </div>
                   </div>

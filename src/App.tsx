@@ -35,6 +35,39 @@ import AdminGoals from './pages/Admin/Goals';
 function App() {
   const { user, profile, loading } = useAuth();
 
+  // Add global error boundary
+  React.useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      console.error('Global error:', event.error);
+      toast.error('An unexpected error occurred. Please try again.');
+      event.preventDefault();
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      console.error('Unhandled promise rejection:', event.reason);
+      
+      // Handle specific error types
+      if (event.reason?.message?.includes('connection')) {
+        toast.error('Connection error. Please check your internet connection.');
+      } else if (event.reason?.message?.includes('JWT')) {
+        // Session related errors will be handled by Supabase client
+        return;
+      } else {
+        toast.error('An unexpected error occurred. Please try again.');
+      }
+      
+      event.preventDefault();
+    };
+
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, []);
+
   if (loading) {
     return <LoadingScreen />;
   }
@@ -63,11 +96,11 @@ function App() {
                 <Route path="/my-courses" element={<AuthGuard><UserDashboard /></AuthGuard>} />
                 <Route path="/profile" element={<AuthGuard><Profile /></AuthGuard>} />
                 <Route path="/lessons" element={<AuthGuard><Lessons /></AuthGuard>} />
-                <Route path="/lesson/:lessonId" element={<AuthGuard><LessonDetails /></AuthGuard>} />
+                <Route path="/lessons/:lessonId" element={<AuthGuard><LessonDetails /></AuthGuard>} />
+                <Route path="/courses/:courseId/lessons/:lessonId" element={<AuthGuard><LessonDetails /></AuthGuard>} />
                 <Route path="/lesson-history" element={<AuthGuard><LessonHistory /></AuthGuard>} />
                 <Route path="/courses" element={<AuthGuard><Courses /></AuthGuard>} />
                 <Route path="/courses/:courseId" element={<AuthGuard><CourseDetails /></AuthGuard>} />
-                <Route path="/courses/:courseId/lessons/:lessonId" element={<AuthGuard><LessonDetails /></AuthGuard>} />
                 <Route path="/courses/free/lessons/:lessonId" element={<AuthGuard><LessonDetails /></AuthGuard>} />
                 <Route path="/progress" element={<AuthGuard><Progress /></AuthGuard>} />
                 <Route path="/progress/entry/:entryId" element={<AuthGuard><Progress /></AuthGuard>} />

@@ -1,0 +1,41 @@
+.calendarContainer {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+:global(.react-calendar) {
+  width: 100%;
+  border: none;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background: transparent;
+  font-family: inherit;
+}
+
+:global(.dot-container) {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+:global(.dot) {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #10b981;
+  margin: 0 1px;
+}
+
+:global(.react-calendar__tile--active .dot) {
+  background-color: white;
+}
+
+:global(.has-entries) {
+  font-weight: 500;
+  position: relative;
+}

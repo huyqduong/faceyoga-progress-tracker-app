@@ -7,6 +7,8 @@ import { openaiApi } from '../lib/openai';
 import toast from 'react-hot-toast';
 import { useGoalProgressStore } from '../store/goalProgressStore';
 import { useProfileStore } from '../store/profileStore';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Goal {
   id: string;
@@ -212,7 +214,7 @@ Format the response in a clear, encouraging way.`;
 
             <div className="bg-gradient-to-br from-mint-50 to-white rounded-xl p-8 border border-mint-100">
               <div className="prose prose-lg max-w-none">
-                <p className="text-gray-800 whitespace-pre-wrap leading-relaxed">{aiRecommendation}</p>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{aiRecommendation}</ReactMarkdown>
               </div>
             </div>
 

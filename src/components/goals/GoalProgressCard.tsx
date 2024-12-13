@@ -6,6 +6,8 @@ import { GoalWithProgress, GoalStatus } from '../../types/goal';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../hooks/useAuth';
+import { courseApi } from '../../lib/courses';
 
 interface GoalProgressCardProps {
   goal: GoalWithProgress;
@@ -34,6 +36,7 @@ const statusLabels = {
 };
 
 export default function GoalProgressCard({ goal, onStatusChange }: GoalProgressCardProps) {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [relatedLessons, setRelatedLessons] = useState<RelatedLesson[]>([]);
   const [loadingLessons, setLoadingLessons] = useState(false);
@@ -92,23 +95,74 @@ export default function GoalProgressCard({ goal, onStatusChange }: GoalProgressC
     fetchRelatedLessons();
   }, [goal.id, showLessons]);
 
-  const handleStartLesson = async (lessonId: string) => {
+  const handleLessonClick = async (lessonId: string) => {
     try {
-      // Check if lesson belongs to a course
-      const { data: sectionLessons } = await supabase
+      // Get lesson details from section_lessons, taking the first section if multiple exist
+      const { data: sectionLessons, error: sectionError } = await supabase
         .from('section_lessons')
         .select(`
+          lesson_id,
           section:course_sections(
             course_id
           )
         `)
         .eq('lesson_id', lessonId)
-        .maybeSingle();
+        .limit(1); // Get only the first section
 
-      // If lesson belongs to a course, use course route, otherwise use free lesson route
-      if (sectionLessons?.section?.course_id) {
-        navigate(`/courses/${sectionLessons.section.course_id}/lessons/${lessonId}`);
+      if (sectionError) {
+        console.error('Error checking section lesson:', sectionError);
+        // Try standalone lessons table
+        const { data: lesson, error: lessonError } = await supabase
+          .from('lessons')
+          .select('*')
+          .eq('id', lessonId)
+          .single();
+
+        if (lessonError) {
+          console.error('Error checking standalone lesson:', lessonError);
+          navigate(`/courses/free/lessons/${lessonId}`); // Fallback to free lesson route
+          return;
+        }
+
+        // If found in standalone lessons, use free route
+        navigate(`/courses/free/lessons/${lessonId}`);
+        return;
+      }
+
+      // If lesson belongs to a course section, check access before navigating
+      if (sectionLessons?.[0]?.section?.course_id) {
+        const courseId = sectionLessons[0].section.course_id;
+        
+        // Check if course is free
+        const { data: course, error: courseError } = await supabase
+          .from('courses')
+          .select('price')
+          .eq('id', courseId)
+          .single();
+
+        if (courseError) {
+          console.error('Error checking course:', courseError);
+          navigate(`/courses/free/lessons/${lessonId}`); // Fallback to free lesson route
+          return;
+        }
+
+        // If course has no price or price is 0, it's free
+        if (!course?.price || course.price === 0) {
+          navigate(`/courses/${courseId}/lessons/${lessonId}`);
+          return;
+        }
+
+        // For paid courses, check if user has access
+        const hasAccess = await courseApi.checkCourseAccess(user.id, courseId);
+        if (!hasAccess) {
+          // If no access, redirect to course page instead of showing error
+          navigate(`/courses/${courseId}`);
+          return;
+        }
+
+        navigate(`/courses/${courseId}/lessons/${lessonId}`);
       } else {
+        // If not found in any course section, use free route
         navigate(`/courses/free/lessons/${lessonId}`);
       }
     } catch (error) {
@@ -118,66 +172,69 @@ export default function GoalProgressCard({ goal, onStatusChange }: GoalProgressC
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 p-6 border border-gray-100">
+    <div className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 p-4 sm:p-6 border-2 
+      ${status === 'in_progress' 
+        ? 'border-mint-500 shadow-mint-100' 
+        : 'border-gray-100'}`}>
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">{goal.label}</h3>
-          <p className="text-gray-600">{goal.description}</p>
+          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 sm:mb-2">{goal.label}</h3>
+          <p className="text-sm sm:text-base text-gray-600">{goal.description}</p>
         </div>
-        <div className="w-16 h-16">
+        <div className="w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0">
           <CircularProgressbar
             value={percentage}
             text={`${Math.round(percentage)}%`}
             styles={buildStyles({
-              pathColor: '#16A34A',
-              textColor: '#16A34A',
+              pathColor: status === 'in_progress' ? '#3a9e95' : '#16A34A',
+              textColor: status === 'in_progress' ? '#3a9e95' : '#16A34A',
               trailColor: '#E5E7EB',
             })}
           />
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 my-6">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 my-4 sm:my-6">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-purple-100">
-            <Trophy className="w-5 h-5 text-purple-600" />
+          <div className="p-1.5 sm:p-2 rounded-lg bg-purple-100">
+            <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
           </div>
           <div>
-            <p className="text-sm text-gray-600">Milestones</p>
-            <p className="font-semibold">{milestonesReached} / {milestoneCount}</p>
+            <p className="text-xs sm:text-sm text-gray-600">Milestones</p>
+            <p className="text-sm sm:text-base font-semibold">{milestonesReached} / {milestoneCount}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-blue-100">
-            <Target className="w-5 h-5 text-blue-600" />
+          <div className="p-1.5 sm:p-2 rounded-lg bg-blue-100">
+            <Target className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
           </div>
           <div>
-            <p className="text-sm text-gray-600">Progress</p>
-            <p className="font-semibold">{progress} points</p>
+            <p className="text-xs sm:text-sm text-gray-600">Progress</p>
+            <p className="text-sm sm:text-base font-semibold">{progress} points</p>
           </div>
         </div>
 
         {goal.estimated_duration && (
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-mint-100">
-              <Clock className="w-5 h-5 text-mint-600" />
+            <div className="p-1.5 sm:p-2 rounded-lg bg-mint-100">
+              <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-mint-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-600">Est. Duration</p>
-              <p className="font-semibold">{goal.estimated_duration}</p>
+              <p className="text-xs sm:text-sm text-gray-600">Est. Duration</p>
+              <p className="text-sm sm:text-base font-semibold">{goal.estimated_duration}</p>
             </div>
           </div>
         )}
 
         {goal.progress?.last_updated && (
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-orange-100">
-              <Calendar className="w-5 h-5 text-orange-600" />
+            <div className="p-1.5 sm:p-2 rounded-lg bg-orange-100">
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-600">Last Updated</p>
-              <p className="font-semibold">
+              <p className="text-xs sm:text-sm text-gray-600">Last Updated</p>
+              <p className="text-sm sm:text-base font-semibold">
                 {format(new Date(goal.progress.last_updated), 'MMM d, yyyy')}
               </p>
             </div>
@@ -185,12 +242,12 @@ export default function GoalProgressCard({ goal, onStatusChange }: GoalProgressC
         )}
       </div>
 
-      <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
+      <div className="flex items-center justify-between mt-4 sm:mt-6 pt-4 border-t border-gray-100">
         <div>
           <select
             value={status}
             onChange={(e) => onStatusChange?.(e.target.value as GoalStatus)}
-            className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[status]} 
+            className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${statusColors[status]} 
               border-2 border-transparent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-mint-500`}
           >
             {Object.entries(statusLabels).map(([value, label]) => (
@@ -200,7 +257,7 @@ export default function GoalProgressCard({ goal, onStatusChange }: GoalProgressC
         </div>
         
         {goal.difficulty && (
-          <span className={`px-3 py-1 rounded-full text-sm font-medium 
+          <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium 
             ${goal.difficulty === 'beginner' ? 'bg-green-100 text-green-600' :
               goal.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-600' :
               'bg-red-100 text-red-600'}`}
@@ -211,7 +268,7 @@ export default function GoalProgressCard({ goal, onStatusChange }: GoalProgressC
       </div>
 
       {/* Related Lessons Section */}
-      <div className="mt-6">
+      <div className="mt-4 sm:mt-6">
         <button
           onClick={() => setShowLessons(!showLessons)}
           className="flex items-center gap-2 text-mint-600 hover:text-mint-700 font-medium"
@@ -246,7 +303,7 @@ export default function GoalProgressCard({ goal, onStatusChange }: GoalProgressC
                       </div>
                     </div>
                     <button
-                      onClick={() => handleStartLesson(lesson.id)}
+                      onClick={() => handleLessonClick(lesson.id)}
                       className="p-2 text-mint-600 hover:text-mint-700 rounded-lg hover:bg-mint-50 transition-colors"
                     >
                       <Play className="w-5 h-5" />

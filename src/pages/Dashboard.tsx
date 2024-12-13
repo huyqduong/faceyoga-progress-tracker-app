@@ -50,15 +50,23 @@ function Dashboard() {
   };
 
   useEffect(() => {
-    if (user) {
-      Promise.all([
-        fetchProfile(user.id),
-        fetchLessons(),
-        fetchAllCourses(),
-        fetchProgress(user.id),
-        fetchHistory(user.id)
-      ]).catch(console.error);
-    }
+    const loadData = async () => {
+      try {
+        if (user) {
+          await Promise.all([
+            fetchProfile(user.id),
+            fetchLessons(),
+            fetchAllCourses(),
+            fetchProgress(user.id),
+            fetchHistory(user.id)
+          ]);
+        }
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+      }
+    };
+
+    loadData();
   }, [user, fetchProfile, fetchLessons, fetchAllCourses, fetchProgress, fetchHistory]);
 
   const stats = useMemo(() => {
@@ -104,8 +112,10 @@ function Dashboard() {
   }, [history]);
 
   const recentLessons = useMemo(() => {
+    if (!history || !lessons) return [];
     return history
-      .slice(0, 3)
+      .filter(entry => entry.lesson_id) // Ensure lesson_id exists
+      .slice(0, 5)
       .map(entry => {
         const lesson = lessons.find(l => l.id === entry.lesson_id);
         const course = courses.find(c => c.id === entry.course_id);
@@ -260,7 +270,20 @@ function Dashboard() {
         </div>
         <div className="space-y-4">
           {recentLessons.map((entry) => (
-            <div key={entry.id} className="flex items-center space-x-4">
+            <div 
+              key={entry.id} 
+              className="flex items-center space-x-4 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors"
+              onClick={() => {
+                if (!entry.lesson_id) return;
+                
+                const lessonPath = entry.course_id 
+                  ? `/courses/${entry.course_id}/lessons/${entry.lesson_id}`
+                  : `/lessons/${entry.lesson_id}`;
+                
+                console.log('Navigating to:', lessonPath);
+                navigate(lessonPath);
+              }}
+            >
               <div className="flex-shrink-0">
                 <img
                   src={entry.lesson?.image_url || '/images/placeholder.jpg'}
@@ -279,29 +302,11 @@ function Dashboard() {
                 </p>
                 <p className="text-sm text-gray-500">
                   {format(new Date(entry.completed_at), 'MMM d, yyyy')} •{' '}
-                  {formatPracticeTime(entry.duration || 0)}
+                  {entry.practice_time} min
                 </p>
               </div>
-              <button
-                onClick={() => navigate(`/lessons/${entry.lesson_id}`)}
-                className="flex-shrink-0 text-mint-600 hover:text-mint-700"
-              >
-                <Play className="w-5 h-5" />
-              </button>
             </div>
           ))}
-          {recentLessons.length === 0 && (
-            <div className="text-center py-8">
-              <Dumbbell className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-500">No completed lessons yet</p>
-              <button
-                onClick={() => navigate('/lessons')}
-                className="mt-2 text-mint-600 hover:text-mint-700 text-sm font-medium"
-              >
-                Start Your First Lesson
-              </button>
-            </div>
-          )}
         </div>
       </div>
 
