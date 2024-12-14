@@ -2,16 +2,16 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 interface BeforeAfterSliderProps {
-  beforeImage: string;
-  afterImage: string;
+  beforeImage?: string;
+  afterImage?: string;
   beforeLabel?: string;
   afterLabel?: string;
   weeks?: number;
 }
 
 const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({
-  beforeImage,
-  afterImage,
+  beforeImage = '/images/transformations/before-placeholder.jpg',
+  afterImage = '/images/transformations/after-placeholder.jpg',
   beforeLabel = 'Before',
   afterLabel = 'After',
   weeks = 8

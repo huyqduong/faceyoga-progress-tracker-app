@@ -95,13 +95,16 @@ const Landing = () => {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5 }}
-              className="flex items-center"
+              className="flex items-center space-x-3"
             >
               <img
                 src={settings?.logo_url || '/images/logo.svg'}
                 alt={settings?.business_name || 'Face Yoga App'}
                 className="h-10 w-auto"
               />
+              <div className="text-xl font-bold text-mint-600">
+                {settings?.business_name || 'Renew and Glow Face Yoga'}
+              </div>
             </motion.div>
             <motion.div
               initial={{ opacity: 0, x: 20 }}
@@ -109,12 +112,12 @@ const Landing = () => {
               transition={{ duration: 0.5 }}
               className="flex items-center gap-2"
             >
-              <button className="px-4 py-2 text-mint-600 hover:text-mint-700 font-medium">
+              {/* <button className="px-4 py-2 text-mint-600 hover:text-mint-700 font-medium">
                 Log In
               </button>
               <button className="px-4 py-2 bg-mint-600 text-white rounded-lg hover:bg-mint-700 transition-colors font-medium">
                 Sign Up
-              </button>
+              </button> */}
             </motion.div>
           </div>
         </div>
@@ -136,101 +139,202 @@ const Landing = () => {
               transition={{ duration: 0.8 }}
               className="text-left"
             >
-              <h1 className="text-5xl sm:text-7xl font-bold tracking-tight mb-6">
+              <h1 className="text-3xl sm:text-5xl font-bold tracking-tight mb-6">
                 <span className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-mint-600/90 to-mint-300/90">
-                  Transform Your Face
+                  Transform Your Face Naturally
                 </span>
                 <span className="block mt-2 text-transparent bg-clip-text bg-gradient-to-r from-mint-500/90 to-mint-200/90">
-                  Naturally
+                  
                 </span>
               </h1>
               <p className="mt-6 text-xl sm:text-2xl leading-relaxed text-gray-600 font-light">
                 Experience the power of guided face yoga exercises for natural rejuvenation and radiant skin
               </p>
 
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4, duration: 0.8 }}
-                className="mt-10"
-              >
-                <form onSubmit={handleSignup} className="flex flex-col sm:flex-row gap-4" id="signup-form">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email for early access"
-                    className="flex-1 rounded-xl border-2 border-mint-200 px-6 py-4 text-lg text-gray-900 placeholder-gray-500 focus:border-mint-500 focus:outline-none shadow-sm"
-                    required
-                  />
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="rounded-xl bg-gradient-to-r from-mint-600 to-mint-700 px-8 py-4 font-semibold text-white shadow-lg hover:shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-600 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:translate-y-[-2px] text-lg min-w-[180px]"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        <span>Signing up...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>Join Waitlist</span>
-                        <ArrowRight className="h-5 w-5" />
-                      </>
-                    )}
-                  </button>
-                </form>
-                <p className="mt-4 text-sm text-gray-600 text-center sm:text-left">
-                  Be the first to know when we launch. No spam, ever.
-                </p>
-              </motion.div>
+              {/* Free App Badge */}
+              {/* <div className="mt-6 inline-block bg-gradient-to-r from-mint-50 to-mint-100 border border-mint-200 rounded-full px-6 py-3">
+                <span className="text-mint-700 font-semibold flex items-center gap-2">
+                  <Sparkles className="w-5 h-5" />
+                  100% Free Forever
+                </span>
+              </div> */}
+
+              <div className="mt-8 flex flex-col sm:flex-row gap-4">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={scrollToSignup}
+                  className="px-8 py-4 bg-gradient-to-r from-mint-600 to-mint-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all font-medium text-lg flex items-center justify-center gap-2"
+                >
+                  Join Waitlist <ArrowRight className="w-5 h-5" />
+                </motion.button>
+                <motion.a
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  href="#features"
+                  className="px-8 py-4 bg-white text-mint-600 rounded-xl shadow-md hover:shadow-lg transition-all font-medium text-lg flex items-center justify-center gap-2"
+                >
+                  Learn More <Sparkles className="w-5 h-5" />
+                </motion.a>
+              </div>
+
+              {/* Social Proof */}
+              <div className="mt-12 flex items-center gap-8">
+                <div className="flex -space-x-2">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="w-10 h-10 rounded-full bg-gradient-to-br from-mint-300 to-mint-400 border-2 border-white" />
+                  ))}
+                </div>
+                <div className="text-gray-600">
+                  <span className="font-semibold text-mint-600">100+</span> happy users
+                </div>
+              </div>
             </motion.div>
 
-            {/* Right Column - Feature Cards */}
+            {/* Right Column - Feature Image */}
             <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2, duration: 0.8 }}
-              className="space-y-6"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8 }}
+              className="relative flex items-center justify-center"
             >
-              {[
-                {
-                  icon: Calendar,
-                  title: "Daily Routines",
-                  description: "Personalized face yoga routines tailored to your goals"
-                },
-                {
-                  icon: Camera,
-                  title: "Progress Tracking",
-                  description: "Track your transformation with advanced photo tools"
-                },
-                {
-                  icon: GraduationCap,
-                  title: "Expert Guidance",
-                  description: "Learn from certified instructors and structured courses"
-                }
-              ].map((feature, index) => (
-                <motion.div
-                  key={feature.title}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3 + index * 0.1, duration: 0.5 }}
-                  className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-mint-100/50"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="rounded-xl bg-gradient-to-br from-mint-400 to-mint-600 p-3 shadow-md">
-                      <feature.icon className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">{feature.title}</h3>
-                      <p className="mt-1 text-gray-600">{feature.description}</p>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
+              <div className="relative w-[80%] aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl">
+                <BeforeAfterSlider
+                  beforeImage="/images/before-sample.jpg"
+                  afterImage="/images/after-sample.jpg"
+                  beforeLabel=""
+                  afterLabel=""
+                />
+                
+                {/* Results Label */}
+                <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
+                  <span className="text-mint-700 font-semibold">Real Results</span>
+                </div>
+              </div>
+              
+              {/* Floating Stats */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="absolute -bottom-6 left-8 bg-white rounded-2xl shadow-xl p-4 flex items-center gap-3"
+              >
+                <div className="p-3 bg-mint-50 rounded-xl">
+                  <Award className="w-6 h-6 text-mint-600" />
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500">Success Rate</div>
+                  <div className="font-bold text-xl">98%</div>
+                </div>
+              </motion.div>
             </motion.div>
           </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section id="features" className="py-20 bg-white">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Why Choose Our App?</h2>
+            <p className="text-xl text-gray-600">
+              Discover the features that make our <span className="text-mint-600 font-semibold">100% free</span> face yoga app unique
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[
+              {
+                icon: <Calendar className="w-8 h-8 text-mint-600" />,
+                title: "Daily Routines",
+                description: "Personalized face yoga routines tailored to your goals and schedule"
+              },
+              {
+                icon: <Camera className="w-8 h-8 text-mint-600" />,
+                title: "Progress Tracking",
+                description: "Advanced photo tools to track and visualize your transformation journey"
+              },
+              {
+                icon: <GraduationCap className="w-8 h-8 text-mint-600" />,
+                title: "Expert Guidance",
+                description: "Learn from certified instructors with structured video courses"
+              },
+              {
+                icon: <Clock className="w-8 h-8 text-mint-600" />,
+                title: "Time-Efficient",
+                description: "Quick 10-minute exercises that fit into your busy lifestyle"
+              },
+              {
+                icon: <Users className="w-8 h-8 text-mint-600" />,
+                title: "Community Support",
+                description: "Join a supportive community of face yoga enthusiasts"
+              },
+              {
+                icon: <Crown className="w-8 h-8 text-mint-600" />,
+                title: "Premium Content",
+                description: "Access exclusive exercises and premium features"
+              }
+            ].map((feature, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="bg-mint-50/50 rounded-2xl p-6 hover:bg-mint-50 transition-colors"
+              >
+                <div className="bg-white w-16 h-16 rounded-xl shadow-md flex items-center justify-center mb-4">
+                  {feature.icon}
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">{feature.title}</h3>
+                <p className="text-gray-600">{feature.description}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Join Waitlist Section */}
+      <section id="signup-form" className="py-20 bg-gradient-to-b from-mint-50 to-white">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Be the First to Experience</h2>
+            <p className="text-xl text-gray-600 mb-8">
+              Join our exclusive waitlist and get early access to transform your face naturally - <span className="text-mint-600 font-semibold">completely free forever</span>
+            </p>
+            
+            <form onSubmit={handleSignup} className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                className="flex-1 px-6 py-4 rounded-xl border border-mint-200 focus:outline-none focus:ring-2 focus:ring-mint-500 focus:border-transparent"
+                required
+              />
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="px-8 py-4 bg-mint-600 text-white rounded-xl hover:bg-mint-700 transition-colors font-medium text-lg flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Joining...
+                  </>
+                ) : (
+                  <>
+                    Join Waitlist
+                    <ArrowRight className="w-5 h-5" />
+                  </>
+                )}
+              </button>
+            </form>
+            <p className="mt-4 text-sm text-gray-500">Be the first to know when we launch. No spam, ever.</p>
+          </motion.div>
         </div>
       </section>
 
@@ -243,7 +347,7 @@ const Landing = () => {
             transition={{ duration: 0.8 }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-mint-600 to-mint-400 mb-4">
+            <h2 className="text-4xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-mint-600 to-mint-400 mb-4">
               Real Results from Our Community
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto font-light">
