@@ -95,14 +95,14 @@ const Landing = () => {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5 }}
-              className="flex items-center space-x-3"
+              className="flex items-center space-x-2 sm:space-x-3"
             >
               <img
                 src={settings?.logo_url || '/images/logo.svg'}
                 alt={settings?.business_name || 'Face Yoga App'}
-                className="h-10 w-auto"
+                className="h-8 sm:h-10 w-auto"
               />
-              <div className="text-xl font-bold text-mint-600">
+              <div className="text-base sm:text-xl font-bold text-mint-600 truncate">
                 {settings?.business_name || 'Renew and Glow Face Yoga'}
               </div>
             </motion.div>
@@ -130,62 +130,51 @@ const Landing = () => {
           <div className="absolute inset-0 bg-gradient-to-br from-mint-50/90 via-white/95 to-mint-50/90 backdrop-blur-sm"></div>
         </div>
 
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-20">
+          <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 items-center">
             {/* Left Column - Text Content */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
-              className="text-left"
+              className="text-center lg:text-left"
             >
-              <h1 className="text-3xl sm:text-5xl font-bold tracking-tight mb-6">
+              <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold tracking-tight mb-4 sm:mb-6">
                 <span className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-mint-600/90 to-mint-300/90">
                   Transform Your Face Naturally
                 </span>
-                <span className="block mt-2 text-transparent bg-clip-text bg-gradient-to-r from-mint-500/90 to-mint-200/90">
-                  
-                </span>
               </h1>
-              <p className="mt-6 text-xl sm:text-2xl leading-relaxed text-gray-600 font-light">
+              <p className="mt-4 sm:mt-6 text-lg sm:text-xl md:text-2xl leading-relaxed text-gray-600 font-light">
                 Experience the power of guided face yoga exercises for natural rejuvenation and radiant skin
               </p>
 
-              {/* Free App Badge */}
-              {/* <div className="mt-6 inline-block bg-gradient-to-r from-mint-50 to-mint-100 border border-mint-200 rounded-full px-6 py-3">
-                <span className="text-mint-700 font-semibold flex items-center gap-2">
-                  <Sparkles className="w-5 h-5" />
-                  100% Free Forever
-                </span>
-              </div> */}
-
-              <div className="mt-8 flex flex-col sm:flex-row gap-4">
+              <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={scrollToSignup}
-                  className="px-8 py-4 bg-gradient-to-r from-mint-600 to-mint-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all font-medium text-lg flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-mint-600 to-mint-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all font-medium text-base sm:text-lg flex items-center justify-center gap-2"
                 >
-                  Join Waitlist <ArrowRight className="w-5 h-5" />
+                  Join Waitlist <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
                 </motion.button>
                 <motion.a
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   href="#features"
-                  className="px-8 py-4 bg-white text-mint-600 rounded-xl shadow-md hover:shadow-lg transition-all font-medium text-lg flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-white text-mint-600 rounded-xl shadow-md hover:shadow-lg transition-all font-medium text-base sm:text-lg flex items-center justify-center gap-2"
                 >
-                  Learn More <Sparkles className="w-5 h-5" />
+                  Learn More <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
                 </motion.a>
               </div>
 
               {/* Social Proof */}
-              <div className="mt-12 flex items-center gap-8">
+              <div className="mt-8 sm:mt-12 flex flex-col sm:flex-row items-center gap-4 sm:gap-8 justify-center lg:justify-start">
                 <div className="flex -space-x-2">
                   {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="w-10 h-10 rounded-full bg-gradient-to-br from-mint-300 to-mint-400 border-2 border-white" />
+                    <div key={i} className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-mint-300 to-mint-400 border-2 border-white" />
                   ))}
                 </div>
-                <div className="text-gray-600">
+                <div className="text-gray-600 text-sm sm:text-base">
                   <span className="font-semibold text-mint-600">100+</span> happy users
                 </div>
               </div>
