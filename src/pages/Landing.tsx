@@ -96,14 +96,14 @@ const Landing = () => {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5 }}
-              className="flex items-center space-x-2 sm:space-x-3"
+              className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0"
             >
               <img
                 src={settings?.logo_url || '/images/logo.svg'}
                 alt={settings?.business_name || 'Face Yoga App'}
-                className="h-8 sm:h-10 w-auto"
+                className="h-8 sm:h-10 w-auto flex-shrink-0"
               />
-              <div className="text-base sm:text-xl font-bold text-mint-600 truncate dark:text-gray-100">
+              <div className="text-base sm:text-xl font-bold text-mint-600 truncate dark:text-gray-100 min-w-0">
                 {settings?.business_name || 'Renew and Glow Face Yoga'}
               </div>
             </motion.div>
@@ -111,14 +111,8 @@ const Landing = () => {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5 }}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 ml-4 flex-shrink-0"
             >
-              {/* <button className="px-4 py-2 text-mint-600 hover:text-mint-700 font-medium">
-                Log In
-              </button>
-              <button className="px-4 py-2 bg-mint-600 text-white rounded-lg hover:bg-mint-700 transition-colors font-medium">
-                Sign Up
-              </button> */}
               <ThemeToggle />
             </motion.div>
           </div>

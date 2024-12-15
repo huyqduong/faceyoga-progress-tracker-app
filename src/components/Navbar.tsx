@@ -188,17 +188,14 @@ function Navbar() {
             </div>
           </div>
 
-          {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center">
+          {/* Mobile Menu Button and Theme Toggle */}
+          <div className="flex items-center md:hidden space-x-2">
+            <ThemeToggle />
             <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-2 rounded-md text-mint-500 hover:text-mint-600 hover:bg-mint-50"
+              onClick={() => setIsMenuOpen(true)}
+              className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
-              {isMenuOpen ? (
-                <X className="w-6 h-6" />
-              ) : (
-                <Menu className="w-6 h-6" />
-              )}
+              <Menu className="w-6 h-6" />
             </button>
           </div>
         </div>
@@ -228,8 +225,8 @@ function Navbar() {
                 <Link
                   to="/"
                   className={`block px-4 py-2 rounded-lg text-sm font-medium ${
-                    location.pathname === '/'
-                      ? 'text-mint-600 dark:text-mint-400 bg-mint-50 dark:bg-mint-900/20'
+                    location.pathname === '/' 
+                      ? 'text-mint-600 dark:text-mint-400 bg-mint-50 dark:bg-mint-900/20' 
                       : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
                   onClick={closeAllMenus}
@@ -243,8 +240,8 @@ function Navbar() {
                 <Link
                   to="/my-courses"
                   className={`block px-4 py-2 rounded-lg text-sm font-medium ${
-                    location.pathname === '/my-courses'
-                      ? 'text-mint-600 dark:text-mint-400 bg-mint-50 dark:bg-mint-900/20'
+                    location.pathname === '/my-courses' 
+                      ? 'text-mint-600 dark:text-mint-400 bg-mint-50 dark:bg-mint-900/20' 
                       : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
                   onClick={closeAllMenus}
