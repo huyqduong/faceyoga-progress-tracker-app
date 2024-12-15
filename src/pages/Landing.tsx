@@ -198,9 +198,9 @@ const Landing = () => {
                 />
                 
                 {/* Results Label */}
-                <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
+                {/* <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
                   <span className="text-mint-700 font-semibold">Real Results</span>
-                </div>
+                </div> */}
               </div>
               
               {/* Floating Stats */}
