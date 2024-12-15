@@ -22,10 +22,10 @@ interface RelatedLesson {
 }
 
 const statusColors = {
-  not_started: 'bg-gray-100 text-gray-600',
-  in_progress: 'bg-mint-100 text-mint-600',
-  completed: 'bg-green-100 text-green-600',
-  paused: 'bg-yellow-100 text-yellow-600',
+  not_started: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400',
+  in_progress: 'bg-mint-100 dark:bg-mint-900/30 text-mint-600 dark:text-mint-400',
+  completed: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
+  paused: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400',
 };
 
 const statusLabels = {
@@ -172,14 +172,14 @@ export default function GoalProgressCard({ goal, onStatusChange }: GoalProgressC
   };
 
   return (
-    <div className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 p-4 sm:p-6 border-2 
+    <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 p-4 sm:p-6 border-2 
       ${status === 'in_progress' 
-        ? 'border-mint-500 shadow-mint-100' 
-        : 'border-gray-100'}`}>
+        ? 'border-mint-500 shadow-mint-100 dark:shadow-mint-900/20' 
+        : 'border-gray-100 dark:border-gray-700'}`}>
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 sm:mb-2">{goal.label}</h3>
-          <p className="text-sm sm:text-base text-gray-600">{goal.description}</p>
+          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-1 sm:mb-2">{goal.label}</h3>
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">{goal.description}</p>
         </div>
         <div className="w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0">
           <CircularProgressbar
@@ -196,45 +196,45 @@ export default function GoalProgressCard({ goal, onStatusChange }: GoalProgressC
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 my-4 sm:my-6">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 sm:p-2 rounded-lg bg-purple-100">
-            <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
+          <div className="p-1.5 sm:p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
+            <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 dark:text-purple-400" />
           </div>
           <div>
-            <p className="text-xs sm:text-sm text-gray-600">Milestones</p>
-            <p className="text-sm sm:text-base font-semibold">{milestonesReached} / {milestoneCount}</p>
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Milestones</p>
+            <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">{milestonesReached} / {milestoneCount}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="p-1.5 sm:p-2 rounded-lg bg-blue-100">
-            <Target className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+          <div className="p-1.5 sm:p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+            <Target className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" />
           </div>
           <div>
-            <p className="text-xs sm:text-sm text-gray-600">Progress</p>
-            <p className="text-sm sm:text-base font-semibold">{progress} points</p>
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Progress</p>
+            <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">{progress} points</p>
           </div>
         </div>
 
         {goal.estimated_duration && (
           <div className="flex items-center gap-2">
-            <div className="p-1.5 sm:p-2 rounded-lg bg-mint-100">
-              <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-mint-600" />
+            <div className="p-1.5 sm:p-2 rounded-lg bg-mint-100 dark:bg-mint-900/30">
+              <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-mint-600 dark:text-mint-400" />
             </div>
             <div>
-              <p className="text-xs sm:text-sm text-gray-600">Est. Duration</p>
-              <p className="text-sm sm:text-base font-semibold">{goal.estimated_duration}</p>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Est. Duration</p>
+              <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">{goal.estimated_duration}</p>
             </div>
           </div>
         )}
 
         {goal.progress?.last_updated && (
           <div className="flex items-center gap-2">
-            <div className="p-1.5 sm:p-2 rounded-lg bg-orange-100">
-              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
+            <div className="p-1.5 sm:p-2 rounded-lg bg-orange-100 dark:bg-orange-900/30">
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600 dark:text-orange-400" />
             </div>
             <div>
-              <p className="text-xs sm:text-sm text-gray-600">Last Updated</p>
-              <p className="text-sm sm:text-base font-semibold">
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Last Updated</p>
+              <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
                 {format(new Date(goal.progress.last_updated), 'MMM d, yyyy')}
               </p>
             </div>
@@ -242,13 +242,13 @@ export default function GoalProgressCard({ goal, onStatusChange }: GoalProgressC
         )}
       </div>
 
-      <div className="flex items-center justify-between mt-4 sm:mt-6 pt-4 border-t border-gray-100">
+      <div className="flex items-center justify-between mt-4 sm:mt-6 pt-4 border-t border-gray-100 dark:border-gray-700">
         <div>
           <select
             value={status}
             onChange={(e) => onStatusChange?.(e.target.value as GoalStatus)}
             className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${statusColors[status]} 
-              border-2 border-transparent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-mint-500`}
+              border-2 border-transparent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-mint-500 dark:focus:ring-offset-gray-800`}
           >
             {Object.entries(statusLabels).map(([value, label]) => (
               <option key={value} value={value}>{label}</option>
@@ -258,9 +258,9 @@ export default function GoalProgressCard({ goal, onStatusChange }: GoalProgressC
         
         {goal.difficulty && (
           <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium 
-            ${goal.difficulty === 'beginner' ? 'bg-green-100 text-green-600' :
-              goal.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-600' :
-              'bg-red-100 text-red-600'}`}
+            ${goal.difficulty === 'beginner' ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' :
+              goal.difficulty === 'intermediate' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400' :
+              'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'}`}
           >
             {goal.difficulty.charAt(0).toUpperCase() + goal.difficulty.slice(1)}
           </span>
@@ -271,7 +271,7 @@ export default function GoalProgressCard({ goal, onStatusChange }: GoalProgressC
       <div className="mt-4 sm:mt-6">
         <button
           onClick={() => setShowLessons(!showLessons)}
-          className="flex items-center gap-2 text-mint-600 hover:text-mint-700 font-medium"
+          className="flex items-center gap-2 text-mint-600 dark:text-mint-400 hover:text-mint-700 dark:hover:text-mint-300 font-medium"
         >
           {showLessons ? 'Hide Related Lessons' : 'Show Related Lessons'}
         </button>
@@ -280,14 +280,14 @@ export default function GoalProgressCard({ goal, onStatusChange }: GoalProgressC
           <div className="mt-4 space-y-4">
             {loadingLessons ? (
               <div className="flex items-center justify-center py-4">
-                <Loader2 className="w-6 h-6 text-mint-500 animate-spin" />
+                <Loader2 className="w-6 h-6 text-mint-500 dark:text-mint-400 animate-spin" />
               </div>
             ) : relatedLessons.length > 0 ? (
               <div className="space-y-3">
                 {relatedLessons.map(lesson => (
                   <div 
                     key={lesson.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   >
                     <div className="flex items-center gap-3">
                       <img 
@@ -296,15 +296,15 @@ export default function GoalProgressCard({ goal, onStatusChange }: GoalProgressC
                         className="w-12 h-12 rounded-lg object-cover"
                       />
                       <div>
-                        <h4 className="font-medium text-gray-900">{lesson.title}</h4>
-                        <p className="text-sm text-gray-600">
+                        <h4 className="font-medium text-gray-900 dark:text-white">{lesson.title}</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
                           Contributes {lesson.contribution_weight} points
                         </p>
                       </div>
                     </div>
                     <button
                       onClick={() => handleLessonClick(lesson.id)}
-                      className="p-2 text-mint-600 hover:text-mint-700 rounded-lg hover:bg-mint-50 transition-colors"
+                      className="p-2 text-mint-600 dark:text-mint-400 hover:text-mint-700 dark:hover:text-mint-300 rounded-lg hover:bg-mint-50 dark:hover:bg-mint-900/20 transition-colors"
                     >
                       <Play className="w-5 h-5" />
                     </button>
@@ -312,7 +312,7 @@ export default function GoalProgressCard({ goal, onStatusChange }: GoalProgressC
                 ))}
               </div>
             ) : (
-              <p className="text-gray-600 text-center py-4">
+              <p className="text-gray-600 dark:text-gray-400 text-center py-4">
                 No related lessons found for this goal.
               </p>
             )}

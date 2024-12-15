@@ -65,25 +65,25 @@ function LessonHistory() {
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center space-x-4">
           <BackButton />
-          <h1 className="text-3xl font-bold text-gray-900">Lesson History</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Lesson History</h1>
         </div>
       </div>
 
       {loading ? (
         <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mint-500" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mint-500 dark:border-mint-400" />
         </div>
       ) : history.length === 0 ? (
         <div className="text-center py-12">
-          <h2 className="text-xl font-medium text-gray-900 mb-4">
+          <h2 className="text-xl font-medium text-gray-900 dark:text-white mb-4">
             No lessons completed yet
           </h2>
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
             Start practicing face yoga to track your progress!
           </p>
           <button
             onClick={() => navigate('/lessons')}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-mint-600 hover:bg-mint-700"
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-mint-600 hover:bg-mint-700 dark:bg-mint-500 dark:hover:bg-mint-600 transition-colors"
           >
             Browse Lessons
           </button>
@@ -93,7 +93,7 @@ function LessonHistory() {
           {history.map((entry) => (
             <div
               key={entry.id}
-              className="bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow border border-gray-100"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700"
             >
               <div className="flex items-start space-x-4">
                 <img
@@ -102,18 +102,18 @@ function LessonHistory() {
                   className="w-24 h-24 rounded-lg object-cover"
                 />
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
                     {entry.lesson.title}
                   </h3>
                   <div className="flex flex-wrap gap-2 mb-2">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">
                       {entry.lesson.target_area}
                     </span>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-mint-100 text-mint-800">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-mint-100 dark:bg-mint-900/30 text-mint-800 dark:text-mint-300">
                       {entry.lesson.difficulty}
                     </span>
                   </div>
-                  <div className="flex items-center space-x-4 text-sm text-gray-500">
+                  <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
                     <span className="flex items-center">
                       <Calendar className="w-4 h-4 mr-1" />
                       {formatDistanceToNow(new Date(entry.completed_at), { addSuffix: true })}
@@ -126,7 +126,7 @@ function LessonHistory() {
                 </div>
                 <button
                   onClick={() => navigate(`/lesson/${entry.lesson.id}`)}
-                  className="text-mint-600 hover:text-mint-700"
+                  className="text-mint-600 dark:text-mint-400 hover:text-mint-700 dark:hover:text-mint-300"
                 >
                   <ArrowRight className="w-5 h-5" />
                 </button>

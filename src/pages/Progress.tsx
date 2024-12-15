@@ -271,7 +271,7 @@ function Progress() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-4">
           <BackButton />
-          <h1 className="text-2xl font-bold">Progress Tracker</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Progress Tracker</h1>
         </div>
       </div>
 
@@ -279,11 +279,11 @@ function Progress() {
         {/* Left Column - Photo Upload and Calendar */}
         <div className="lg:col-span-1 space-y-8">
           {/* Photo Upload Section */}
-          <div className="bg-white rounded-xl shadow-sm p-6 space-y-6">
-            <h2 className="text-xl font-semibold text-gray-900">Add New Progress Photo</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 space-y-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Add New Progress Photo</h2>
             
             {error && (
-              <div className="p-4 bg-red-50 text-red-600 rounded-lg flex items-center">
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg flex items-center">
                 <X className="w-5 h-5 mr-2 flex-shrink-0" />
                 <p>{error}</p>
               </div>
@@ -302,10 +302,10 @@ function Progress() {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 rounded-lg hover:border-mint-500 transition-colors group"
+                  className="w-full flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-mint-500 dark:hover:border-mint-400 transition-colors group"
                 >
-                  <ImagePlus className="w-8 h-8 text-gray-400 group-hover:text-mint-500 transition-colors mb-2" />
-                  <span className="text-sm text-gray-600 group-hover:text-mint-700">Upload Photo</span>
+                  <ImagePlus className="w-8 h-8 text-gray-400 dark:text-gray-500 group-hover:text-mint-500 transition-colors mb-2" />
+                  <span className="text-sm text-gray-600 dark:text-gray-400 group-hover:text-mint-700 dark:group-hover:text-mint-400">Upload Photo</span>
                 </button>
 
                 {isMobile && (
@@ -314,10 +314,10 @@ function Progress() {
                       <button
                         type="button"
                         onClick={startCamera}
-                        className="w-full flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 rounded-lg hover:border-mint-500 transition-colors group"
+                        className="w-full flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-mint-500 dark:hover:border-mint-400 transition-colors group"
                       >
-                        <Camera className="w-8 h-8 text-gray-400 group-hover:text-mint-500 transition-colors mb-2" />
-                        <span className="text-sm text-gray-600 group-hover:text-mint-700">Take Photo</span>
+                        <Camera className="w-8 h-8 text-gray-400 dark:text-gray-500 group-hover:text-mint-500 transition-colors mb-2" />
+                        <span className="text-sm text-gray-600 dark:text-gray-400 group-hover:text-mint-700 dark:group-hover:text-mint-400">Take Photo</span>
                       </button>
                     ) : (
                       <div className="space-y-4">
@@ -332,9 +332,9 @@ function Progress() {
                             <button
                               type="button"
                               onClick={toggleCamera}
-                              className="p-3 bg-white/90 rounded-full hover:bg-white transition-colors"
+                              className="p-3 bg-white/90 dark:bg-gray-800/90 rounded-full hover:bg-white dark:hover:bg-gray-800 transition-colors"
                             >
-                              <RefreshCcw className="w-6 h-6 text-gray-700" />
+                              <RefreshCcw className="w-6 h-6 text-gray-700 dark:text-gray-300" />
                             </button>
                             <button
                               type="button"
@@ -346,9 +346,9 @@ function Progress() {
                             <button
                               type="button"
                               onClick={stopCamera}
-                              className="p-3 bg-white/90 rounded-full hover:bg-white transition-colors"
+                              className="p-3 bg-white/90 dark:bg-gray-800/90 rounded-full hover:bg-white dark:hover:bg-gray-800 transition-colors"
                             >
-                              <CameraOff className="w-6 h-6 text-gray-700" />
+                              <CameraOff className="w-6 h-6 text-gray-700 dark:text-gray-300" />
                             </button>
                           </div>
                         </div>
@@ -368,9 +368,9 @@ function Progress() {
                   <button
                     type="button"
                     onClick={clearSelection}
-                    className="absolute top-2 right-2 p-2 bg-white/90 rounded-full hover:bg-white transition-colors"
+                    className="absolute top-2 right-2 p-2 bg-white/90 dark:bg-gray-800/90 rounded-full hover:bg-white dark:hover:bg-gray-800 transition-colors"
                   >
-                    <X className="w-5 h-5 text-gray-700" />
+                    <X className="w-5 h-5 text-gray-700 dark:text-gray-300" />
                   </button>
                 </div>
 
@@ -379,7 +379,7 @@ function Progress() {
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Add notes about your progress..."
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mint-500 focus:border-transparent"
+                    className="w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-mint-500 focus:border-transparent placeholder-gray-500 dark:placeholder-gray-400"
                     rows={3}
                   />
 
@@ -396,8 +396,8 @@ function Progress() {
           </div>
 
           {/* Calendar Section */}
-          <div className="bg-white rounded-xl shadow-sm p-6 space-y-6">
-            <h2 className="text-xl font-semibold text-gray-900">Progress Calendar</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 space-y-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Progress Calendar</h2>
             <div className={styles.calendarContainer}>
               <Calendar
                 onChange={handleDateClick}
@@ -406,10 +406,11 @@ function Progress() {
                 tileClassName={tileClassName}
                 locale="en-US"
                 onActiveStartDateChange={handleActiveStartDateChange}
+                className="dark:bg-gray-800 dark:text-white"
               />
             </div>
             <div className="mt-4">
-              <h3 className="text-lg font-semibold mb-2">
+              <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">
                 {selectedDate 
                   ? `Photos from ${format(selectedDate, 'MMMM d, yyyy')}`
                   : calendarView === 'month'
@@ -422,12 +423,12 @@ function Progress() {
 
         {/* Progress Gallery Section */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl shadow-sm p-6 space-y-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 space-y-6">
             <div className="flex justify-between items-center">
               <div className="flex items-center space-x-4">
-                <h2 className="text-xl font-semibold text-gray-900">Progress Timeline</h2>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Progress Timeline</h2>
                 {selectedDate && (
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
                     {format(selectedDate, 'MMMM d, yyyy')}
                   </span>
                 )}
@@ -438,7 +439,7 @@ function Progress() {
                     <>
                       <button
                         onClick={() => setSelectedEntries([])}
-                        className="text-sm text-gray-600 hover:text-gray-900"
+                        className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                       >
                         Clear Selection ({selectedEntries.length})
                       </button>
@@ -459,11 +460,11 @@ function Progress() {
             {loading ? (
               <div className="text-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-mint-500 mx-auto"></div>
-                <p className="mt-4 text-gray-600">Loading progress...</p>
+                <p className="mt-4 text-gray-600 dark:text-gray-400">Loading progress...</p>
               </div>
             ) : filteredEntries.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-gray-600">
+                <p className="text-gray-600 dark:text-gray-400">
                   {selectedDate 
                     ? `No progress entries for ${format(selectedDate, 'MMMM d, yyyy')}`
                     : calendarView === 'month'
@@ -474,13 +475,13 @@ function Progress() {
             ) : isComparing ? (
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-medium text-gray-900">Photo Comparison</h3>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">Photo Comparison</h3>
                   <button
                     onClick={() => {
                       setIsComparing(false);
                       setSelectedEntries([]);
                     }}
-                    className="text-sm text-gray-600 hover:text-gray-900"
+                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                   >
                     Exit Comparison
                   </button>
@@ -497,12 +498,12 @@ function Progress() {
                             className="w-full h-full object-cover rounded-lg"
                           />
                         </div>
-                        <div className="flex items-center text-sm text-gray-600">
+                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                           <CalendarIcon className="w-4 h-4 mr-2" />
                           <time>{format(new Date(entry.created_at), 'PPP')}</time>
                         </div>
                         {entry.notes && (
-                          <p className="text-sm text-gray-700">{entry.notes}</p>
+                          <p className="text-sm text-gray-700 dark:text-gray-300">{entry.notes}</p>
                         )}
                       </div>
                     ))}
@@ -516,7 +517,7 @@ function Progress() {
                     className={`relative group rounded-xl overflow-hidden border-2 transition-all ${
                       selectedEntries.includes(entry.id)
                         ? 'border-mint-500 shadow-lg'
-                        : 'border-transparent hover:border-gray-200'
+                        : 'border-transparent hover:border-gray-200 dark:hover:border-gray-600'
                     }`}
                   >
                     <div
@@ -531,19 +532,19 @@ function Progress() {
                         />
                       </div>
                       <div className="p-4 space-y-2">
-                        <div className="flex items-center text-gray-600">
+                        <div className="flex items-center text-gray-600 dark:text-gray-400">
                           <CalendarIcon className="w-4 h-4 mr-2" />
                           <time>{format(new Date(entry.created_at), 'PPP')}</time>
                         </div>
                         {entry.notes && (
-                          <p className="text-sm text-gray-700">{entry.notes}</p>
+                          <p className="text-sm text-gray-700 dark:text-gray-300">{entry.notes}</p>
                         )}
                       </div>
                     </div>
                     
                     <button
                       onClick={() => handleDeleteProgress(entry.id)}
-                      className="absolute top-2 right-2 p-2 bg-white/90 rounded-full opacity-0 group-hover:opacity-100 hover:bg-white transition-all"
+                      className="absolute top-2 right-2 p-2 bg-white/90 dark:bg-gray-800/90 rounded-full opacity-0 group-hover:opacity-100 hover:bg-white dark:hover:bg-gray-800 transition-all"
                     >
                       <Trash2 className="w-5 h-5 text-red-500" />
                     </button>

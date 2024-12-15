@@ -36,8 +36,8 @@ function Resources() {
   return (
     <div className="space-y-8">
       <header className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">Learning Resources</h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Learning Resources</h1>
+        <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
           Expand your knowledge with our comprehensive collection of face yoga resources.
         </p>
       </header>

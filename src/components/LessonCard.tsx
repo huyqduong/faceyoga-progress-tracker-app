@@ -15,16 +15,28 @@ export default function LessonCard({ lesson, onStartLesson, isLocked, courseTitl
   const { title, duration, target_area, difficulty, description, image_url } = lesson;
 
   return (
-    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <CardMedia
-        component="img"
-        height="140"
-        image={image_url}
-        alt={title}
-        sx={isLocked ? { filter: 'grayscale(100%)' } : undefined}
-      />
-      <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-        <Typography gutterBottom variant="h6" component="div">
+    <div 
+      className="group relative bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer"
+    >
+      {/* Thumbnail */}
+      <div className="aspect-video relative">
+        <CardMedia
+          component="img"
+          height="140"
+          image={image_url}
+          alt={title}
+          sx={isLocked ? { filter: 'grayscale(100%)' } : undefined}
+          className="w-full h-full object-cover"
+        />
+        {/* Duration Badge */}
+        <div className="absolute bottom-2 right-2 px-2 py-1 bg-black/60 backdrop-blur-sm rounded text-xs text-white">
+          {duration} min
+        </div>
+      </div>
+
+      {/* Content */}
+      <CardContent className="p-4">
+        <Typography gutterBottom variant="h6" component="div" className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
           {title}
           {isLocked && (
             <Chip
@@ -41,28 +53,31 @@ export default function LessonCard({ lesson, onStartLesson, isLocked, courseTitl
           )}
         </Typography>
         
-        <Stack direction="row" spacing={1} mb={2}>
+        <Stack direction="row" spacing={1} mb={2} className="flex items-center justify-between">
           <Chip
             icon={<AccessTimeIcon />}
             label={`${duration} min`}
             size="small"
             variant="outlined"
+            className="text-sm text-gray-500 dark:text-gray-400"
           />
           <Chip
             icon={<TargetIcon />}
             label={target_area}
             size="small"
             variant="outlined"
+            className="text-sm text-gray-500 dark:text-gray-400"
           />
           <Chip
             icon={<FitnessCenterIcon />}
             label={difficulty}
             size="small"
             variant="outlined"
+            className="text-sm text-gray-500 dark:text-gray-400"
           />
         </Stack>
 
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }} className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-3">
           {description}
         </Typography>
 
@@ -83,10 +98,11 @@ export default function LessonCard({ lesson, onStartLesson, isLocked, courseTitl
           onClick={() => onStartLesson(lesson)}
           disabled={isLocked}
           sx={{ mt: 'auto' }}
+          className="w-full"
         >
           {isLocked ? 'Unlock Lesson' : 'Start Lesson'}
         </Button>
       </CardContent>
-    </Card>
+    </div>
   );
 }

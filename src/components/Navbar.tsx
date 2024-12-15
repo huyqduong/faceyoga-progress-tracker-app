@@ -17,6 +17,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useSettingsStore } from '../store/settingsStore';
 import { signOut } from '../lib/auth';
 import toast from 'react-hot-toast';
+import { ThemeToggle } from './ThemeToggle';
 
 function Navbar() {
   const location = useLocation();
@@ -53,9 +54,9 @@ function Navbar() {
   const isAdmin = profile?.role === 'admin';
 
   return (
-    <nav className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-mint-100 sticky top-0 z-50">
-      <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center h-16">
+    <nav className="bg-white dark:bg-gray-800 shadow-md">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
           {/* Logo and Business Name */}
           <Link to="/" className="flex-shrink-0 flex items-center space-x-3">
             {settings?.logo_url ? (
@@ -65,32 +66,33 @@ function Navbar() {
                 className="h-10 w-10 object-contain"
               />
             ) : (
-              <div className="h-10 w-10 flex items-center justify-center bg-mint-50 rounded-lg">
-                <Sparkles className="w-6 h-6 text-mint-500" />
+              <div className="h-10 w-10 flex items-center justify-center bg-mint-50 dark:bg-mint-900/20 rounded-lg">
+                <Sparkles className="w-6 h-6 text-mint-500 dark:text-mint-400" />
               </div>
             )}
             <div className="hidden sm:block">
-              <h1 className="text-xl font-bold text-gray-900 leading-tight">
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">
                 {settings?.business_name || 'Face Yoga'}
               </h1>
-              <p className="text-sm text-gray-500 leading-tight">
+              <p className="text-sm text-gray-500 dark:text-gray-400 leading-tight">
                 {settings?.tagline || 'Transform Your Face Naturally'}
               </p>
             </div>
             {/* Mobile Business Name */}
-            <h1 className="sm:hidden text-lg font-bold text-gray-900">
+            <h1 className="sm:hidden text-lg font-bold text-gray-900 dark:text-white">
               {settings?.business_name?.split(' ').map(word => word[0]).join('') || 'FY'}
             </h1>
           </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-4">
+            <ThemeToggle />
             <Link
               to="/"
               className={`px-3 py-2 rounded-lg text-sm font-medium ${
                 location.pathname === '/' 
-                  ? 'text-mint-600 bg-mint-50' 
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  ? 'text-mint-600 dark:text-mint-400 bg-mint-50 dark:bg-mint-900/20' 
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
               <span className="flex items-center space-x-2">
@@ -103,8 +105,8 @@ function Navbar() {
               to="/my-courses"
               className={`px-3 py-2 rounded-lg text-sm font-medium ${
                 location.pathname === '/my-courses' 
-                  ? 'text-mint-600 bg-mint-50' 
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  ? 'text-mint-600 dark:text-mint-400 bg-mint-50 dark:bg-mint-900/20' 
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
               <span className="flex items-center space-x-2">
@@ -117,8 +119,8 @@ function Navbar() {
               to="/dashboard"
               className={`px-3 py-2 rounded-lg text-sm font-medium ${
                 location.pathname === '/dashboard'
-                  ? 'text-mint-600 bg-mint-50'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  ? 'text-mint-600 dark:text-mint-400 bg-mint-50 dark:bg-mint-900/20'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
               <span className="flex items-center space-x-2">
@@ -132,8 +134,8 @@ function Navbar() {
                 to="/admin"
                 className={`px-3 py-2 rounded-lg text-sm font-medium ${
                   location.pathname === '/admin'
-                    ? 'text-mint-600 bg-mint-50'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    ? 'text-mint-600 dark:text-mint-400 bg-mint-50 dark:bg-mint-900/20'
+                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
                 }`}
               >
                 <span className="flex items-center space-x-2">
@@ -147,7 +149,7 @@ function Navbar() {
             <div className="relative ml-2">
               <button
                 onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-mint-50"
+                className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-mint-50 dark:hover:bg-gray-700"
               >
                 {profile?.avatar_url ? (
                   <img
@@ -156,18 +158,18 @@ function Navbar() {
                     className="w-8 h-8 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-mint-100 flex items-center justify-center">
-                    <UserCircle className="w-6 h-6 text-mint-600" />
+                  <div className="w-8 h-8 rounded-full bg-mint-100 dark:bg-mint-900/20 flex items-center justify-center">
+                    <UserCircle className="w-6 h-6 text-mint-600 dark:text-mint-400" />
                   </div>
                 )}
-                <span className="text-gray-700 hidden xl:inline">{profile?.full_name || 'Profile'}</span>
+                <span className="text-gray-700 dark:text-gray-300 hidden xl:inline">{profile?.full_name || 'Profile'}</span>
               </button>
 
               {isProfileMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-100">
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50 border border-gray-100 dark:border-gray-700">
                   <Link
                     to="/profile"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-mint-50"
+                    className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-mint-50 dark:hover:bg-gray-700"
                     onClick={closeAllMenus}
                   >
                     <UserCircle className="w-4 h-4 inline-block mr-2" />
@@ -176,7 +178,7 @@ function Navbar() {
                   <button
                     onClick={handleSignOut}
                     disabled={isSigningOut}
-                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50"
                   >
                     <LogOut className="w-4 h-4 inline-block mr-2" />
                     {isSigningOut ? 'Signing out...' : 'Sign Out'}
@@ -203,74 +205,110 @@ function Navbar() {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden border-t border-mint-100 py-2">
-            <div className="space-y-1">
-              {/* Mobile Profile Info */}
-              <div className="px-4 py-3 border-b border-mint-100">
-                <div className="flex items-center space-x-3">
-                  {profile?.avatar_url ? (
-                    <img
-                      src={profile.avatar_url}
-                      alt={profile.full_name || 'Profile'}
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-mint-100 flex items-center justify-center">
-                      <UserCircle className="w-8 h-8 text-mint-600" />
-                    </div>
-                  )}
-                  <div>
-                    <div className="font-medium text-gray-900">
-                      {profile?.full_name || 'User'}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {profile?.email}
-                    </div>
-                  </div>
-                </div>
+          <div className="md:hidden fixed inset-0 z-50">
+            {/* Backdrop */}
+            <div 
+              className="fixed inset-0 bg-black/20 backdrop-blur-sm"
+              onClick={() => setIsMenuOpen(false)}
+            />
+            
+            {/* Menu panel */}
+            <div className="fixed inset-y-0 right-0 w-full max-w-sm bg-white dark:bg-gray-800 shadow-xl p-6">
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Menu</h2>
+                <button
+                  onClick={() => setIsMenuOpen(false)}
+                  className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <X className="w-6 h-6" />
+                </button>
               </div>
 
-              <div className="border-t border-mint-100 mt-2 pt-2 px-2">
+              <nav className="space-y-2">
                 <Link
                   to="/"
-                  className="block px-4 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-mint-50"
+                  className={`block px-4 py-2 rounded-lg text-sm font-medium ${
+                    location.pathname === '/'
+                      ? 'text-mint-600 dark:text-mint-400 bg-mint-50 dark:bg-mint-900/20'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
                   onClick={closeAllMenus}
                 >
-                  Home
+                  <span className="flex items-center space-x-2">
+                    <Home className="w-5 h-5" />
+                    <span>Home</span>
+                  </span>
                 </Link>
 
                 <Link
                   to="/my-courses"
-                  className="block px-4 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-mint-50"
+                  className={`block px-4 py-2 rounded-lg text-sm font-medium ${
+                    location.pathname === '/my-courses'
+                      ? 'text-mint-600 dark:text-mint-400 bg-mint-50 dark:bg-mint-900/20'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
                   onClick={closeAllMenus}
                 >
-                  My Courses
+                  <span className="flex items-center space-x-2">
+                    <Book className="w-5 h-5" />
+                    <span>My Courses</span>
+                  </span>
                 </Link>
 
                 <Link
                   to="/dashboard"
-                  className="block px-4 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-mint-50"
+                  className={`block px-4 py-2 rounded-lg text-sm font-medium ${
+                    location.pathname === '/dashboard'
+                      ? 'text-mint-600 dark:text-mint-400 bg-mint-50 dark:bg-mint-900/20'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
                   onClick={closeAllMenus}
                 >
-                  Dashboard
+                  <span className="flex items-center space-x-2">
+                    <Layout className="w-5 h-5" />
+                    <span>Dashboard</span>
+                  </span>
                 </Link>
 
                 {isAdmin && (
                   <Link
                     to="/admin"
-                    className="block px-4 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-mint-50"
+                    className={`block px-4 py-2 rounded-lg text-sm font-medium ${
+                      location.pathname === '/admin'
+                        ? 'text-mint-600 dark:text-mint-400 bg-mint-50 dark:bg-mint-900/20'
+                        : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
                     onClick={closeAllMenus}
                   >
-                    Admin Panel
+                    <span className="flex items-center space-x-2">
+                      <Settings className="w-5 h-5" />
+                      <span>Admin Panel</span>
+                    </span>
                   </Link>
                 )}
+              </nav>
+
+              <div className="mt-8 border-t border-gray-100 dark:border-gray-700 pt-6">
+                <Link
+                  to="/profile"
+                  className="block px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+                  onClick={closeAllMenus}
+                >
+                  <span className="flex items-center space-x-2">
+                    <UserCircle className="w-5 h-5" />
+                    <span>Profile Settings</span>
+                  </span>
+                </Link>
+
                 <button
                   onClick={handleSignOut}
                   disabled={isSigningOut}
-                  className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+                  className="w-full mt-2 px-4 py-2 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 text-left"
                 >
-                  <LogOut className="w-5 h-5" />
-                  <span>{isSigningOut ? 'Signing out...' : 'Sign Out'}</span>
+                  <span className="flex items-center space-x-2">
+                    <LogOut className="w-5 h-5" />
+                    <span>{isSigningOut ? 'Signing out...' : 'Sign Out'}</span>
+                  </span>
                 </button>
               </div>
             </div>

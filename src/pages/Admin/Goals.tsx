@@ -132,69 +132,108 @@ export default function AdminGoals() {
 
   if (loading) {
     return (
-      <div className="p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mint-500 mx-auto"></div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-mint-500 dark:border-mint-400 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading goals...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="sm:flex sm:items-center sm:justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Goal Management</h1>
-          <p className="mt-2 text-lg text-gray-600">
-            Manage the goals that users can select during onboarding.
-          </p>
-        </div>
+    <div className="container mx-auto px-4 py-8">
+      <header className="flex justify-between items-center mb-8">
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Goal Management</h1>
         <button
           onClick={handleAdd}
-          className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent 
-            rounded-lg shadow-sm text-white bg-mint-500 hover:bg-mint-600 focus:outline-none 
-            focus:ring-2 focus:ring-offset-2 focus:ring-mint-500"
+          className="px-4 py-2 bg-mint-500 hover:bg-mint-600 dark:bg-mint-600 dark:hover:bg-mint-700 text-white rounded-lg transition-colors"
+          disabled={isAdding}
         >
-          <Plus className="h-5 w-5 mr-2" />
+          <Plus className="w-5 h-5 inline-block mr-2" />
           Add New Goal
         </button>
+      </header>
+
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+        <div className="p-6">
+          {goals.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-600 dark:text-gray-400">No goals found.</p>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Click the "New Goal" button to create one.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {goals.map((goal) => (
+                <div
+                  key={goal.id}
+                  className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+                >
+                  <div>
+                    <h3 className="font-medium text-gray-900 dark:text-white">{goal.label}</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{goal.description}</p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => handleEdit(goal)}
+                      className="p-2 text-mint-600 dark:text-mint-400 hover:bg-mint-50 dark:hover:bg-mint-900/50 rounded-lg"
+                    >
+                      <Edit2 className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(goal.id)}
+                      className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-lg"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {editingGoal && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-lg">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                 {isAdding ? 'Add New Goal' : 'Edit Goal'}
-              </h2>
+              </h3>
               <button
                 onClick={() => setEditingGoal(null)}
-                className="p-2 text-gray-400 hover:text-gray-500 rounded-lg"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
               >
-                <X className="h-6 w-6" />
+                <X className="w-6 h-6" />
               </button>
             </div>
 
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Label
                 </label>
                 <input
                   type="text"
                   value={editingGoal.label}
                   onChange={(e) => setEditingGoal({ ...editingGoal, label: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-mint-500 focus:border-transparent"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-mint-500 dark:focus:ring-mint-400"
                   placeholder="e.g., Tone Jawline"
+                  required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Icon
                 </label>
                 <select
                   value={editingGoal.icon}
                   onChange={(e) => setEditingGoal({ ...editingGoal, icon: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-mint-500 focus:border-transparent"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-mint-500 dark:focus:ring-mint-400"
                 >
                   {AVAILABLE_ICONS.map((icon) => (
                     <option key={icon.value} value={icon.value}>
@@ -205,28 +244,29 @@ export default function AdminGoals() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Description
                 </label>
                 <textarea
                   value={editingGoal.description}
                   onChange={(e) => setEditingGoal({ ...editingGoal, description: e.target.value })}
-                  rows={3}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-mint-500 focus:border-transparent"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-mint-500 dark:focus:ring-mint-400"
                   placeholder="e.g., Strengthen and define your jawline muscles"
+                  rows={4}
+                  required
                 />
               </div>
 
               <div className="flex justify-end space-x-4">
                 <button
                   onClick={() => setEditingGoal(null)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSave}
-                  className="px-4 py-2 bg-mint-500 text-white rounded-lg hover:bg-mint-600"
+                  className="px-4 py-2 bg-mint-500 hover:bg-mint-600 dark:bg-mint-600 dark:hover:bg-mint-700 text-white rounded-lg transition-colors"
                 >
                   Save Goal
                 </button>
@@ -235,56 +275,6 @@ export default function AdminGoals() {
           </div>
         </div>
       )}
-
-      <div className="bg-white shadow-sm rounded-xl overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Icon
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Label
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Description
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {goals.map((goal) => (
-              <tr key={goal.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-mint-600">{goal.icon}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{goal.label}</div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="text-sm text-gray-500">{goal.description}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    onClick={() => handleEdit(goal)}
-                    className="text-mint-600 hover:text-mint-700 mr-4"
-                  >
-                    <Edit2 className="h-5 w-5" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(goal.id)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 className="h-5 w-5" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 }

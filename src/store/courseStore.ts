@@ -46,34 +46,24 @@ export const useCourseStore = create<CourseState>((set, get) => ({
   clearError: () => set({ error: null }),
 
   fetchCourses: async () => {
+    set({ loading: true, error: null });
     try {
       const courses = await courseApi.fetchCourses();
-      set(state => ({ 
-        courses,
-        loading: state.loading // Preserve loading state
-      }));
+      set({ courses, loading: false });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch courses';
-      set(state => ({ 
-        error: message,
-        loading: state.loading // Preserve loading state
-      }));
+      set({ error: message, loading: false });
     }
   },
 
   fetchAllCourses: async () => {
+    set({ loading: true, error: null });
     try {
       const courses = await courseApi.fetchAllCourses();
-      set(state => ({ 
-        courses,
-        loading: state.loading
-      }));
+      set({ courses, loading: false });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch courses';
-      set(state => ({ 
-        error: message,
-        loading: state.loading
-      }));
+      set({ error: message, loading: false });
     }
   },
 

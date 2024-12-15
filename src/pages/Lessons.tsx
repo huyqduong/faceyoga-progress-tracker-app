@@ -125,14 +125,14 @@ function Lessons() {
     <div className="container mx-auto px-4 py-6 space-y-6">
       {/* Header */}
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900">Face Yoga Lessons</h1>
-        <p className="mt-2 text-gray-600">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Face Yoga Lessons</h1>
+        <p className="mt-2 text-gray-600 dark:text-gray-300">
           Explore our collection of face yoga lessons to enhance your practice
         </p>
       </div>
 
       {/* Filters and Search */}
-      <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-start justify-between bg-white p-4 rounded-xl shadow-sm">
+      <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-start justify-between bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm">
         <div className="flex-1 max-w-md">
           <LessonSearch
             value={searchQuery}
@@ -151,14 +151,14 @@ function Lessons() {
       {/* Loading State */}
       {loading && (
         <div className="flex justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mint-500"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mint-500 dark:border-mint-400"></div>
         </div>
       )}
 
       {/* Error State */}
       {error && (
         <div className="text-center py-12">
-          <div className="inline-flex items-center px-4 py-2 rounded-md text-sm text-red-700 bg-red-100">
+          <div className="inline-flex items-center px-4 py-2 rounded-md text-sm text-red-700 dark:text-red-200 bg-red-100 dark:bg-red-900/20">
             <span>Failed to load lessons. Please try again.</span>
           </div>
         </div>
@@ -199,7 +199,7 @@ function Lessons() {
               ref={loadMoreRef}
               className="flex justify-center py-4"
             >
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mint-500"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mint-500 dark:border-mint-400"></div>
             </div>
           )}
         </>

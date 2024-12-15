@@ -88,21 +88,19 @@ export const signUp = async (email: string, password: string) => {
 
 export const signOut = async () => {
   try {
-    // Clear all local state first
-    useAuthStore.getState().setUser(null);
-    useProfileStore.getState().clearProfile();
-    
-    // Sign out from Supabase and clear session
+    // First sign out from Supabase
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
 
+    // Then clear all local state
+    useAuthStore.getState().setUser(null);
+    useProfileStore.getState().clearProfile();
+
     // Clear any persisted session data
-    localStorage.removeItem('sb-access-token');
-    localStorage.removeItem('sb-refresh-token');
-    localStorage.removeItem('supabase.auth.token');
+    localStorage.clear(); // Clear all localStorage to ensure no remnants
     
-    // Force reload to clear any remaining state
-    window.location.href = '/login';
+    // Force a full page reload to clear any remaining state
+    window.location.replace('/login');
     
     return true;
   } catch (error) {

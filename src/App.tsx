@@ -31,6 +31,7 @@ import LessonManager from './pages/Admin/LessonManager';
 import SettingsManager from './pages/Admin/SettingsManager';
 import UserManager from './pages/Admin/UserManager';
 import AdminGoals from './pages/Admin/Goals';
+import toast from 'react-hot-toast';
 
 function App() {
   const { user, profile, loading } = useAuth();
@@ -68,13 +69,11 @@ function App() {
     };
   }, []);
 
-  if (loading) {
-    return <LoadingScreen />;
-  }
-
-  return (
+  return loading ? (
+    <LoadingScreen />
+  ) : (
     <Router>
-      <div className="min-h-screen bg-mint-50 pattern-bg flex flex-col">
+      <div className="min-h-screen bg-mint-50 dark:bg-gray-900 pattern-bg flex flex-col">
         {user && !loading && !profile?.onboarding_completed ? (
           <Routes>
             <Route path="/onboarding" element={<Onboarding />} />

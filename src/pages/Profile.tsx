@@ -82,12 +82,12 @@ function Profile() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">
             <BackButton />
-            <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Profile</h1>
           </div>
         </div>
 
@@ -95,10 +95,10 @@ function Profile() {
           {/* Left Column - Avatar and Quick Stats */}
           <div className="space-y-6">
             {/* Avatar Section */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
               <div className="flex flex-col items-center">
                 <div className="relative group">
-                  <div className="w-40 h-40 rounded-full overflow-hidden bg-mint-50 ring-4 ring-mint-100">
+                  <div className="w-40 h-40 rounded-full overflow-hidden bg-mint-50 dark:bg-mint-900/20 ring-4 ring-mint-100 dark:ring-mint-900/40">
                     {profile?.avatar_url ? (
                       <img
                         src={profile.avatar_url}
@@ -106,13 +106,13 @@ function Profile() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <UserCircle className="w-full h-full text-mint-300" />
+                      <UserCircle className="w-full h-full text-mint-300 dark:text-mint-600" />
                     )}
                     <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
                       <button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={isUploading}
-                        className="opacity-0 group-hover:opacity-100 p-2 bg-white text-gray-700 rounded-full hover:bg-mint-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="opacity-0 group-hover:opacity-100 p-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-full hover:bg-mint-50 dark:hover:bg-mint-900/40 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Upload profile picture"
                       >
                         <Camera className="w-6 h-6" />
@@ -128,32 +128,32 @@ function Profile() {
                   />
                 </div>
                 {isUploading && (
-                  <div className="mt-4 flex items-center space-x-2 text-mint-600">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-mint-600"></div>
+                  <div className="mt-4 flex items-center space-x-2 text-mint-600 dark:text-mint-400">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-mint-600 dark:border-mint-400"></div>
                     <p className="text-sm">Uploading image...</p>
                   </div>
                 )}
                 <div className="mt-4 text-center">
-                  <h2 className="text-xl font-semibold text-gray-900">{formData.full_name || 'Your Name'}</h2>
-                  <p className="text-gray-500">@{formData.username || 'username'}</p>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{formData.full_name || 'Your Name'}</h2>
+                  <p className="text-gray-500 dark:text-gray-400">@{formData.username || 'username'}</p>
                 </div>
               </div>
             </div>
 
             {/* Quick Stats */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Activity Stats</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Activity Stats</h3>
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Courses Enrolled</span>
+                  <span className="text-gray-600 dark:text-gray-400">Courses Enrolled</span>
                   <span className="font-medium">3</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Exercises Completed</span>
+                  <span className="text-gray-600 dark:text-gray-400">Exercises Completed</span>
                   <span className="font-medium">24</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Days Practiced</span>
+                  <span className="text-gray-600 dark:text-gray-400">Days Practiced</span>
                   <span className="font-medium">15</span>
                 </div>
               </div>
@@ -161,39 +161,39 @@ function Profile() {
           </div>
 
           {/* Right Column - Profile Form */}
-          <div className="bg-white rounded-xl shadow-sm p-8">
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">Profile Information</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Profile Information</h3>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                     Username
                   </label>
                   <div className="relative">
-                    <User className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <User className="w-5 h-5 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       name="username"
                       value={formData.username}
                       onChange={handleInputChange}
-                      className="pl-10 w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-mint-500 focus:border-transparent transition-all duration-200"
+                      className="pl-10 w-full p-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-mint-500 dark:focus:ring-mint-400 focus:border-transparent transition-all duration-200"
                       placeholder="Enter username"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                     Full Name
                   </label>
                   <div className="relative">
-                    <User className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <User className="w-5 h-5 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       name="full_name"
                       value={formData.full_name}
                       onChange={handleInputChange}
-                      className="pl-10 w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-mint-500 focus:border-transparent transition-all duration-200"
+                      className="pl-10 w-full p-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-mint-500 dark:focus:ring-mint-400 focus:border-transparent transition-all duration-200"
                       placeholder="Enter full name"
                     />
                   </div>
@@ -201,50 +201,50 @@ function Profile() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                   Email
                 </label>
                 <div className="relative">
-                  <Mail className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Mail className="w-5 h-5 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="email"
                     name="email"
                     value={formData.email}
                     disabled
-                    className="pl-10 w-full p-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                    className="pl-10 w-full p-3 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                   Phone
                 </label>
                 <div className="relative">
-                  <Phone className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Phone className="w-5 h-5 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="tel"
                     name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    className="pl-10 w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-mint-500 focus:border-transparent transition-all duration-200"
+                    className="pl-10 w-full p-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-mint-500 dark:focus:ring-mint-400 focus:border-transparent transition-all duration-200"
                     placeholder="Enter phone number"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                   Address
                 </label>
                 <div className="relative">
-                  <MapPin className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <MapPin className="w-5 h-5 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     name="address"
                     value={formData.address}
                     onChange={handleInputChange}
-                    className="pl-10 w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-mint-500 focus:border-transparent transition-all duration-200"
+                    className="pl-10 w-full p-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-mint-500 dark:focus:ring-mint-400 focus:border-transparent transition-all duration-200"
                     placeholder="Enter address"
                   />
                 </div>
@@ -253,11 +253,11 @@ function Profile() {
               <button
                 type="submit"
                 disabled={isSaving || !hasChanges}
-                className="w-full flex items-center justify-center space-x-2 bg-mint-500 text-white p-3 rounded-lg hover:bg-mint-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center space-x-2 bg-mint-500 dark:bg-mint-400 text-white p-3 rounded-lg hover:bg-mint-600 dark:hover:bg-mint-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSaving ? (
                   <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white dark:border-gray-200"></div>
                     <span>Saving Changes...</span>
                   </>
                 ) : (

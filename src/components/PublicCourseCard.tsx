@@ -15,8 +15,8 @@ function PublicCourseCard({ course, hasAccess, price = 0, onClick }: PublicCours
   return (
     <div
       onClick={onClick}
-      className={`bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all cursor-pointer ${
-        hasAccess ? 'border-2 border-mint-500' : 'border border-gray-100'
+      className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all cursor-pointer ${
+        hasAccess ? 'border-2 border-mint-500 dark:border-mint-400' : 'border border-gray-100 dark:border-gray-700'
       }`}
     >
       <div className="relative">
@@ -31,12 +31,12 @@ function PublicCourseCard({ course, hasAccess, price = 0, onClick }: PublicCours
         )}
         <div className="absolute top-4 right-4 flex gap-2">
           <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-            isFree ? 'bg-mint-100 text-mint-700' : 'bg-yellow-100 text-yellow-700'
+            isFree ? 'bg-mint-100 dark:bg-mint-900/30 text-mint-700 dark:text-mint-300' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
           }`}>
             {isFree ? 'Free' : `$${price}`}
           </span>
           {hasAccess && (
-            <span className="px-3 py-1 rounded-full text-sm font-medium bg-mint-100 text-mint-700 flex items-center gap-1">
+            <span className="px-3 py-1 rounded-full text-sm font-medium bg-mint-100 dark:bg-mint-900/30 text-mint-700 dark:text-mint-300 flex items-center gap-1">
               <Check className="w-4 h-4" />
               Owned
             </span>
@@ -45,60 +45,45 @@ function PublicCourseCard({ course, hasAccess, price = 0, onClick }: PublicCours
       </div>
       <div className="p-4 sm:p-6 space-y-4">
         <div>
-          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 flex items-center gap-2">
+          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
             {course.title}
-            {!isFree && !hasAccess && <Lock className="w-4 h-4 text-gray-400" />}
+            {!isFree && !hasAccess && <Lock className="w-4 h-4 text-gray-400 dark:text-gray-500" />}
           </h3>
-          <p className="text-gray-600 line-clamp-2 text-sm sm:text-base">
-            {course.description}
-          </p>
+          <p className="text-gray-600 dark:text-gray-300 line-clamp-2">{course.description}</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
-          <div className="flex items-center">
-            <Clock className="w-4 h-4 mr-1" />
-            {course.duration}
+        <div className="flex flex-wrap gap-4">
+          <div className="flex items-center gap-1.5">
+            <Clock className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+            <span className="text-sm text-gray-600 dark:text-gray-400">{course.duration}</span>
           </div>
-          <div className="flex items-center">
-            <Target className="w-4 h-4 mr-1" />
-            {course.difficulty}
+          <div className="flex items-center gap-1.5">
+            <Target className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+            <span className="text-sm text-gray-600 dark:text-gray-400">{course.level}</span>
           </div>
           {course.rating && (
-            <div className="flex items-center text-yellow-500">
-              <Star className="w-4 h-4 mr-1 fill-current" />
-              {course.rating}
+            <div className="flex items-center gap-1.5">
+              <Star className="w-4 h-4 text-yellow-400" />
+              <span className="text-sm text-gray-600 dark:text-gray-400">{course.rating}</span>
             </div>
           )}
         </div>
 
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onClick();
-          }}
-          className={`w-full px-4 py-2 rounded-lg flex items-center justify-center space-x-2 ${
-            hasAccess
-              ? 'bg-mint-500 text-white hover:bg-mint-600'
-              : isFree
-              ? 'bg-mint-500 text-white hover:bg-mint-600'
-              : 'bg-yellow-500 text-white hover:bg-yellow-600'
-          } transition-colors`}
-        >
-          {hasAccess ? (
-            <>
-              <span>Continue Learning</span>
-            </>
-          ) : isFree ? (
-            <>
-              <span>Start Learning</span>
-            </>
-          ) : (
-            <>
-              <Lock className="w-4 h-4" />
-              <span>Purchase Course</span>
-            </>
-          )}
-        </button>
+        {/* Progress bar for owned courses */}
+        {hasAccess && course.progress !== undefined && (
+          <div className="mt-4">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Progress</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{course.progress}%</span>
+            </div>
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              <div
+                className="bg-mint-500 dark:bg-mint-400 h-2 rounded-full transition-all"
+                style={{ width: `${course.progress}%` }}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

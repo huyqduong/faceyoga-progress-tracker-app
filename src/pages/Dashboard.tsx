@@ -135,11 +135,11 @@ function Dashboard() {
     <div className="container mx-auto px-4 py-8 space-y-8">
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-500 text-sm">Total Practice Time</p>
-              <h3 className="text-2xl font-bold text-gray-900">
+              <p className="text-gray-500 dark:text-gray-400 text-sm">Total Practice Time</p>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
                 {formatPracticeTime(stats.totalPracticeTime)}
               </h3>
             </div>
@@ -147,31 +147,31 @@ function Dashboard() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-500 text-sm">Completed Lessons</p>
-              <h3 className="text-2xl font-bold text-gray-900">{stats.totalLessons}</h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">Completed Lessons</p>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalLessons}</h3>
             </div>
             <Play className="w-10 h-10 text-rose-500" />
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-500 text-sm">Completed Courses</p>
-              <h3 className="text-2xl font-bold text-gray-900">{stats.completedCourses}</h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">Completed Courses</p>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{stats.completedCourses}</h3>
             </div>
             <Trophy className="w-10 h-10 text-yellow-500" />
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-500 text-sm">Practice Streak</p>
-              <h3 className="text-2xl font-bold text-gray-900">{stats.streakDays} days</h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">Practice Streak</p>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{stats.streakDays} days</h3>
             </div>
             <Calendar className="w-10 h-10 text-purple-500" />
           </div>
@@ -180,12 +180,12 @@ function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Practice Chart */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Practice History</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Practice History</h3>
             <button
               onClick={() => navigate('/lesson-history')}
-              className="text-mint-600 hover:text-mint-700 text-sm font-medium flex items-center"
+              className="text-mint-600 hover:text-mint-700 dark:text-mint-400 dark:hover:text-mint-300 text-sm font-medium flex items-center"
             >
               View All
               <ChevronRight className="w-4 h-4 ml-1" />
@@ -194,10 +194,19 @@ function Dashboard() {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={practiceData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
+                <CartesianGrid strokeDasharray="3 3" className="dark:opacity-20" />
+                <XAxis dataKey="date" className="dark:text-gray-400" />
+                <YAxis className="dark:text-gray-400" />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'rgb(31, 41, 55)', 
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    color: 'white'
+                  }}
+                  itemStyle={{ color: 'white' }}
+                  labelStyle={{ color: 'white' }}
+                />
                 <Line
                   type="monotone"
                   dataKey="minutes"
@@ -211,12 +220,12 @@ function Dashboard() {
         </div>
 
         {/* Recent Progress */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Recent Progress</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Progress</h3>
             <button
               onClick={() => navigate('/progress')}
-              className="text-mint-600 hover:text-mint-700 text-sm font-medium flex items-center"
+              className="text-mint-600 hover:text-mint-700 dark:text-mint-400 dark:hover:text-mint-300 text-sm font-medium flex items-center"
             >
               View All
               <ChevronRight className="w-4 h-4 ml-1" />
@@ -233,20 +242,20 @@ function Dashboard() {
                   />
                 </div>
                 <div className="flex-grow">
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     {format(new Date(entry.created_at), 'MMM d, yyyy')}
                   </p>
-                  <p className="text-sm text-gray-700 line-clamp-2">{entry.notes}</p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">{entry.notes}</p>
                 </div>
               </div>
             ))}
             {progressImages.length === 0 && (
               <div className="text-center py-8">
-                <Camera className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                <p className="text-gray-500">No progress photos yet</p>
+                <Camera className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-2" />
+                <p className="text-gray-500 dark:text-gray-400">No progress photos yet</p>
                 <button
                   onClick={() => navigate('/progress')}
-                  className="mt-2 text-mint-600 hover:text-mint-700 text-sm font-medium"
+                  className="mt-2 text-mint-600 hover:text-mint-700 dark:text-mint-400 dark:hover:text-mint-300 text-sm font-medium"
                 >
                   Add Your First Photo
                 </button>
@@ -257,12 +266,12 @@ function Dashboard() {
       </div>
 
       {/* Recent Lessons */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">Recent Lessons</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Lessons</h3>
           <button
-            onClick={() => navigate('/lesson-history')}
-            className="text-mint-600 hover:text-mint-700 text-sm font-medium flex items-center"
+            onClick={() => navigate('/lessons')}
+            className="text-mint-600 hover:text-mint-700 dark:text-mint-400 dark:hover:text-mint-300 text-sm font-medium flex items-center"
           >
             View All
             <ChevronRight className="w-4 h-4 ml-1" />
@@ -272,7 +281,7 @@ function Dashboard() {
           {recentLessons.map((entry) => (
             <div 
               key={entry.id} 
-              className="flex items-center space-x-4 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors"
+              className="flex items-center space-x-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded-lg transition-colors"
               onClick={() => {
                 if (!entry.lesson_id) return;
                 
@@ -296,11 +305,11 @@ function Dashboard() {
                 />
               </div>
               <div className="flex-grow">
-                <h4 className="font-medium text-gray-900">{entry.lesson?.title}</h4>
-                <p className="text-sm text-gray-500">
+                <h4 className="font-medium text-gray-900 dark:text-white">{entry.lesson?.title}</h4>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   {entry.course?.title ? `From ${entry.course.title}` : 'Free Lesson'}
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   {format(new Date(entry.completed_at), 'MMM d, yyyy')} •{' '}
                   {entry.practice_time} min
                 </p>
@@ -311,12 +320,12 @@ function Dashboard() {
       </div>
 
       {/* Latest Courses */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">Latest Courses</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Latest Courses</h3>
           <button
             onClick={() => navigate('/courses')}
-            className="text-mint-600 hover:text-mint-700 text-sm font-medium flex items-center"
+            className="text-mint-600 hover:text-mint-700 dark:text-mint-400 dark:hover:text-mint-300 text-sm font-medium flex items-center"
           >
             View All
             <ChevronRight className="w-4 h-4 ml-1" />
@@ -326,7 +335,7 @@ function Dashboard() {
           {courses.slice(0, 3).map((course) => (
             <div
               key={course.id}
-              className="group relative bg-gray-50 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+              className="group relative bg-gray-50 dark:bg-gray-800 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
             >
               <div className="aspect-w-16 aspect-h-9">
                 <img
@@ -340,11 +349,11 @@ function Dashboard() {
                 />
               </div>
               <div className="p-4">
-                <h4 className="font-medium text-gray-900 group-hover:text-mint-600 transition-colors">
+                <h4 className="font-medium text-gray-900 dark:text-white group-hover:text-mint-600 transition-colors">
                   {course.title}
                 </h4>
-                <p className="text-sm text-gray-500 line-clamp-2 mt-1">{course.description}</p>
-                <div className="flex items-center mt-2 text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mt-1">{course.description}</p>
+                <div className="flex items-center mt-2 text-sm text-gray-500 dark:text-gray-400">
                   <Clock className="w-4 h-4 mr-1" />
                   <span>{course.duration}</span>
                   <span className="mx-2">•</span>
@@ -362,9 +371,9 @@ function Dashboard() {
           ))}
           {courses.length === 0 && (
             <div className="col-span-full text-center py-8">
-              <Target className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-500">No courses available yet</p>
-              <p className="text-sm text-gray-400 mt-1">Check back soon for new courses!</p>
+              <Target className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-2" />
+              <p className="text-gray-500 dark:text-gray-400">No courses available yet</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Check back soon for new courses!</p>
             </div>
           )}
         </div>

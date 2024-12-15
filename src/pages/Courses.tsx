@@ -88,8 +88,10 @@ function Courses() {
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
       <header className="text-center">
-        <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-4">Face Yoga Courses</h1>
-        <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          Face Yoga Courses
+        </h1>
+        <p className="text-gray-600 dark:text-gray-300">
           Explore our comprehensive face yoga courses designed to help you achieve your facial fitness goals.
         </p>
       </header>
@@ -148,7 +150,7 @@ function Courses() {
             </button>
           </div>
         </div>
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-gray-600 dark:text-gray-300">
           {filteredCourses.length} courses found
         </div>
       </div>
@@ -167,8 +169,8 @@ function Courses() {
 
       {courses.length === 0 && !error && (
         <div className="text-center py-12">
-          <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">No courses available yet.</p>
+          <BookOpen className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-300">No courses available yet.</p>
         </div>
       )}
     </div>

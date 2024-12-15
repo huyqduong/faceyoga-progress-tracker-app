@@ -33,8 +33,8 @@ function LessonGrid({ lessons, onStartLesson, hasAccessToLesson }: LessonGridPro
     return (
       <div className="flex flex-col items-center justify-center py-12 px-4">
         <div className="text-center">
-          <h3 className="mt-2 text-lg font-medium text-gray-900">No lessons found</h3>
-          <p className="mt-1 text-sm text-gray-500">
+          <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-white">No lessons found</h3>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Try adjusting your search or filters to find what you're looking for.
           </p>
         </div>
@@ -47,7 +47,7 @@ function LessonGrid({ lessons, onStartLesson, hasAccessToLesson }: LessonGridPro
       {lessons.map((lesson) => (
         <div
           key={lesson.id}
-          className="group bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 hover:shadow-md transition-all duration-200 hover:border-mint-200"
+          className="group bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all duration-200 hover:border-mint-200 dark:hover:border-mint-700"
         >
           <div className="aspect-video w-full relative overflow-hidden">
             <img
@@ -67,11 +67,11 @@ function LessonGrid({ lessons, onStartLesson, hasAccessToLesson }: LessonGridPro
             )}
           </div>
           <div className="p-4">
-            <h3 className="font-semibold text-gray-900 line-clamp-1">{lesson.title}</h3>
-            <p className="text-sm text-gray-600 mt-1 line-clamp-2">{lesson.description}</p>
+            <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-1">{lesson.title}</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">{lesson.description}</p>
             
             <div className="mt-4 flex flex-col gap-3">
-              <div className="flex items-center justify-between text-sm text-gray-600">
+              <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
                 <div className="flex items-center gap-1.5">
                   <Clock className="w-4 h-4" />
                   <span>{lesson.duration} min</span>
@@ -88,10 +88,10 @@ function LessonGrid({ lessons, onStartLesson, hasAccessToLesson }: LessonGridPro
                 className={`
                   w-full inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium
                   ${loading[lesson.id] 
-                    ? 'bg-gray-100 text-gray-400 cursor-wait'
+                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-wait'
                     : lessonAccess[lesson.id]
                       ? 'bg-mint-500 text-white hover:bg-mint-600 shadow-sm hover:shadow'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }
                   transition-all duration-200
                 `}

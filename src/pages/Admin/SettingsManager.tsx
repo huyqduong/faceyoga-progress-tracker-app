@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, Save, Trash2 } from 'lucide-react';
+import { ArrowLeft, Upload, Save, Trash2, X, Sparkles } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useSettingsStore } from '../../store/settingsStore';
 import toast from 'react-hot-toast';
@@ -83,7 +83,7 @@ function SettingsManager() {
 
     try {
       setLoading(true);
-      
+
       // Upload new logo
       const fileExt = file.name.split('.').pop();
       const filePath = `logo.${fileExt}`;
@@ -197,235 +197,255 @@ function SettingsManager() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-8">
-      <div className="flex items-center space-x-4">
-        <button
-          onClick={() => navigate('/admin')}
-          className="p-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100"
-        >
-          <ArrowLeft className="w-6 h-6" />
-        </button>
-        <h1 className="text-3xl font-bold text-gray-900">Website Settings</h1>
-      </div>
+    <div className="container mx-auto px-4 py-8">
+      <header className="mb-8">
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Website Settings</h1>
+        <p className="mt-2 text-gray-600 dark:text-gray-400">
+          Customize your website's appearance and content
+        </p>
+      </header>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 space-y-8">
         {/* Logo Section */}
-        <div className="bg-white rounded-xl shadow-sm p-6 space-y-6">
-          <h2 className="text-xl font-semibold text-gray-900">Logo</h2>
-          <div className="flex items-center space-x-6">
-            <div className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-              {settings?.logo_url ? (
+        <section className="space-y-4">
+          <h2 className="text-lg font-medium text-gray-900 dark:text-white">Logo</h2>
+          <div className="flex items-center gap-6">
+            {settings?.logo_url ? (
+              <div className="relative">
                 <img
                   src={settings.logo_url}
-                  alt="Business Logo"
-                  className="w-full h-full object-contain"
+                  alt="Website Logo"
+                  className="h-20 w-20 object-contain rounded-lg bg-gray-50 dark:bg-gray-700 p-2"
                 />
-              ) : (
-                <Upload className="w-8 h-8 text-gray-400" />
-              )}
-            </div>
-            <div className="space-y-4">
+                <button
+                  onClick={handleRemoveLogo}
+                  className="absolute -top-2 -right-2 p-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full hover:bg-red-200 dark:hover:bg-red-900/50"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="h-20 w-20 flex items-center justify-center rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-400 dark:text-gray-500">
+                <Sparkles className="w-8 h-8" />
+              </div>
+            )}
+            <div>
               <input
-                ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                ref={fileInputRef}
                 onChange={handleLogoUpload}
+                accept="image/*"
                 className="hidden"
               />
               <button
-                type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="px-4 py-2 bg-mint-500 text-white rounded-lg hover:bg-mint-600 transition-colors"
+                className="px-4 py-2 bg-mint-500 hover:bg-mint-600 dark:bg-mint-600 dark:hover:bg-mint-700 text-white rounded-lg transition-colors"
               >
                 Upload Logo
               </button>
-              {settings?.logo_url && (
-                <button
-                  type="button"
-                  onClick={handleRemoveLogo}
-                  className="px-4 py-2 text-red-600 hover:text-red-700"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
-              )}
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Recommended size: 200x200 pixels
+              </p>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Business Information */}
-        <div className="bg-white rounded-xl shadow-sm p-6 space-y-6">
-          <h2 className="text-xl font-semibold text-gray-900">Business Information</h2>
-          
+        {/* Settings Form */}
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Business Name
               </label>
               <input
                 type="text"
                 value={formData.business_name}
-                onChange={(e) => setFormData({ ...formData, business_name: e.target.value })}
-                className="w-full p-2 border rounded-lg"
-                required
+                onChange={(e) =>
+                  setFormData({ ...formData, business_name: e.target.value })
+                }
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-mint-500 dark:focus:ring-mint-400"
+                placeholder="Enter business name"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Tagline
               </label>
               <input
                 type="text"
                 value={formData.tagline}
-                onChange={(e) => setFormData({ ...formData, tagline: e.target.value })}
-                className="w-full p-2 border rounded-lg"
-                required
+                onChange={(e) =>
+                  setFormData({ ...formData, tagline: e.target.value })
+                }
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-mint-500 dark:focus:ring-mint-400"
+                placeholder="Enter tagline"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Home Page Title
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Home Title
               </label>
               <input
                 type="text"
                 value={formData.home_title}
-                onChange={(e) => setFormData({ ...formData, home_title: e.target.value })}
-                className="w-full p-2 border rounded-lg"
-                required
+                onChange={(e) =>
+                  setFormData({ ...formData, home_title: e.target.value })
+                }
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-mint-500 dark:focus:ring-mint-400"
+                placeholder="Enter home title"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Contact Email
               </label>
               <input
                 type="email"
                 value={formData.contact_email}
-                onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
-                className="w-full p-2 border rounded-lg"
+                onChange={(e) =>
+                  setFormData({ ...formData, contact_email: e.target.value })
+                }
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-mint-500 dark:focus:ring-mint-400"
+                placeholder="Enter contact email"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Contact Phone
               </label>
               <input
                 type="tel"
                 value={formData.contact_phone}
-                onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
-                className="w-full p-2 border rounded-lg"
+                onChange={(e) =>
+                  setFormData({ ...formData, contact_phone: e.target.value })
+                }
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-mint-500 dark:focus:ring-mint-400"
+                placeholder="Enter contact phone"
               />
             </div>
           </div>
-        </div>
 
-        {/* Social Links */}
-        <div className="bg-white rounded-xl shadow-sm p-6 space-y-6">
-          <h2 className="text-xl font-semibold text-gray-900">Social Media Links</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Facebook
-              </label>
-              <input
-                type="url"
-                value={formData.social_links.facebook}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  social_links: { ...formData.social_links, facebook: e.target.value }
-                })}
-                className="w-full p-2 border rounded-lg"
-                placeholder="https://facebook.com/..."
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              About Text
+            </label>
+            <textarea
+              value={formData.about_text}
+              onChange={(e) =>
+                setFormData({ ...formData, about_text: e.target.value })
+              }
+              rows={4}
+              className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-mint-500 dark:focus:ring-mint-400"
+              placeholder="Enter about text"
+            />
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Instagram
-              </label>
-              <input
-                type="url"
-                value={formData.social_links.instagram}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  social_links: { ...formData.social_links, instagram: e.target.value }
-                })}
-                className="w-full p-2 border rounded-lg"
-                placeholder="https://instagram.com/..."
-              />
-            </div>
+          <div>
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+              Social Links
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                  Facebook
+                </label>
+                <input
+                  type="url"
+                  value={formData.social_links.facebook}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      social_links: {
+                        ...formData.social_links,
+                        facebook: e.target.value,
+                      },
+                    })
+                  }
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-mint-500 dark:focus:ring-mint-400"
+                  placeholder="Enter Facebook URL"
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Twitter
-              </label>
-              <input
-                type="url"
-                value={formData.social_links.twitter}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  social_links: { ...formData.social_links, twitter: e.target.value }
-                })}
-                className="w-full p-2 border rounded-lg"
-                placeholder="https://twitter.com/..."
-              />
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                  Instagram
+                </label>
+                <input
+                  type="url"
+                  value={formData.social_links.instagram}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      social_links: {
+                        ...formData.social_links,
+                        instagram: e.target.value,
+                      },
+                    })
+                  }
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-mint-500 dark:focus:ring-mint-400"
+                  placeholder="Enter Instagram URL"
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                YouTube
-              </label>
-              <input
-                type="url"
-                value={formData.social_links.youtube}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  social_links: { ...formData.social_links, youtube: e.target.value }
-                })}
-                className="w-full p-2 border rounded-lg"
-                placeholder="https://youtube.com/..."
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                  Twitter
+                </label>
+                <input
+                  type="url"
+                  value={formData.social_links.twitter}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      social_links: {
+                        ...formData.social_links,
+                        twitter: e.target.value,
+                      },
+                    })
+                  }
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-mint-500 dark:focus:ring-mint-400"
+                  placeholder="Enter Twitter URL"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                  YouTube
+                </label>
+                <input
+                  type="url"
+                  value={formData.social_links.youtube}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      social_links: {
+                        ...formData.social_links,
+                        youtube: e.target.value,
+                      },
+                    })
+                  }
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-mint-500 dark:focus:ring-mint-400"
+                  placeholder="Enter YouTube URL"
+                />
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* About Text */}
-        <div className="bg-white rounded-xl shadow-sm p-6 space-y-6">
-          <h2 className="text-xl font-semibold text-gray-900">About Text</h2>
-          <textarea
-            value={formData.about_text}
-            onChange={(e) => setFormData({ ...formData, about_text: e.target.value })}
-            className="w-full p-2 border rounded-lg"
-            rows={6}
-            placeholder="Enter your business description..."
-          />
-        </div>
-
-        {/* Save Button */}
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            disabled={saving}
-            className="px-6 py-2 bg-mint-500 text-white rounded-lg hover:bg-mint-600 transition-colors disabled:opacity-50 flex items-center space-x-2"
-          >
-            {saving ? (
-              <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                <span>Saving...</span>
-              </>
-            ) : (
-              <>
-                <Save className="w-5 h-5" />
-                <span>Save Settings</span>
-              </>
-            )}
-          </button>
-        </div>
-      </form>
+          <div className="flex justify-end space-x-4">
+            <button
+              type="submit"
+              disabled={saving}
+              className="px-6 py-2 bg-mint-500 hover:bg-mint-600 dark:bg-mint-600 dark:hover:bg-mint-700 text-white rounded-lg transition-colors disabled:opacity-50"
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

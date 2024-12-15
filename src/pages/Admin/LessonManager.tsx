@@ -184,38 +184,30 @@ function LessonManager() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Lesson Management</h1>
+    <div className="container mx-auto px-4 py-8 space-y-8 dark:bg-gray-900">
+      <header className="flex justify-between items-center">
+        <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Lesson Management</h2>
         <button
-          onClick={() => setIsEditing(!isEditing)}
-          className="flex items-center px-4 py-2 bg-mint-500 text-white rounded-lg hover:bg-mint-600 transition-colors"
+          onClick={() => setIsEditing(true)}
+          className="px-4 py-2 bg-mint-500 hover:bg-mint-600 dark:bg-mint-600 dark:hover:bg-mint-700 text-white rounded-lg transition-colors"
+          disabled={isEditing}
         >
-          {isEditing ? (
-            <>
-              <X className="w-5 h-5 mr-2" />
-              Cancel
-            </>
-          ) : (
-            <>
-              <Plus className="w-5 h-5 mr-2" />
-              New Lesson
-            </>
-          )}
+          <Plus className="w-5 h-5 inline-block mr-2" />
+          New Lesson
         </button>
-      </div>
+      </header>
 
       {error && (
-        <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-lg">
+        <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-lg dark:bg-red-900 dark:text-red-100">
           {error}
         </div>
       )}
 
       {isEditing ? (
-        <form onSubmit={handleSubmit} className="space-y-6 bg-white rounded-xl shadow-sm p-6">
+        <form onSubmit={handleSubmit} className="space-y-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Title
               </label>
               <input
@@ -224,13 +216,13 @@ function LessonManager() {
                 onChange={(e) =>
                   setFormData({ ...formData, title: e.target.value })
                 }
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full px-4 py-2 border rounded-lg dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
                 placeholder="Enter lesson title"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Duration (minutes)
               </label>
               <input
@@ -239,13 +231,13 @@ function LessonManager() {
                 onChange={(e) =>
                   setFormData({ ...formData, duration: e.target.value })
                 }
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full px-4 py-2 border rounded-lg dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
                 placeholder="e.g., 10"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Category
               </label>
               <select
@@ -253,7 +245,7 @@ function LessonManager() {
                 onChange={(e) =>
                   setFormData({ ...formData, category: e.target.value })
                 }
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full px-4 py-2 border rounded-lg dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
               >
                 <option value="">Select category</option>
                 <option value="eyes">Eyes & Forehead</option>
@@ -265,7 +257,7 @@ function LessonManager() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Target Area
               </label>
               <input
@@ -274,13 +266,13 @@ function LessonManager() {
                 onChange={(e) =>
                   setFormData({ ...formData, target_area: e.target.value })
                 }
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full px-4 py-2 border rounded-lg dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
                 placeholder="Enter target area"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Difficulty
               </label>
               <select
@@ -288,7 +280,7 @@ function LessonManager() {
                 onChange={(e) =>
                   setFormData({ ...formData, difficulty: e.target.value })
                 }
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full px-4 py-2 border rounded-lg dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
               >
                 <option value="">Select difficulty</option>
                 <option value="Beginner">Beginner</option>
@@ -299,7 +291,7 @@ function LessonManager() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Description
             </label>
             <textarea
@@ -308,13 +300,13 @@ function LessonManager() {
                 setFormData({ ...formData, description: e.target.value })
               }
               rows={4}
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-2 border rounded-lg dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
               placeholder="Enter lesson description"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Instructions
             </label>
             {formData.instructions.map((instruction, index) => (
@@ -325,13 +317,13 @@ function LessonManager() {
                   onChange={(e) =>
                     handleArrayInput('instructions', index, e.target.value)
                   }
-                  className="flex-1 px-4 py-2 border rounded-lg"
+                  className="flex-1 px-4 py-2 border rounded-lg dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
                   placeholder={`Step ${index + 1}`}
                 />
                 <button
                   type="button"
                   onClick={() => removeArrayItem('instructions', index)}
-                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                  className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900 rounded-lg"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -340,14 +332,14 @@ function LessonManager() {
             <button
               type="button"
               onClick={() => addArrayItem('instructions')}
-              className="text-mint-600 hover:text-mint-700"
+              className="text-mint-600 dark:text-mint-400 hover:text-mint-700 dark:hover:text-mint-500"
             >
               + Add Step
             </button>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Benefits
             </label>
             {formData.benefits.map((benefit, index) => (
@@ -358,13 +350,13 @@ function LessonManager() {
                   onChange={(e) =>
                     handleArrayInput('benefits', index, e.target.value)
                   }
-                  className="flex-1 px-4 py-2 border rounded-lg"
+                  className="flex-1 px-4 py-2 border rounded-lg dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
                   placeholder={`Benefit ${index + 1}`}
                 />
                 <button
                   type="button"
                   onClick={() => removeArrayItem('benefits', index)}
-                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                  className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900 rounded-lg"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -373,14 +365,14 @@ function LessonManager() {
             <button
               type="button"
               onClick={() => addArrayItem('benefits')}
-              className="text-mint-600 hover:text-mint-700"
+              className="text-mint-600 dark:text-mint-400 hover:text-mint-700 dark:hover:text-mint-500"
             >
               + Add Benefit
             </button>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Video URL (optional)
             </label>
             <input
@@ -389,13 +381,13 @@ function LessonManager() {
               onChange={(e) =>
                 setFormData({ ...formData, video_url: e.target.value })
               }
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-2 border rounded-lg dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
               placeholder="Enter video URL (YouTube or Vimeo)"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Image
             </label>
             <div className="flex items-center gap-4">
@@ -417,7 +409,7 @@ function LessonManager() {
                 <button
                   type="button"
                   onClick={() => imageInputRef.current?.click()}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                  className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
                 >
                   Choose Image
                 </button>
@@ -432,9 +424,9 @@ function LessonManager() {
               onChange={(e) =>
                 setFormData({ ...formData, is_premium: e.target.checked })
               }
-              className="rounded border-gray-300 text-mint-600 focus:ring-mint-500"
+              className="rounded border-gray-300 dark:border-gray-700 text-mint-600 dark:text-mint-400 focus:ring-mint-500 dark:focus:ring-mint-400"
             />
-            <label className="text-sm font-medium text-gray-700">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Premium Lesson
             </label>
           </div>
@@ -449,26 +441,26 @@ function LessonManager() {
                 setImagePreview('');
                 setError(null);
               }}
-              className="px-6 py-2 text-gray-600 hover:text-gray-900"
+              className="px-6 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-6 py-2 bg-mint-500 text-white rounded-lg hover:bg-mint-600 disabled:opacity-50"
+              className="px-6 py-2 bg-mint-500 dark:bg-mint-600 hover:bg-mint-600 dark:hover:bg-mint-700 text-white rounded-lg transition-colors"
             >
               {isSubmitting ? 'Saving...' : formData.id ? 'Update' : 'Create'}
             </button>
           </div>
         </form>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">All Lessons</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">All Lessons</h2>
               {lessons.length > 0 && (
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-gray-600 dark:text-gray-400">
                   {lessons.length} {lessons.length === 1 ? 'lesson' : 'lessons'}
                 </span>
               )}
@@ -476,13 +468,13 @@ function LessonManager() {
 
             {loading ? (
               <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-mint-500 mx-auto"></div>
-                <p className="mt-4 text-gray-600">Loading lessons...</p>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-mint-500 dark:border-mint-400 mx-auto"></div>
+                <p className="mt-4 text-gray-600 dark:text-gray-400">Loading lessons...</p>
               </div>
             ) : lessons.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-gray-600">No lessons found.</p>
-                <p className="mt-2 text-sm text-gray-500">
+                <p className="text-gray-600 dark:text-gray-400">No lessons found.</p>
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                   Click the "New Lesson" button to create one.
                 </p>
               </div>
@@ -491,7 +483,7 @@ function LessonManager() {
                 {lessons.map((lesson) => (
                   <div
                     key={lesson.id}
-                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                    className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg"
                   >
                     <div className="flex items-center space-x-4">
                       <img
@@ -500,17 +492,17 @@ function LessonManager() {
                         className="w-12 h-12 rounded-lg object-cover"
                       />
                       <div>
-                        <h3 className="font-medium text-gray-900">
+                        <h3 className="font-medium text-gray-900 dark:text-white">
                           {lesson.title}
                         </h3>
-                        <div className="flex items-center space-x-2 text-sm text-gray-500">
+                        <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
                           <span>{lesson.duration} min</span>
                           <span>•</span>
                           <span>{lesson.difficulty}</span>
                           {lesson.is_premium && (
                             <>
                               <span>•</span>
-                              <span className="text-amber-600">Premium</span>
+                              <span className="text-amber-600 dark:text-amber-400">Premium</span>
                             </>
                           )}
                         </div>
@@ -519,13 +511,13 @@ function LessonManager() {
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleEdit(lesson)}
-                        className="p-2 text-mint-600 hover:bg-mint-50 rounded-lg"
+                        className="p-2 text-mint-600 dark:text-mint-400 hover:bg-mint-50 dark:hover:bg-mint-900 rounded-lg"
                       >
                         <Edit2 className="w-5 h-5" />
                       </button>
                       <button
                         onClick={() => handleDelete(lesson.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                        className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900 rounded-lg"
                       >
                         <X className="w-5 h-5" />
                       </button>
