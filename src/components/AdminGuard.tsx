@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import LoadingScreen from './LoadingScreen';
 
@@ -9,6 +9,7 @@ interface AdminGuardProps {
 
 function AdminGuard({ children }: AdminGuardProps) {
   const { profile, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return <LoadingScreen />;
@@ -18,6 +19,7 @@ function AdminGuard({ children }: AdminGuardProps) {
     return <Navigate to="/" replace />;
   }
 
+  // Don't redirect to onboarding for admin routes
   return <>{children}</>;
 }
 

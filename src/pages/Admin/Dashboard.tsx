@@ -1,5 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { Users, Book, Target, Clock, TrendingUp, Award, DollarSign, Activity } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { 
+  Users, 
+  Book, 
+  Target, 
+  Clock, 
+  TrendingUp, 
+  Award, 
+  DollarSign, 
+  Activity,
+  Settings
+} from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import {
@@ -40,6 +51,8 @@ interface LessonHistory {
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
     totalLessons: 0,
@@ -53,115 +66,84 @@ export default function Dashboard() {
     dailyActiveUsers: [],
     lessonCompletions: [],
     categoryDistribution: [],
-    userStreaks: [],
+    userStreaks: []
   });
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchDashboardStats();
   }, []);
 
-  const calculateStreak = (completions: string[]): number => {
-    if (!completions.length) return 0;
-
-    const dates = completions
-      .map(date => new Date(date))
-      .sort((a, b) => b.getTime() - a.getTime());
-
-    let streak = 1;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const lastCompletion = dates[0];
-    lastCompletion.setHours(0, 0, 0, 0);
-
-    // If the last completion is not today or yesterday, streak is broken
-    if (today.getTime() - lastCompletion.getTime() > 2 * 24 * 60 * 60 * 1000) {
-      return 0;
-    }
-
-    for (let i = 0; i < dates.length - 1; i++) {
-      const curr = dates[i];
-      const next = dates[i + 1];
-      curr.setHours(0, 0, 0, 0);
-      next.setHours(0, 0, 0, 0);
-
-      const diffDays = (curr.getTime() - next.getTime()) / (24 * 60 * 60 * 1000);
-
-      if (diffDays === 1) {
-        streak++;
-      } else {
-        break;
-      }
-    }
-
-    return streak;
-  };
-
   const fetchDashboardStats = async () => {
     try {
       setLoading(true);
 
-      // Fetch base stats
-      const [
-        { count: totalUsers },
-        { count: totalLessons },
-        { count: totalCourses },
-        { count: activeUsers },
-        { count: premiumUsers },
-      ] = await Promise.all([
-        supabase.from('profiles').select('*', { count: 'exact', head: true }),
-        supabase.from('lessons').select('*', { count: 'exact', head: true }),
-        supabase.from('courses').select('*', { count: 'exact', head: true }),
-        supabase
-          .from('lesson_history')
-          .select('user_id', { count: 'exact', head: true })
-          .gte('completed_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
-        supabase
-          .from('course_access')
-          .select('user_id', { count: 'exact', head: true })
-          .gt('expires_at', new Date().toISOString())
-          .not('expires_at', 'is', null),
-      ]);
+      // Fetch total users
+      const { count: totalUsers } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact' });
 
-      // Fetch lesson history for charts and practice time
-      const { data: lessonHistory } = await supabase
+      // Fetch total lessons
+      const { count: totalLessons } = await supabase
+        .from('lessons')
+        .select('*', { count: 'exact' });
+
+      // Fetch total courses
+      const { count: totalCourses } = await supabase
+        .from('courses')
+        .select('*', { count: 'exact' });
+
+      // Fetch active users (users who completed lessons in the last 30 days)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const { count: activeUsers } = await supabase
         .from('lesson_history')
-        .select('completed_at, user_id, practice_time')
-        .gte('completed_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+        .select('user_id', { count: 'exact', head: true })
+        .gte('completed_at', thirtyDaysAgo.toISOString())
+        .not('completed_at', 'is', null);
+
+      // Fetch premium users
+      const { count: premiumUsers } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact' })
+        .eq('is_premium', true);
+
+      // Fetch daily active users for the last 30 days
+      const { data: dailyActiveUsers } = await supabase
+        .from('lesson_history')
+        .select('completed_at, user_id')
+        .gte('completed_at', thirtyDaysAgo.toISOString())
         .order('completed_at', { ascending: true });
 
-      // Process lesson history data
-      const dailyData = new Map<string, number>();
-      const userCompletions = new Map<string, string[]>();
-      let totalPracticeTime = 0;
-
-      lessonHistory?.forEach((record: LessonHistory) => {
-        const date = new Date(record.completed_at).toISOString().split('T')[0];
-        dailyData.set(date, (dailyData.get(date) || 0) + 1);
-
-        const userDates = userCompletions.get(record.user_id) || [];
-        userDates.push(record.completed_at);
-        userCompletions.set(record.user_id, userDates);
-
-        totalPracticeTime += record.practice_time || 0;
+      // Process daily active users data
+      const dailyUsersMap = new Map();
+      dailyActiveUsers?.forEach(entry => {
+        const date = new Date(entry.completed_at).toLocaleDateString();
+        dailyUsersMap.set(date, (dailyUsersMap.get(date) || new Set()).add(entry.user_id));
       });
 
-      // Calculate streaks
-      const streakCounts = new Map<number, number>();
-      userCompletions.forEach(completions => {
-        const streak = calculateStreak(completions);
-        streakCounts.set(streak, (streakCounts.get(streak) || 0) + 1);
-      });
+      const dailyActiveUsersData = Array.from(dailyUsersMap).map(([date, users]) => ({
+        date,
+        count: (users as Set<string>).size
+      }));
 
-      // Fetch category distribution
-      const { data: lessons } = await supabase
-        .from('lessons')
-        .select('target_area');
+      // Calculate average engagement (average lessons completed per user)
+      const totalCompletions = dailyActiveUsers?.length || 0;
+      const averageEngagement = totalUsers ? totalCompletions / totalUsers : 0;
 
-      const categoryCount = new Map<string, number>();
-      lessons?.forEach(lesson => {
-        categoryCount.set(lesson.target_area, (categoryCount.get(lesson.target_area) || 0) + 1);
-      });
+      // Calculate completion rate
+      const { count: totalAttempts } = await supabase
+        .from('lesson_history')
+        .select('*', { count: 'exact' });
+
+      const completionRate = totalAttempts ? (totalCompletions / totalAttempts) * 100 : 0;
+
+      // Fetch total practice time
+      const { data: practiceTimeData } = await supabase
+        .from('lesson_history')
+        .select('practice_time');
+
+      const totalPracticeTime = practiceTimeData?.reduce((sum, entry) => sum + (entry.practice_time || 0), 0) || 0;
 
       setStats({
         totalUsers: totalUsers || 0,
@@ -169,26 +151,14 @@ export default function Dashboard() {
         totalCourses: totalCourses || 0,
         activeUsers: activeUsers || 0,
         premiumUsers: premiumUsers || 0,
-        totalRevenue: 0,
-        averageEngagement: activeUsers ? (activeUsers / (totalUsers || 1)) * 100 : 0,
-        completionRate: 0,
-        totalPracticeTime: totalPracticeTime,
-        dailyActiveUsers: Array.from(dailyData.entries()).map(([date, count]) => ({
-          date,
-          count,
-        })),
-        lessonCompletions: Array.from(dailyData.entries()).map(([date, count]) => ({
-          date,
-          count,
-        })),
-        categoryDistribution: Array.from(categoryCount.entries()).map(([name, value]) => ({
-          name,
-          value,
-        })),
-        userStreaks: Array.from(streakCounts.entries()).map(([streak, count]) => ({
-          streak,
-          count,
-        })),
+        totalRevenue: 0, // Implement when payment system is ready
+        averageEngagement,
+        completionRate,
+        totalPracticeTime,
+        dailyActiveUsers: dailyActiveUsersData,
+        lessonCompletions: [], // Implement if needed
+        categoryDistribution: [], // Implement if needed
+        userStreaks: [] // Implement if needed
       });
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
@@ -260,7 +230,7 @@ export default function Dashboard() {
                   </h3>
                 </div>
                 <div className="p-3 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                  <BookOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                  <Book className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                 </div>
               </div>
             </div>
@@ -273,60 +243,90 @@ export default function Dashboard() {
                     {stats.premiumUsers}
                   </h3>
                 </div>
-                <div className="p-3 rounded-lg bg-yellow-100 dark:bg-yellow-900/30">
-                  <Crown className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+                <div className="p-3 rounded-lg bg-amber-100 dark:bg-amber-900/30">
+                  <Award className="w-6 h-6 text-amber-600 dark:text-amber-400" />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Charts Grid */}
+          {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* User Activity Chart */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Daily Active Users
-              </h3>
-              {/* Add your chart component here */}
-            </div>
-
-            {/* Lesson Completions Chart */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Lesson Completions
-              </h3>
-              {/* Add your chart component here */}
-            </div>
-
-            {/* Category Distribution */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Category Distribution
-              </h3>
-              <div className="space-y-4">
-                {stats.categoryDistribution.map(({ name, value }) => (
-                  <div key={name} className="flex items-center justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">{name}</span>
-                    <span className="font-medium text-gray-900 dark:text-white">{value}</span>
-                  </div>
-                ))}
+            {/* Daily Active Users Chart */}
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Daily Active Users</h3>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={stats.dailyActiveUsers}>
+                    <defs>
+                      <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.1}/>
+                        <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip />
+                    <Area 
+                      type="monotone" 
+                      dataKey="count" 
+                      stroke="#10B981" 
+                      fillOpacity={1} 
+                      fill="url(#colorUv)" 
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
             </div>
 
-            {/* User Streaks */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                User Streaks
-              </h3>
+            {/* Other metrics */}
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Performance Metrics</h3>
               <div className="space-y-4">
-                {stats.userStreaks.map(({ streak, count }) => (
-                  <div key={streak} className="flex items-center justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">
-                      {streak} day{streak !== 1 ? 's' : ''} streak
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Average Engagement</p>
+                  <div className="flex items-center mt-1">
+                    <div className="flex-1">
+                      <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full">
+                        <div 
+                          className="h-2 bg-mint-500 rounded-full" 
+                          style={{ width: `${Math.min(stats.averageEngagement * 100, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                    <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {stats.averageEngagement.toFixed(2)}
                     </span>
-                    <span className="font-medium text-gray-900 dark:text-white">{count} users</span>
                   </div>
-                ))}
+                </div>
+
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Completion Rate</p>
+                  <div className="flex items-center mt-1">
+                    <div className="flex-1">
+                      <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full">
+                        <div 
+                          className="h-2 bg-blue-500 rounded-full" 
+                          style={{ width: `${Math.min(stats.completionRate, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                    <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {stats.completionRate.toFixed(1)}%
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Total Practice Time</p>
+                  <div className="flex items-center mt-1">
+                    <Clock className="w-5 h-5 text-gray-400 mr-2" />
+                    <span className="text-lg font-medium text-gray-900 dark:text-white">
+                      {Math.floor(stats.totalPracticeTime / 60)} hours {stats.totalPracticeTime % 60} minutes
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

@@ -109,10 +109,18 @@ Format the response in a clear, encouraging way.`;
 
     setSavingGoals(true);
     try {
+      // First, try to get the existing user goals
+      const { data: existingGoals } = await supabase
+        .from('user_goals')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
       // Save user goals with the AI recommendation
       const { error: goalsError } = await supabase
         .from('user_goals')
         .upsert({
+          ...(existingGoals?.id ? { id: existingGoals.id } : {}),
           user_id: user.id,
           goals: selectedGoals,
           time_commitment: parseInt(timeCommitment),

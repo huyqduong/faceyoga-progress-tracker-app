@@ -1,7 +1,14 @@
 import React from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Settings, Users, BarChart, Menu, X, Dumbbell, GraduationCap, CreditCard, Target, Home, ChevronRight } from 'lucide-react';
+import { Link, useLocation, Routes, Route } from 'react-router-dom';
+import { Settings, Users, BarChart, Menu, X, Dumbbell, GraduationCap, CreditCard, Target, Home, ChevronRight, MessageSquare } from 'lucide-react';
 import { useState } from 'react';
+import AdminDashboard from './Admin/Dashboard';
+import CourseManager from './Admin/CourseManager';
+import LessonManager from './Admin/LessonManager';
+import FeedbackManager from './Admin/FeedbackManager';
+import Goals from './Admin/Goals';
+import UserManager from './Admin/UserManager';
+import SettingsManager from './Admin/SettingsManager';
 
 export default function Admin() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -40,6 +47,12 @@ export default function Admin() {
       current: location.pathname === '/admin/goals',
     },
     {
+      name: 'Feedback Management',
+      href: '/admin/feedback',
+      icon: MessageSquare,
+      current: location.pathname === '/admin/feedback',
+    },
+    {
       name: 'Website Settings',
       href: '/admin/settings',
       icon: Settings,
@@ -50,12 +63,6 @@ export default function Admin() {
       href: '/admin/users',
       icon: Users,
       current: location.pathname === '/admin/users',
-    },
-    {
-      name: 'Test Payment',
-      href: '/admin/test-payment',
-      icon: CreditCard,
-      current: location.pathname === '/admin/test-payment',
     },
   ];
 
@@ -153,7 +160,17 @@ export default function Admin() {
       {/* Main content */}
       <div className="md:pl-64">
         <main className="py-16 md:py-8">
-          <Outlet />
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
+            <Routes>
+              <Route index element={<AdminDashboard />} />
+              <Route path="lessons" element={<LessonManager />} />
+              <Route path="courses" element={<CourseManager />} />
+              <Route path="feedback" element={<FeedbackManager />} />
+              <Route path="goals" element={<Goals />} />
+              <Route path="users" element={<UserManager />} />
+              <Route path="settings" element={<SettingsManager />} />
+            </Routes>
+          </div>
         </main>
       </div>
     </div>
