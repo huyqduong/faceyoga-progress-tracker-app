@@ -17,21 +17,34 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useSettingsStore } from '../store/settingsStore';
+import { useProfileStore } from '../store/profileStore';
 import { signOut } from '../lib/auth';
 import toast from 'react-hot-toast';
 import { ThemeToggle } from './ThemeToggle';
 
 function Navbar() {
   const location = useLocation();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const { settings, fetchSettings } = useSettingsStore();
+  const { fetchProfile } = useProfileStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [avatarKey, setAvatarKey] = useState(Date.now());
 
   useEffect(() => {
     fetchSettings();
   }, [fetchSettings]);
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchProfile(user.id);
+    }
+  }, [user?.id, fetchProfile]);
+
+  useEffect(() => {
+    setAvatarKey(Date.now());
+  }, [profile?.avatar_url]);
 
   const handleSignOut = async () => {
     try {
@@ -165,7 +178,16 @@ function Navbar() {
                     className="bg-white dark:bg-gray-800 rounded-full flex text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                   >
                     <span className="sr-only">Open user menu</span>
-                    <UserCircle className="h-8 w-8 text-gray-400" />
+                    {profile?.avatar_url ? (
+                      <img
+                        key={avatarKey}
+                        src={`${profile.avatar_url}?t=${avatarKey}`}
+                        alt="Profile"
+                        className="h-8 w-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <UserCircle className="h-8 w-8 text-gray-400" />
+                    )}
                   </button>
                 </div>
                 {isProfileMenuOpen && (
@@ -174,6 +196,7 @@ function Navbar() {
                       <Link
                         key={item.name}
                         to={item.href}
+                        onClick={() => setIsProfileMenuOpen(false)}
                         className="flex px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
                       >
                         <item.icon className="h-5 w-5 mr-2" />
@@ -181,7 +204,10 @@ function Navbar() {
                       </Link>
                     ))}
                     <button
-                      onClick={handleSignOut}
+                      onClick={() => {
+                        setIsProfileMenuOpen(false);
+                        handleSignOut();
+                      }}
                       disabled={isSigningOut}
                       className="flex w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
                     >
@@ -218,7 +244,16 @@ function Navbar() {
           <div className="pt-4 pb-3 border-t border-gray-200 dark:border-gray-600">
             <div className="flex items-center px-4">
               <div className="flex-shrink-0">
-                <UserCircle className="h-10 w-10 text-gray-400" />
+                {profile?.avatar_url ? (
+                  <img
+                    key={avatarKey}
+                    src={`${profile.avatar_url}?t=${avatarKey}`}
+                    alt="Profile"
+                    className="h-10 w-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <UserCircle className="h-10 w-10 text-gray-400" />
+                )}
               </div>
               <div className="ml-3">
                 <div className="text-base font-medium text-gray-800 dark:text-white">
@@ -234,6 +269,7 @@ function Navbar() {
                 <Link
                   key={item.name}
                   to={item.href}
+                  onClick={() => setIsProfileMenuOpen(false)}
                   className="flex items-center px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-600"
                 >
                   <item.icon className="h-5 w-5 mr-2" />
@@ -241,7 +277,10 @@ function Navbar() {
                 </Link>
               ))}
               <button
-                onClick={handleSignOut}
+                onClick={() => {
+                  setIsProfileMenuOpen(false);
+                  handleSignOut();
+                }}
                 disabled={isSigningOut}
                 className="flex w-full items-center px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-600"
               >

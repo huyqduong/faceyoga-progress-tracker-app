@@ -44,16 +44,11 @@ export function useAuth() {
         if (mounted) {
           if (event === 'SIGNED_OUT') {
             setUser(null);
-            // Clear any persisted data
-            localStorage.clear();
           } else if (session?.user) {
             setUser(session.user);
             // Fetch profile in the background
             fetchProfile(session.user.id).catch(console.error);
-          } else {
-            setUser(null);
           }
-          setLoading(false);
         }
       }
     );
@@ -63,6 +58,31 @@ export function useAuth() {
       subscription.unsubscribe();
     };
   }, [setUser, fetchProfile]);
+
+  // Add profile subscription
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const profileSubscription = supabase
+      .channel(`profile:${user.id}`)
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'profiles',
+          filter: `user_id=eq.${user.id}`
+        }, 
+        () => {
+          // Refetch profile when it changes
+          fetchProfile(user.id);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      profileSubscription.unsubscribe();
+    };
+  }, [user?.id, fetchProfile]);
 
   return { user, profile, loading };
 }

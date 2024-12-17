@@ -81,14 +81,14 @@ export const useProfileStore = create<ProfileState>((set) => ({
       }
 
       const updatedProfile = await supabaseApi.updateProfile(profile);
+      
+      // Immediately update the local state with the new profile data
       set((state) => ({
-        profile: {
-          ...state.profile!,
-          ...updatedProfile
-        },
+        profile: updatedProfile,  
         loading: false,
         error: null
       }));
+      
     } catch (error) {
       console.error('Error updating profile:', error);
       set({ 

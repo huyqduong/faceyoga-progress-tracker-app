@@ -8,7 +8,7 @@ import BackButton from '../components/BackButton';
 
 function Profile() {
   const { user, profile } = useAuth();
-  const { updateProfile } = useProfileStore();
+  const { updateProfile, fetchProfile } = useProfileStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -34,13 +34,18 @@ function Profile() {
 
     try {
       setIsUploading(true);
+      // First upload the avatar and get the URL
       const publicUrl = await supabaseApi.uploadAvatar(user.id, file);
       
+      // Then update the profile with the new avatar URL
       await updateProfile({
         user_id: user.id,
         avatar_url: publicUrl,
       });
 
+      // Force a fresh profile fetch to ensure we have the latest data
+      await fetchProfile(user.id);
+      
       toast.success('Profile picture updated successfully');
     } catch (err) {
       console.error('Error:', err);

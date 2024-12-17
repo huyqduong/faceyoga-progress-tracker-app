@@ -168,6 +168,11 @@ export const supabaseApi = {
 
       if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
 
+      // Add cache-busting to avatar_url if it's being updated
+      if (profile.avatar_url) {
+        profile.avatar_url = `${profile.avatar_url}?t=${Date.now()}`;
+      }
+
       // If updating completed_lessons, update streak
       if ('completed_lessons' in profile && profile.completed_lessons?.length) {
         const completedLessons = currentProfile?.completed_lessons || [];
@@ -231,7 +236,16 @@ export const supabaseApi = {
         .single();
 
       if (error) throw error;
-      return data;
+      
+      // Force a fresh fetch of the profile
+      const { data: freshProfile, error: freshError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', profile.user_id)
+        .single();
+
+      if (freshError) throw freshError;
+      return freshProfile;
     });
   },
 
@@ -257,20 +271,28 @@ export const supabaseApi = {
     });
   },
   async uploadAvatar(userId: string, file: File): Promise<string> {
-    const fileExt = file.name.split('.').pop();
-    const filePath = `${userId}/avatar.${fileExt}`;
+    return retryOperation(async () => {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${userId}/avatar.${fileExt}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, file, { upsert: true });
+      // Delete any existing avatar first
+      await supabase.storage
+        .from('avatars')
+        .remove([`${userId}/avatar.png`, `${userId}/avatar.jpg`, `${userId}/avatar.jpeg`]);
 
-    if (uploadError) throw uploadError;
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
 
-    const { data: { publicUrl } } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(filePath);
+      if (uploadError) throw uploadError;
 
-    return publicUrl;
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Add cache-busting parameter to force refresh
+      return `${publicUrl}?t=${Date.now()}`;
+    });
   },
   async uploadProgressImage(userId: string, file: File): Promise<string> {
     const fileExt = file.name.split('.').pop();
