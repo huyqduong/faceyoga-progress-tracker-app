@@ -108,8 +108,16 @@ const FeedbackManager = () => {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ color: 'text.primary' }}>
+    <Box sx={{ 
+      minHeight: '100vh',
+      bgcolor: 'background.default',
+      p: 3 
+    }}>
+      <Typography 
+        variant="h4" 
+        gutterBottom
+        sx={{ color: 'text.primary' }}
+      >
         Feedback Management
       </Typography>
 
@@ -119,7 +127,24 @@ const FeedbackManager = () => {
           placeholder="Search feedback..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          sx={{ minWidth: 200 }}
+          sx={{ 
+            minWidth: 200,
+            '& .MuiOutlinedInput-root': {
+              backgroundColor: 'background.default',
+              '& fieldset': {
+                borderColor: 'divider',
+              },
+              '&:hover fieldset': {
+                borderColor: 'primary.main',
+              },
+            },
+            '& .MuiInputBase-input': {
+              color: 'text.primary',
+            },
+            '& .MuiInputAdornment-root': {
+              color: 'text.secondary',
+            },
+          }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -130,11 +155,37 @@ const FeedbackManager = () => {
         />
 
         <FormControl sx={{ minWidth: 120 }}>
-          <InputLabel>Status</InputLabel>
+          <InputLabel sx={{ color: 'text.secondary' }}>Status</InputLabel>
           <Select
             value={statusFilter}
             label="Status"
             onChange={(e: SelectChangeEvent<FeedbackStatus | 'all'>) => setStatusFilter(e.target.value as FeedbackStatus | 'all')}
+            sx={{
+              backgroundColor: 'background.default',
+              color: 'text.primary',
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'divider',
+              },
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'primary.main',
+              },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'primary.main',
+              },
+              '& .MuiSvgIcon-root': {
+                color: 'text.secondary',
+              },
+            }}
+            MenuProps={{
+              PaperProps: {
+                sx: {
+                  bgcolor: 'background.paper',
+                  '& .MuiMenuItem-root': {
+                    color: 'text.primary',
+                  },
+                },
+              },
+            }}
           >
             <MenuItem value="all">All Status</MenuItem>
             <MenuItem value="new">New</MenuItem>
@@ -145,11 +196,37 @@ const FeedbackManager = () => {
         </FormControl>
 
         <FormControl sx={{ minWidth: 120 }}>
-          <InputLabel>Type</InputLabel>
+          <InputLabel sx={{ color: 'text.secondary' }}>Type</InputLabel>
           <Select
             value={typeFilter}
             label="Type"
             onChange={(e: SelectChangeEvent<FeedbackType | 'all'>) => setTypeFilter(e.target.value as FeedbackType | 'all')}
+            sx={{
+              backgroundColor: 'background.default',
+              color: 'text.primary',
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'divider',
+              },
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'primary.main',
+              },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'primary.main',
+              },
+              '& .MuiSvgIcon-root': {
+                color: 'text.secondary',
+              },
+            }}
+            MenuProps={{
+              PaperProps: {
+                sx: {
+                  bgcolor: 'background.paper',
+                  '& .MuiMenuItem-root': {
+                    color: 'text.primary',
+                  },
+                },
+              },
+            }}
           >
             <MenuItem value="all">All Types</MenuItem>
             <MenuItem value="bug">Bug</MenuItem>
@@ -159,26 +236,47 @@ const FeedbackManager = () => {
         </FormControl>
       </Box>
 
-      <TableContainer component={Paper}>
+      <TableContainer component={Paper} sx={{ 
+        backgroundColor: 'background.paper',
+        '& .MuiTableCell-root': {
+          borderColor: 'divider',
+          color: 'text.primary'
+        },
+        '& .MuiTableHead-root': {
+          '& .MuiTableCell-root': {
+            backgroundColor: 'background.default',
+            fontWeight: 'bold',
+            color: 'text.primary'
+          }
+        },
+        '& .MuiTableBody-root': {
+          '& .MuiTableRow-root': {
+            backgroundColor: 'background.default',
+            '&:hover': {
+              backgroundColor: 'action.hover'
+            }
+          }
+        }
+      }}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Type</TableCell>
-              <TableCell>Title</TableCell>
-              <TableCell>Description</TableCell>
-              <TableCell>User</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Date</TableCell>
+              <TableCell sx={{ color: 'text.primary', fontWeight: 'bold' }}>Type</TableCell>
+              <TableCell sx={{ color: 'text.primary', fontWeight: 'bold' }}>Title</TableCell>
+              <TableCell sx={{ color: 'text.primary', fontWeight: 'bold' }}>Description</TableCell>
+              <TableCell sx={{ color: 'text.primary', fontWeight: 'bold' }}>User</TableCell>
+              <TableCell sx={{ color: 'text.primary', fontWeight: 'bold' }}>Status</TableCell>
+              <TableCell sx={{ color: 'text.primary', fontWeight: 'bold' }}>Date</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} align="center">Loading...</TableCell>
+                <TableCell colSpan={6} align="center" sx={{ color: 'text.primary' }}>Loading...</TableCell>
               </TableRow>
             ) : filteredFeedback.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} align="center">No feedback found</TableCell>
+                <TableCell colSpan={6} align="center" sx={{ color: 'text.primary' }}>No feedback found</TableCell>
               </TableRow>
             ) : (
               filteredFeedback
@@ -186,24 +284,67 @@ const FeedbackManager = () => {
                 .map((item) => {
                   const TypeIcon = typeIcons[item.type];
                   return (
-                    <TableRow key={item.id}>
-                      <TableCell>
-                        <IconButton size="small" sx={{ mr: 1 }}>
+                    <TableRow 
+                      key={item.id}
+                      hover
+                      sx={{
+                        '&:nth-of-type(odd)': {
+                          bgcolor: 'action.hover',
+                        },
+                        '&:hover': {
+                          bgcolor: 'action.selected',
+                        }
+                      }}
+                    >
+                      <TableCell sx={{ color: 'text.primary' }}>
+                        <IconButton 
+                          size="small" 
+                          sx={{ 
+                            mr: 1,
+                            color: 'primary.main'
+                          }}
+                        >
                           <TypeIcon size={20} />
                         </IconButton>
                         {item.type}
                       </TableCell>
-                      <TableCell>{item.title}</TableCell>
-                      <TableCell sx={{ maxWidth: 300 }}>
+                      <TableCell sx={{ color: 'text.primary' }}>{item.title}</TableCell>
+                      <TableCell sx={{ maxWidth: 300, color: 'text.primary' }}>
                         <Typography noWrap>{item.description}</Typography>
                       </TableCell>
-                      <TableCell>{item.email}</TableCell>
+                      <TableCell sx={{ color: 'text.primary' }}>{item.email}</TableCell>
                       <TableCell>
                         <FormControl size="small">
                           <Select
                             value={item.status}
                             onChange={(e) => handleStatusChange(item.id, e.target.value as FeedbackStatus)}
-                            sx={{ minWidth: 120 }}
+                            sx={{
+                              minWidth: 120,
+                              backgroundColor: 'background.default',
+                              color: 'text.primary',
+                              '& .MuiOutlinedInput-notchedOutline': {
+                                borderColor: 'divider',
+                              },
+                              '&:hover .MuiOutlinedInput-notchedOutline': {
+                                borderColor: 'primary.main',
+                              },
+                              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                borderColor: 'primary.main',
+                              },
+                              '& .MuiSvgIcon-root': {
+                                color: 'text.secondary',
+                              },
+                            }}
+                            MenuProps={{
+                              PaperProps: {
+                                sx: {
+                                  bgcolor: 'background.paper',
+                                  '& .MuiMenuItem-root': {
+                                    color: 'text.primary',
+                                  },
+                                },
+                              },
+                            }}
                           >
                             <MenuItem value="new">New</MenuItem>
                             <MenuItem value="in_progress">In Progress</MenuItem>
@@ -212,7 +353,7 @@ const FeedbackManager = () => {
                           </Select>
                         </FormControl>
                       </TableCell>
-                      <TableCell>
+                      <TableCell sx={{ color: 'text.primary' }}>
                         {new Date(item.created_at).toLocaleDateString()}
                       </TableCell>
                     </TableRow>
@@ -222,13 +363,31 @@ const FeedbackManager = () => {
           </TableBody>
         </Table>
         <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
           component="div"
           count={filteredFeedback.length}
-          rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
+          rowsPerPage={rowsPerPage}
           onRowsPerPageChange={handleChangeRowsPerPage}
+          sx={{
+            color: 'text.primary',
+            '& .MuiTablePagination-select': {
+              color: 'text.primary',
+              backgroundColor: 'background.default',
+            },
+            '& .MuiTablePagination-selectIcon': {
+              color: 'text.secondary',
+            },
+            '& .MuiTablePagination-displayedRows': {
+              color: 'text.primary',
+            },
+            '& .MuiIconButton-root': {
+              color: 'text.primary',
+              '&.Mui-disabled': {
+                color: 'text.secondary',
+              },
+            },
+          }}
         />
       </TableContainer>
     </Box>

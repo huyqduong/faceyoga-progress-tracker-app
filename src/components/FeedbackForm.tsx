@@ -73,8 +73,9 @@ export const FeedbackForm = () => {
         margin="normal"
         sx={{
           '& .MuiOutlinedInput-root': {
+            backgroundColor: 'background.default',
             '& fieldset': {
-              borderColor: 'rgba(0, 0, 0, 0.23)',
+              borderColor: 'divider',
             },
             '&:hover fieldset': {
               borderColor: 'primary.main',
@@ -89,7 +90,19 @@ export const FeedbackForm = () => {
           '& .MuiSelect-select': {
             color: 'text.primary',
           },
-          backgroundColor: 'background.paper',
+          '& .MuiSvgIcon-root': {
+            color: 'text.secondary',
+          },
+        }}
+        MenuProps={{
+          PaperProps: {
+            sx: {
+              bgcolor: 'background.paper',
+              '& .MuiMenuItem-root': {
+                color: 'text.primary',
+              },
+            },
+          },
         }}
       >
         <MenuItem value="bug">Bug Report</MenuItem>
@@ -106,8 +119,9 @@ export const FeedbackForm = () => {
         required
         sx={{
           '& .MuiOutlinedInput-root': {
+            backgroundColor: 'background.default',
             '& fieldset': {
-              borderColor: 'rgba(0, 0, 0, 0.23)',
+              borderColor: 'divider',
             },
             '&:hover fieldset': {
               borderColor: 'primary.main',
@@ -122,7 +136,6 @@ export const FeedbackForm = () => {
           '& .MuiInputBase-input': {
             color: 'text.primary',
           },
-          backgroundColor: 'background.paper',
         }}
       />
 
@@ -138,8 +151,9 @@ export const FeedbackForm = () => {
         placeholder="Please describe your feedback in detail. For bug reports, include steps to reproduce the issue."
         sx={{
           '& .MuiOutlinedInput-root': {
+            backgroundColor: 'background.default',
             '& fieldset': {
-              borderColor: 'rgba(0, 0, 0, 0.23)',
+              borderColor: 'divider',
             },
             '&:hover fieldset': {
               borderColor: 'primary.main',
@@ -154,7 +168,9 @@ export const FeedbackForm = () => {
           '& .MuiInputBase-input': {
             color: 'text.primary',
           },
-          backgroundColor: 'background.paper',
+          '& .MuiInputBase-inputMultiline': {
+            color: 'text.primary',
+          },
         }}
       />
 

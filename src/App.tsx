@@ -32,6 +32,9 @@ import Landing from './pages/Landing';
 import AdminDashboard from './pages/Admin/Dashboard';
 import LessonManager from './pages/Admin/LessonManager';
 import Feedback from './pages/Feedback';
+import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
+import { useTheme } from './components/ThemeProvider';
+import { lightTheme, darkTheme } from './theme/mui-theme';
 
 // App content component that uses router hooks
 function AppContent() {
@@ -96,6 +99,9 @@ function AppContent() {
 
 // Main App component that provides the Router context
 function App() {
+  const { theme } = useTheme();
+  const muiTheme = theme === 'dark' ? darkTheme : lightTheme;
+
   // Add global error boundary
   React.useEffect(() => {
     const handleError = (event: ErrorEvent) => {
@@ -129,7 +135,9 @@ function App() {
 
   return (
     <Router>
-      <AppContent />
+      <MuiThemeProvider theme={muiTheme}>
+        <AppContent />
+      </MuiThemeProvider>
     </Router>
   );
 }
