@@ -43,18 +43,27 @@ function LessonSelector({ selectedLessons, onChange }: LessonSelectorProps) {
                 className="rounded border-gray-300 text-mint-600 focus:ring-mint-500"
               />
               <div className="flex items-center space-x-3 flex-1">
-                <img
-                  src={lesson.thumbnail_url}
-                  alt={lesson.title}
-                  className="w-10 h-10 rounded object-cover"
-                />
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900">{lesson.title}</p>
-                  <div className="flex items-center space-x-2 text-sm text-gray-500">
-                    <span>{lesson.duration}</span>
-                    <span>•</span>
-                    <span>{lesson.difficulty}</span>
+                {lesson.image_url ? (
+                  <img
+                    src={lesson.image_url}
+                    alt={lesson.title}
+                    className="w-10 h-10 rounded object-cover bg-gray-100"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center">
+                    <span className="text-gray-400 text-xs">No image</span>
                   </div>
+                )}
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-gray-900">
+                    {lesson.title}
+                  </div>
+                  <div className="text-xs text-gray-500 truncate max-w-md">
+                    {lesson.description}
+                  </div>
+                </div>
+                <div className="text-xs text-gray-500 whitespace-nowrap">
+                  {lesson.duration} min
                 </div>
               </div>
             </label>

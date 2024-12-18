@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { courseApi } from '../lib/courses';
 import type { Course, CourseSection, SectionLesson } from '../lib/supabase-types';
 import { useLessonStore } from './lessonStore';
+import { supabase } from '../lib/supabase';
 
 interface CreateCourseData {
   title: string;
@@ -24,7 +25,7 @@ interface UpdateCourseData extends CreateCourseData {
 interface CourseState {
   courses: Course[];
   sections: Record<string, CourseSection[]>;
-  sectionLessons: Record<string, SectionLesson[]>;
+  lessons: Record<string, SectionLesson[]>;
   loading: boolean;
   loadingCourseIds: string[];
   error: string | null;
@@ -33,7 +34,7 @@ interface CourseState {
   fetchCourseSections: (courseId: string) => Promise<CourseSection[]>;
   fetchSectionLessons: (sectionId: string) => Promise<SectionLesson[]>;
   createCourse: (data: CreateCourseData) => Promise<Course>;
-  updateCourse: (id: string, data: UpdateCourseData) => Promise<Course>;
+  updateCourse: (courseId: string, courseData: Partial<Course>) => Promise<Course>;
   deleteCourse: (id: string) => Promise<void>;
   clearError: () => void;
   isLoadingCourse: (courseId: string) => boolean;
@@ -42,7 +43,7 @@ interface CourseState {
 export const useCourseStore = create<CourseState>((set, get) => ({
   courses: [],
   sections: {},
-  sectionLessons: {},
+  lessons: {},
   loading: false,
   loadingCourseIds: [],
   error: null,
@@ -92,39 +93,79 @@ export const useCourseStore = create<CourseState>((set, get) => ({
   },
 
   fetchCourseSections: async (courseId: string) => {
-    console.log(`[CourseStore] Starting fetchCourseSections for course ${courseId}`);
+    const { isLoadingCourse } = get();
     
-    // If already loading this course's sections, don't start another request
-    if (get().loadingCourseIds.includes(courseId)) {
-      console.log(`[CourseStore] Already loading sections for course ${courseId}`);
+    if (isLoadingCourse(courseId)) {
+      console.warn(`[CourseStore] Already fetching sections for course ${courseId}`);
       return get().sections[courseId] || [];
     }
 
-    set(state => ({ 
-      loadingCourseIds: [...state.loadingCourseIds, courseId],
-      error: null 
-    }));
-
     try {
-      // Ensure lessons are loaded first
-      await useLessonStore.getState().ensureLessonsLoaded();
-      
-      console.log(`[CourseStore] Fetching sections for course ${courseId}`);
-      const sections = await courseApi.fetchCourseSections(courseId);
-      console.log(`[CourseStore] Successfully fetched ${sections.length} sections for course ${courseId}`);
-      set(state => ({ 
-        sections: { ...state.sections, [courseId]: sections },
-        loadingCourseIds: state.loadingCourseIds.filter(id => id !== courseId)
+      set(state => ({
+        loadingCourseIds: [...state.loadingCourseIds, courseId],
+        error: null
       }));
-      return sections;
+
+      const { data: sections, error } = await supabase
+        .from('course_sections')
+        .select(`
+          id,
+          title,
+          description,
+          order_index,
+          section_lessons (
+            id,
+            lesson_id,
+            order_id,
+            lessons (
+              id,
+              title,
+              description,
+              duration,
+              difficulty,
+              image_url,
+              video_url,
+              instructions,
+              benefits,
+              category,
+              target_area
+            )
+          )
+        `)
+        .eq('course_id', courseId)
+        .order('order_index');
+
+      if (error) throw error;
+
+      const processedSections = sections.map(section => ({
+        ...section,
+        order: section.order_index,
+        lessons: section.section_lessons
+          .sort((a, b) => a.order_id - b.order_id)
+          .map(sl => sl.lesson_id) // Just store the lesson IDs in the section
+      }));
+
+      console.log('[CourseStore] Processed sections:', processedSections);
+
+      set(state => ({
+        sections: {
+          ...state.sections,
+          [courseId]: processedSections
+        },
+        error: null
+      }));
+
+      return processedSections;
     } catch (error) {
       console.error(`[CourseStore] Error fetching sections for course ${courseId}:`, error);
-      const message = error instanceof Error ? error.message : 'Failed to fetch course sections';
-      set(state => ({ 
-        error: message,
+      set(state => ({
+        error: error instanceof Error ? error.message : 'Failed to fetch course sections'
+      }));
+      return [];
+    } finally {
+      set(state => ({
         loadingCourseIds: state.loadingCourseIds.filter(id => id !== courseId)
       }));
-      throw error;
     }
   },
 
@@ -136,8 +177,8 @@ export const useCourseStore = create<CourseState>((set, get) => ({
       
       // Update the store with the new lessons
       set(state => ({
-        sectionLessons: {
-          ...state.sectionLessons,
+        lessons: {
+          ...state.lessons,
           [sectionId]: lessons.map(item => ({
             ...item,
             lesson: item.lesson || null // Ensure lesson is never undefined
@@ -174,24 +215,113 @@ export const useCourseStore = create<CourseState>((set, get) => ({
     }
   },
 
-  updateCourse: async (id: string, data: UpdateCourseData) => {
-    console.log(`[CourseStore] Starting updateCourse for course ${id}`);
-    set({ loading: true, error: null });
-    
+  updateCourse: async (courseId: string, courseData: Partial<Course>) => {
     try {
-      const updatedCourse = await courseApi.updateCourse(id, data);
-      console.log(`[CourseStore] Course updated successfully: ${updatedCourse.id}`);
-      set((state) => ({
+      console.log(`[CourseStore] Updating course ${courseId}`, courseData);
+      set({ loading: true, error: null });
+      
+      // Extract sections from courseData to handle separately
+      const { sections, ...courseUpdateData } = courseData;
+      
+      // Update course basic info
+      const { data: updatedCourse, error } = await supabase
+        .from('courses')
+        .update(courseUpdateData)
+        .eq('id', courseId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log(`[CourseStore] Course ${courseId} updated successfully`, updatedCourse);
+      
+      // Update sections if provided
+      if (sections) {
+        console.log('[CourseStore] Updating sections:', sections);
+        
+        // First, get existing section IDs to clean up section_lessons
+        const { data: existingSections } = await supabase
+          .from('course_sections')
+          .select('id')
+          .eq('course_id', courseId);
+        
+        if (existingSections?.length) {
+          // Delete existing section_lessons for all sections
+          const { error: deleteLessonsError } = await supabase
+            .from('section_lessons')
+            .delete()
+            .in('section_id', existingSections.map(s => s.id));
+          
+          if (deleteLessonsError) throw deleteLessonsError;
+        }
+
+        // Delete existing sections
+        const { error: deleteError } = await supabase
+          .from('course_sections')
+          .delete()
+          .eq('course_id', courseId);
+        
+        if (deleteError) throw deleteError;
+
+        // Then insert new sections
+        const sectionsToInsert = sections.map((section, index) => ({
+          course_id: courseId,
+          title: section.title,
+          description: section.description,
+          order_index: index,
+        }));
+
+        const { data: newSections, error: insertError } = await supabase
+          .from('course_sections')
+          .insert(sectionsToInsert)
+          .select();
+
+        if (insertError) throw insertError;
+
+        // Update section_lessons for each section
+        for (let i = 0; i < newSections.length; i++) {
+          const section = newSections[i];
+          const sectionLessons = sections[i].lessons || [];
+
+          // Ensure we're using lesson IDs, not full lesson objects
+          const lessonsToInsert = sectionLessons.map((lesson: any, index) => ({
+            section_id: section.id,
+            lesson_id: typeof lesson === 'string' ? lesson : lesson.id,
+            order_id: index,
+          }));
+
+          if (lessonsToInsert.length > 0) {
+            console.log(`[CourseStore] Inserting lessons for section ${section.id}:`, lessonsToInsert);
+            
+            const { error: lessonError } = await supabase
+              .from('section_lessons')
+              .insert(lessonsToInsert);
+
+            if (lessonError) {
+              console.error(`[CourseStore] Error inserting lessons:`, lessonError);
+              throw lessonError;
+            }
+          }
+        }
+      }
+      
+      set(state => ({
         courses: state.courses.map(course => 
-          course.id === id ? updatedCourse : course
+          course.id === courseId ? { ...course, ...updatedCourse } : course
         ),
         loading: false
       }));
+
+      // Refetch course sections to ensure they're up to date
+      await get().fetchCourseSections(courseId);
+      
       return updatedCourse;
     } catch (error) {
-      console.error(`[CourseStore] Error updating course ${id}:`, error);
-      const message = error instanceof Error ? error.message : 'Failed to update course';
-      set({ error: message, loading: false });
+      console.error(`[CourseStore] Error updating course ${courseId}:`, error);
+      set({ 
+        error: error instanceof Error ? error.message : 'Failed to update course',
+        loading: false 
+      });
       throw error;
     }
   },

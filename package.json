@@ -26,6 +26,7 @@
     "@tailwindcss/aspect-ratio": "^0.4.2",
     "@types/react-calendar": "^3.9.0",
     "@types/recharts": "^1.8.29",
+    "clsx": "^2.1.1",
     "date-fns": "^3.3.1",
     "framer-motion": "^11.13.1",
     "lucide-react": "^0.344.0",
@@ -41,6 +42,7 @@
     "remark-gfm": "^4.0.0",
     "renew-and-glow-face-yoga": "file:",
     "sonner": "^1.7.1",
+    "tailwind-merge": "^2.5.5",
     "zustand": "^4.5.1"
   },
   "devDependencies": {

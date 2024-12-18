@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { toast } from 'react-hot-toast';
 import { Save, X, Plus, Trash2, Upload, Image } from 'lucide-react';
 import { useCourseStore } from '../store/courseStore';
-import type { Course } from '../lib/supabase-types';
+import type { Course, CourseSection } from '../lib/supabase-types';
 import LessonSelector from './LessonSelector';
-import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 
 interface CourseFormProps {
@@ -18,7 +18,7 @@ interface CourseFormProps {
 interface CourseSection {
   title: string;
   description: string;
-  exercises: string[];
+  lessons: string[];
 }
 
 function CourseForm({ 
@@ -29,7 +29,7 @@ function CourseForm({
   sections: initialSections,
   loading = false
 }: CourseFormProps) {
-  const { sections: courseSections, exercises: sectionExercises, fetchCourseSections, fetchSectionExercises } = useCourseStore();
+  const { sections: courseSections, lessons: sectionLessons, fetchCourseSections, fetchSectionLessons } = useCourseStore();
   
   const [formData, setFormData] = useState<Partial<Course>>(() => ({
     title: initialData?.title || '',
@@ -47,7 +47,7 @@ function CourseForm({
   }));
 
   const [sections, setSections] = useState<CourseSection[]>(() => 
-    initialSections?.length ? initialSections : [{ title: '', description: '', exercises: [] }]
+    initialSections?.length ? initialSections : [{ title: '', description: '', lessons: [] }]
   );
 
   // Update sections when initialSections changes
@@ -98,122 +98,52 @@ function CourseForm({
     }
   };
 
-  const uploadImage = async () => {
-    if (!imageFile) return null;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    const fileExt = imageFile.name.split('.').pop();
-    const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-    const filePath = `${fileName}`;
-
     try {
-      setIsUploading(true);
-      console.log('Uploading image:', { fileName, filePath, fileSize: imageFile.size });
-      
-      // Check file size
-      const maxSize = 5 * 1024 * 1024; // 5MB
-      if (imageFile.size > maxSize) {
-        throw new Error('File size must be less than 5MB');
+      let finalImageUrl = formData.image_url;
+
+      if (imageFile) {
+        setIsUploading(true);
+        const timestamp = new Date().getTime();
+        const fileExt = imageFile.name.split('.').pop();
+        const fileName = `${timestamp}.${fileExt}`;
+        
+        if (formData.image_url) {
+          await deleteOldImage(formData.image_url);
+        }
+
+        const { data, error: uploadError } = await supabase.storage
+          .from('course-images')
+          .upload(fileName, imageFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('course-images')
+          .getPublicUrl(fileName);
+
+        finalImageUrl = publicUrl;
       }
 
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('course-images')
-        .upload(filePath, imageFile, {
-          cacheControl: '3600',
-          upsert: false
-        });
+      const updatedData = {
+        ...formData,
+        image_url: finalImageUrl,
+        sections: sections.map(section => ({
+          ...section,
+          lessons: section.lessons || []
+        }))
+      };
 
-      if (uploadError) {
-        console.error('Supabase upload error:', uploadError);
-        throw uploadError;
-      }
-
-      console.log('Upload successful:', uploadData);
-
-      const { data: { publicUrl }, error: urlError } = supabase.storage
-        .from('course-images')
-        .getPublicUrl(filePath);
-
-      if (urlError) {
-        console.error('Error getting public URL:', urlError);
-        throw urlError;
-      }
-
-      // If this is an update and we have an old image URL, delete the old image
-      if (initialData?.image_url) {
-        await deleteOldImage(initialData.image_url);
-      }
-
-      console.log('Got public URL:', publicUrl);
-      return publicUrl;
-    } catch (error: any) {
-      console.error('Error uploading image:', {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code
-      });
-      toast.error(error.message || 'Failed to upload image');
-      return null;
+      await onSubmit(updatedData);
+      toast.success('Course saved successfully');
+    } catch (error) {
+      console.error('Error saving course:', error);
+      toast.error('Failed to save course');
     } finally {
       setIsUploading(false);
     }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isSubmitting || loading) return;
-
-    // Filter out empty sections
-    const validSections = sections.filter(section => 
-      section.title.trim() && section.description.trim()
-    );
-
-    // Upload image if selected
-    let imageUrl = formData.image_url;
-    if (imageFile) {
-      const uploadedUrl = await uploadImage();
-      if (uploadedUrl) {
-        imageUrl = uploadedUrl;
-      }
-    }
-
-    // Validate welcome video URL if provided
-    if (formData.welcome_video && !isValidVideoUrl(formData.welcome_video)) {
-      toast.error('Invalid welcome video URL');
-      return;
-    }
-
-    // Validate price
-    if (formData.price < 0) {
-      toast.error('Price cannot be negative');
-      return;
-    }
-
-    // Validate trial duration
-    if (formData.trial_duration_days < 0) {
-      toast.error('Trial duration cannot be negative');
-      return;
-    }
-
-    // Validate subscription duration
-    if (formData.subscription_duration_months < 0) {
-      toast.error('Subscription duration cannot be negative');
-      return;
-    }
-
-    // Validate rating
-    if (formData.rating < 0 || formData.rating > 5) {
-      toast.error('Rating must be between 0 and 5');
-      return;
-    }
-    
-    const data = {
-      ...formData,
-      image_url: imageUrl,
-      sections: validSections
-    };
-
-    await onSubmit(data);
   };
 
   const isValidVideoUrl = (url: string): boolean => {
@@ -245,13 +175,19 @@ function CourseForm({
   };
 
   const addSection = () => {
-    setSections([...sections, { title: '', description: '', exercises: [] }]);
+    setSections([...sections, { title: '', description: '', lessons: [] }]);
   };
 
   const removeSection = (index: number) => {
     const newSections = sections.filter((_, i) => i !== index);
     setSections(newSections);
   };
+
+  useEffect(() => {
+    if (initialData?.id) {
+      fetchCourseSections(initialData.id);
+    }
+  }, [initialData?.id, fetchCourseSections]);
 
   if (loading) {
     return (
@@ -508,7 +444,7 @@ function CourseForm({
             <h4 className="text-lg font-medium text-gray-900">Course Sections</h4>
             <button
               type="button"
-              onClick={() => setSections([...sections, { title: '', description: '', exercises: [] }])}
+              onClick={() => setSections([...sections, { title: '', description: '', lessons: [] }])}
               className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-lg text-mint-700 bg-mint-100 hover:bg-mint-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-mint-500"
             >
               Add Section
@@ -551,10 +487,10 @@ function CourseForm({
                     />
                   </div>
                   <LessonSelector
-                    selectedLessons={section.exercises || []}
+                    selectedLessons={section.lessons || []}
                     onChange={(lessons) => {
                       const newSections = [...sections];
-                      newSections[index].exercises = lessons;
+                      newSections[index].lessons = lessons;
                       setSections(newSections);
                     }}
                   />
