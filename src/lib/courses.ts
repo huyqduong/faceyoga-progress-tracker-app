@@ -86,6 +86,40 @@ export const courseApi = {
     return data || [];
   },
 
+  async fetchCourseLessons(courseId: string): Promise<Record<string, SectionLesson[]>> {
+    const { data: sections } = await supabase
+      .from('course_sections')
+      .select('id')
+      .eq('course_id', courseId);
+
+    if (!sections?.length) return {};
+
+    const sectionIds = sections.map(s => s.id);
+    
+    const { data, error } = await supabase
+      .from('section_lessons')
+      .select(`
+        id,
+        section_id,
+        lesson_id,
+        order_id,
+        lesson:lessons (*)
+      `)
+      .in('section_id', sectionIds)
+      .order('order_id');
+
+    if (error) throw error;
+
+    // Group lessons by section_id
+    return (data || []).reduce((acc, lesson) => {
+      if (!acc[lesson.section_id]) {
+        acc[lesson.section_id] = [];
+      }
+      acc[lesson.section_id].push(lesson);
+      return acc;
+    }, {} as Record<string, SectionLesson[]>);
+  },
+
   async createCourse(data: CreateCourseWithSections): Promise<Course> {
     const { sections, ...courseData } = data;
 

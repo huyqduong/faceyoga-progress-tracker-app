@@ -15,7 +15,7 @@ function CourseDetails() {
   const { 
     courses, 
     sections, 
-    lessons: sectionLessons,
+    sectionLessons,
     loading: storeLoading,
     error,
     fetchCourses,
@@ -27,6 +27,7 @@ function CourseDetails() {
   const [videoError, setVideoError] = useState<string | null>(null);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [hasAccess, setHasAccess] = useState<boolean>(false);
+  const [loadingSections, setLoadingSections] = useState<string[]>([]);
 
   // Get course data
   const course = courses.find(c => c.id === courseId);
@@ -36,8 +37,6 @@ function CourseDetails() {
     const loadCourseData = async () => {
       if (!courseId) return;
       
-      if (dataLoaded) return; // Prevent reloading if data is already loaded
-      
       setIsLoading(true);
       try {
         // Load data in sequence to ensure dependencies are met
@@ -45,27 +44,45 @@ function CourseDetails() {
           await fetchCourses();
         }
 
-        // Fetch sections for this course
-        await fetchCourseSections(courseId);
+        // Fetch sections for this course if not already loaded
+        if (!sections[courseId] || sections[courseId].length === 0) {
+          await fetchCourseSections(courseId);
+        }
         
         // Get sections after they're loaded
-        const courseSections = sections[courseId] || [];
+        const currentSections = sections[courseId] || [];
+        console.log('[CourseDetails] Course sections:', currentSections);
         
-        // Fetch lessons for all sections
-        await Promise.all(courseSections.map(section => 
-          fetchSectionLessons(section.id)
-        ));
+        // Fetch lessons for sections that don't have lessons loaded
+        const sectionsNeedingLessons = currentSections.filter(
+          section => !sectionLessons[section.id] || sectionLessons[section.id].length === 0
+        );
+        
+        if (sectionsNeedingLessons.length > 0) {
+          setLoadingSections(sectionsNeedingLessons.map(s => s.id));
+          await Promise.all(sectionsNeedingLessons.map(async section => {
+            console.log(`[CourseDetails] Fetching lessons for section ${section.id}`);
+            try {
+              const lessons = await fetchSectionLessons(section.id);
+              console.log(`[CourseDetails] Fetched lessons for section ${section.id}:`, lessons);
+            } finally {
+              setLoadingSections(prev => prev.filter(id => id !== section.id));
+            }
+          }));
+        }
 
+        console.log('[CourseDetails] All section lessons:', sectionLessons);
         setDataLoaded(true);
       } catch (error) {
         console.error('Error loading course data:', error);
+        toast.error('Failed to load course data');
       } finally {
         setIsLoading(false);
       }
     };
 
     loadCourseData();
-  }, [courseId, courses.length, dataLoaded, fetchCourses, fetchCourseSections, fetchSectionLessons, sections]);
+  }, [courseId, courses.length, sections, sectionLessons, fetchCourses, fetchCourseSections, fetchSectionLessons]);
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -269,43 +286,49 @@ function CourseDetails() {
                 )}
               </div>
               <div className="divide-y divide-gray-200">
-                {sectionLessons[section.id]?.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => handleLessonClick(item.lesson_id)}
-                    className={`w-full px-4 py-3 flex items-center justify-between text-left transition-colors
-                      ${hasAccess 
-                        ? 'hover:bg-gray-50 cursor-pointer' 
-                        : 'cursor-not-allowed text-gray-400'
-                      }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      {item.lesson?.image_url && (
-                        <div className="w-10 h-10 rounded overflow-hidden flex-shrink-0">
-                          <img
-                            src={item.lesson.image_url}
-                            alt={item.lesson.title}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      )}
-                      <div>
-                        <div className="font-medium">{item.lesson?.title}</div>
-                        <div className="text-sm text-gray-500">
-                          <span className="flex items-center">
-                            <Clock className="h-4 w-4 mr-1" />
-                            {item.lesson?.duration}
-                          </span>
+                {loadingSections.includes(section.id) ? (
+                  <div className="px-4 py-3 text-sm text-gray-500">Loading lessons...</div>
+                ) : (sectionLessons[section.id] || []).map((item) => {
+                  const lesson = item.lesson;
+                  if (!lesson) return null;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => handleLessonClick(lesson.id)}
+                      className={`w-full px-4 py-3 flex items-center justify-between text-left transition-colors
+                        ${hasAccess 
+                          ? 'hover:bg-gray-50 cursor-pointer' 
+                          : 'cursor-not-allowed text-gray-400'
+                        }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        {lesson.image_url && (
+                          <div className="w-10 h-10 rounded overflow-hidden flex-shrink-0">
+                            <img
+                              src={lesson.image_url}
+                              alt={lesson.title}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-medium">{lesson.title}</div>
+                          <div className="text-sm text-gray-500">
+                            <span className="flex items-center">
+                              <Clock className="h-4 w-4 mr-1" />
+                              {lesson.duration}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    {!hasAccess ? (
-                      <Lock className="h-4 w-4" />
-                    ) : (
-                      <ArrowRight className="h-4 w-4 text-mint-600" />
-                    )}
-                  </button>
-                ))}
+                      {!hasAccess ? (
+                        <Lock className="h-4 w-4" />
+                      ) : (
+                        <ArrowRight className="h-4 w-4 text-mint-600" />
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           ))}

@@ -11,6 +11,8 @@ interface CourseFormProps {
   onSubmit: (data: any) => Promise<void>;
   onCancel: () => void;
   isSubmitting: boolean;
+  sections?: CourseSection[];
+  loading?: boolean;
 }
 
 interface CourseSection {
@@ -19,10 +21,17 @@ interface CourseSection {
   exercises: string[];
 }
 
-function CourseForm({ initialData, onSubmit, onCancel, isSubmitting }: CourseFormProps) {
+function CourseForm({ 
+  initialData, 
+  onSubmit, 
+  onCancel, 
+  isSubmitting, 
+  sections: initialSections,
+  loading = false
+}: CourseFormProps) {
   const { sections: courseSections, exercises: sectionExercises, fetchCourseSections, fetchSectionExercises } = useCourseStore();
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Partial<Course>>(() => ({
     title: initialData?.title || '',
     description: initialData?.description || '',
     difficulty: initialData?.difficulty || 'Beginner',
@@ -35,13 +44,18 @@ function CourseForm({ initialData, onSubmit, onCancel, isSubmitting }: CourseFor
     trial_duration_days: initialData?.trial_duration_days || 0,
     subscription_duration_months: initialData?.subscription_duration_months || 0,
     rating: initialData?.rating || 0
-  });
+  }));
 
-  const [sections, setSections] = useState<CourseSection[]>([
-    { title: '', description: '', exercises: [] }
-  ]);
+  const [sections, setSections] = useState<CourseSection[]>(() => 
+    initialSections?.length ? initialSections : [{ title: '', description: '', exercises: [] }]
+  );
 
-  const [isLoadingSections, setIsLoadingSections] = useState(false);
+  // Update sections when initialSections changes
+  useEffect(() => {
+    if (initialSections?.length) {
+      setSections(initialSections);
+    }
+  }, [initialSections]);
 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(formData.image_url || null);
@@ -145,61 +159,10 @@ function CourseForm({ initialData, onSubmit, onCancel, isSubmitting }: CourseFor
     }
   };
 
-  // Load existing sections and exercises when editing
-  useEffect(() => {
-    const loadSectionData = async () => {
-      if (initialData?.id) {
-        setIsLoadingSections(true);
-        try {
-          // Only fetch sections if we don't have them
-          if (!courseSections[initialData.id]) {
-            await fetchCourseSections(initialData.id);
-          }
-          const currentSections = courseSections[initialData.id] || [];
-          
-          // Fetch exercises for sections we don't have
-          const sectionsWithExercises = await Promise.all(
-            currentSections.map(async (section) => {
-              try {
-                if (!sectionExercises[section.id]) {
-                  await fetchSectionExercises(section.id);
-                }
-                const sectionExerciseList = sectionExercises[section.id] || [];
-                return {
-                  title: section.title,
-                  description: section.description,
-                  exercises: sectionExerciseList.map(e => e.exercise_id)
-                };
-              } catch (error) {
-                console.error(`Error loading exercises for section ${section.id}:`, error);
-                toast.error(`Failed to load exercises for section "${section.title}"`);
-                return {
-                  title: section.title,
-                  description: section.description,
-                  exercises: []
-                };
-              }
-            })
-          );
-
-          if (sectionsWithExercises.length > 0) {
-            setSections(sectionsWithExercises);
-          }
-        } catch (error) {
-          console.error('Error loading course sections:', error);
-          toast.error('Failed to load course sections');
-        } finally {
-          setIsLoadingSections(false);
-        }
-      }
-    };
-
-    loadSectionData();
-  }, [initialData?.id, fetchCourseSections, fetchSectionExercises, courseSections, sectionExercises]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    if (isSubmitting || loading) return;
+
     // Filter out empty sections
     const validSections = sections.filter(section => 
       section.title.trim() && section.description.trim()
@@ -244,11 +207,13 @@ function CourseForm({ initialData, onSubmit, onCancel, isSubmitting }: CourseFor
       return;
     }
     
-    await onSubmit({
+    const data = {
       ...formData,
       image_url: imageUrl,
       sections: validSections
-    });
+    };
+
+    await onSubmit(data);
   };
 
   const isValidVideoUrl = (url: string): boolean => {
@@ -288,191 +253,206 @@ function CourseForm({ initialData, onSubmit, onCancel, isSubmitting }: CourseFor
     setSections(newSections);
   };
 
-  if (isLoadingSections) {
+  if (loading) {
     return (
-      <div className="text-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mint-500 mx-auto"></div>
-        <p className="mt-2 text-gray-600">Loading course sections...</p>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mint-600"></div>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
-      {/* Course Details */}
-      <div className="bg-white rounded-xl shadow-sm p-6 space-y-6">
-        <h3 className="text-xl font-semibold text-gray-900 pb-4 border-b">Course Details</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Title
-              </label>
-              <input
-                type="text"
-                name="title"
-                value={formData.title}
-                onChange={handleInputChange}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-mint-500"
-                placeholder="Enter course title"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description
-              </label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                required
-                rows={4}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-mint-500 resize-none"
-                placeholder="Enter course description"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Difficulty
-              </label>
-              <select
-                name="difficulty"
-                value={formData.difficulty}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-mint-500"
-              >
-                <option value="Beginner">Beginner</option>
-                <option value="Intermediate">Intermediate</option>
-                <option value="Advanced">Advanced</option>
-              </select>
-            </div>
+    <form onSubmit={handleSubmit} className="space-y-8 p-6">
+      <div className="space-y-8 divide-y divide-gray-200">
+        {/* Basic Information */}
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-medium leading-6 text-gray-900">
+              Course Information
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Basic information about the course.
+            </p>
           </div>
 
-          <div className="space-y-4">
-            {/* Image Upload Section */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Course Image
-              </label>
-              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-mint-500 transition-colors">
-                <div className="space-y-2 text-center">
-                  {imagePreview ? (
-                    <div className="relative">
-                      <img
-                        src={imagePreview}
-                        alt="Course preview"
-                        className="mx-auto h-32 w-32 object-cover rounded-lg"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setImageFile(null);
-                          setImagePreview(null);
-                          setFormData(prev => ({ ...prev, image_url: '' }));
-                        }}
-                        className="absolute -top-2 -right-2 p-1 bg-red-100 rounded-full text-red-600 hover:bg-red-200"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center">
-                      <Image className="mx-auto h-12 w-12 text-gray-400" />
-                      <div className="flex text-sm text-gray-600">
-                        <label
-                          htmlFor="image-upload"
-                          className="relative cursor-pointer rounded-md font-medium text-mint-600 hover:text-mint-500 focus-within:outline-none"
-                        >
-                          <span>Upload a file</span>
-                          <input
-                            id="image-upload"
-                            name="image-upload"
-                            type="file"
-                            ref={fileInputRef}
-                            className="sr-only"
-                            accept="image/*"
-                            onChange={handleImageSelect}
-                          />
-                        </label>
-                        <p className="pl-1">or drag and drop</p>
-                      </div>
-                      <p className="text-xs text-gray-500">
-                        PNG, JPG, GIF up to 10MB
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Welcome Video URL
-              </label>
-              <input
-                type="url"
-                name="welcome_video"
-                value={formData.welcome_video}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-mint-500"
-                placeholder="https://..."
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Price
-                </label>
-                <input
-                  type="number"
-                  name="price"
-                  value={formData.price}
-                  onChange={handleInputChange}
-                  min="0"
-                  step="0.01"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-mint-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Duration (hours)
-                </label>
-                <input
-                  type="text"
-                  name="duration"
-                  value={formData.duration}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-mint-500"
-                  placeholder="e.g., 2.5"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-4 pt-4">
-          <label className="flex items-center space-x-2">
+          {/* Title */}
+          <div>
+            <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+              Title
+            </label>
             <input
-              type="checkbox"
-              name="is_published"
-              checked={formData.is_published}
-              onChange={handleInputChange}
-              className="rounded border-gray-300 text-mint-600 focus:ring-mint-500"
+              type="text"
+              name="title"
+              id="title"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-mint-500 focus:ring-mint-500 sm:text-sm"
+              required
             />
-            <span className="text-sm text-gray-700">Publish course</span>
-          </label>
-        </div>
-      </div>
+          </div>
 
-      {/* Access and Pricing */}
-      <div className="bg-white rounded-xl shadow-sm p-6 space-y-6">
-        <h3 className="text-xl font-semibold text-gray-900 pb-4 border-b">Access and Pricing</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Description */}
+          <div>
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+              Description
+            </label>
+            <textarea
+              id="description"
+              name="description"
+              rows={3}
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-mint-500 focus:ring-mint-500 sm:text-sm"
+              required
+            />
+          </div>
+
+          {/* Difficulty */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Difficulty
+            </label>
+            <select
+              name="difficulty"
+              value={formData.difficulty}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-mint-500"
+            >
+              <option value="Beginner">Beginner</option>
+              <option value="Intermediate">Intermediate</option>
+              <option value="Advanced">Advanced</option>
+            </select>
+          </div>
+
+          {/* Image Upload Section */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Course Image
+            </label>
+            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-mint-500 transition-colors">
+              <div className="space-y-2 text-center">
+                {imagePreview ? (
+                  <div className="relative">
+                    <img
+                      src={imagePreview}
+                      alt="Course preview"
+                      className="mx-auto h-32 w-32 object-cover rounded-lg"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImageFile(null);
+                        setImagePreview(null);
+                        setFormData(prev => ({ ...prev, image_url: '' }));
+                      }}
+                      className="absolute -top-2 -right-2 p-1 bg-red-100 rounded-full text-red-600 hover:bg-red-200"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center">
+                    <Image className="mx-auto h-12 w-12 text-gray-400" />
+                    <div className="flex text-sm text-gray-600">
+                      <label
+                        htmlFor="image-upload"
+                        className="relative cursor-pointer rounded-md font-medium text-mint-600 hover:text-mint-500 focus-within:outline-none"
+                      >
+                        <span>Upload a file</span>
+                        <input
+                          id="image-upload"
+                          name="image-upload"
+                          type="file"
+                          ref={fileInputRef}
+                          className="sr-only"
+                          accept="image/*"
+                          onChange={handleImageSelect}
+                        />
+                      </label>
+                      <p className="pl-1">or drag and drop</p>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      PNG, JPG, GIF up to 10MB
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Welcome Video URL */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Welcome Video URL
+            </label>
+            <input
+              type="url"
+              name="welcome_video"
+              value={formData.welcome_video}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-mint-500"
+              placeholder="https://..."
+            />
+          </div>
+
+          {/* Price */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Price
+            </label>
+            <input
+              type="number"
+              name="price"
+              value={formData.price}
+              onChange={handleInputChange}
+              min="0"
+              step="0.01"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-mint-500"
+            />
+          </div>
+
+          {/* Duration */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Duration (hours)
+            </label>
+            <input
+              type="text"
+              name="duration"
+              value={formData.duration}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-mint-500"
+              placeholder="e.g., 2.5"
+            />
+          </div>
+
+          {/* Published */}
+          <div className="flex items-center space-x-4 pt-4">
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                name="is_published"
+                checked={formData.is_published}
+                onChange={handleInputChange}
+                className="rounded border-gray-300 text-mint-600 focus:ring-mint-500"
+              />
+              <span className="text-sm text-gray-700">Publish course</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Access and Pricing */}
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-medium leading-6 text-gray-900">
+              Access and Pricing
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Access and pricing information for the course.
+            </p>
+          </div>
+
+          {/* Access Type */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Access Type
@@ -521,74 +501,77 @@ function CourseForm({ initialData, onSubmit, onCancel, isSubmitting }: CourseFor
             </div>
           )}
         </div>
-      </div>
 
-      {/* Course Sections */}
-      <div className="bg-white rounded-xl shadow-sm p-6 space-y-6">
-        <div className="flex justify-between items-center pb-4 border-b">
-          <h3 className="text-xl font-semibold text-gray-900">Course Sections</h3>
-          <button
-            type="button"
-            onClick={addSection}
-            className="flex items-center space-x-2 px-4 py-2 bg-mint-100 text-mint-700 rounded-lg hover:bg-mint-200 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Section</span>
-          </button>
-        </div>
+        {/* Course Sections */}
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h4 className="text-lg font-medium text-gray-900">Course Sections</h4>
+            <button
+              type="button"
+              onClick={() => setSections([...sections, { title: '', description: '', exercises: [] }])}
+              className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-lg text-mint-700 bg-mint-100 hover:bg-mint-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-mint-500"
+            >
+              Add Section
+            </button>
+          </div>
 
-        <div className="space-y-6">
           {sections.map((section, index) => (
-            <div key={index} className="p-4 bg-gray-50 rounded-lg space-y-4">
+            <div key={index} className="space-y-4 p-4 border border-gray-200 rounded-lg">
               <div className="flex justify-between items-start">
-                <h4 className="text-lg font-medium text-gray-900">Section {index + 1}</h4>
+                <div className="flex-1 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Section Title
+                    </label>
+                    <input
+                      type="text"
+                      value={section.title}
+                      onChange={(e) => {
+                        const newSections = [...sections];
+                        newSections[index].title = e.target.value;
+                        setSections(newSections);
+                      }}
+                      className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-mint-500 focus:ring-mint-500 sm:text-sm"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Section Description
+                    </label>
+                    <textarea
+                      value={section.description}
+                      onChange={(e) => {
+                        const newSections = [...sections];
+                        newSections[index].description = e.target.value;
+                        setSections(newSections);
+                      }}
+                      rows={2}
+                      className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-mint-500 focus:ring-mint-500 sm:text-sm"
+                    />
+                  </div>
+                  <LessonSelector
+                    selectedLessons={section.exercises || []}
+                    onChange={(lessons) => {
+                      const newSections = [...sections];
+                      newSections[index].exercises = lessons;
+                      setSections(newSections);
+                    }}
+                  />
+                </div>
                 {sections.length > 1 && (
                   <button
                     type="button"
-                    onClick={() => removeSection(index)}
-                    className="p-1 text-red-600 hover:bg-red-100 rounded-full transition-colors"
+                    onClick={() => {
+                      const newSections = [...sections];
+                      newSections.splice(index, 1);
+                      setSections(newSections);
+                    }}
+                    className="ml-4 p-1 text-gray-400 hover:text-gray-500"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-5 h-5" />
                   </button>
                 )}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Section Title
-                  </label>
-                  <input
-                    type="text"
-                    value={section.title}
-                    onChange={(e) => handleSectionChange(index, 'title', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-mint-500"
-                    placeholder="Enter section title"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Section Description
-                  </label>
-                  <input
-                    type="text"
-                    value={section.description}
-                    onChange={(e) => handleSectionChange(index, 'description', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-mint-500"
-                    placeholder="Enter section description"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Lessons
-                </label>
-                <LessonSelector
-                  selectedLessons={section.exercises}
-                  onChange={(lessons) => handleSectionChange(index, 'exercises', lessons)}
-                />
               </div>
             </div>
           ))}
@@ -596,29 +579,29 @@ function CourseForm({ initialData, onSubmit, onCancel, isSubmitting }: CourseFor
       </div>
 
       {/* Form Actions */}
-      <div className="flex justify-end space-x-4 pt-4">
+      <div className="flex justify-end space-x-3">
         <button
           type="button"
           onClick={onCancel}
-          className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
           disabled={isSubmitting}
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-mint-500"
         >
           Cancel
         </button>
         <button
           type="submit"
-          className="px-6 py-2 bg-mint-600 text-white rounded-lg hover:bg-mint-700 transition-colors flex items-center space-x-2 disabled:opacity-50"
-          disabled={isSubmitting || isUploading}
+          disabled={isSubmitting || loading}
+          className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-mint-600 hover:bg-mint-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-mint-500"
         >
-          {isSubmitting || isUploading ? (
+          {isSubmitting ? (
             <>
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white" />
-              <span>{isUploading ? 'Uploading...' : 'Saving...'}</span>
+              <span className="animate-spin mr-2">⌛</span>
+              Saving...
             </>
           ) : (
             <>
-              <Save className="w-4 h-4" />
-              <span>Save Course</span>
+              <Save className="w-4 h-4 mr-2" />
+              Save Course
             </>
           )}
         </button>
