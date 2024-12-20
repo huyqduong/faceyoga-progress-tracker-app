@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Clock, Target, BookOpen, AlertCircle, Lock, ArrowRight } from 'lucide-react';
 import { useCourseStore } from '../store/courseStore';
 import { CoursePurchaseButton } from '../components/CoursePurchaseButton';
 import { useAuthStore } from '../store/authStore';
 import { courseApi } from '../lib/courses';
-import toast from 'react-hot-toast';
-import { supabase } from '../lib/supabase';
+import { toast } from 'react-hot-toast';
+import type { SectionLesson } from '../lib/supabase-types';
 
 function CourseDetails() {
   const { courseId } = useParams();
@@ -14,324 +14,264 @@ function CourseDetails() {
   const { user } = useAuthStore();
   const { 
     courses, 
-    sections, 
-    sectionLessons,
+    sections,
+    lessons: sectionLessons,
     loading: storeLoading,
-    error,
+    error: storeError,
     fetchCourses,
     fetchCourseSections,
-    fetchSectionLessons
+    fetchSectionLessons,
+    isLoadingCourse
   } = useCourseStore();
 
   const [isLoading, setIsLoading] = useState(true);
-  const [videoError, setVideoError] = useState<string | null>(null);
-  const [dataLoaded, setDataLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [hasAccess, setHasAccess] = useState<boolean>(false);
   const [loadingSections, setLoadingSections] = useState<string[]>([]);
 
   // Get course data
-  const course = courses.find(c => c.id === courseId);
-  const courseSections = sections[courseId] || [];
+  const course = courseId ? courses.find(c => c.id === courseId) : null;
+  const courseSections = courseId && sections[courseId] ? sections[courseId] : [];
 
-  useEffect(() => {
-    const loadCourseData = async () => {
-      if (!courseId) return;
-      
-      setIsLoading(true);
-      try {
-        // Load data in sequence to ensure dependencies are met
-        if (courses.length === 0) {
-          await fetchCourses();
-        }
-
-        // Fetch sections for this course if not already loaded
-        if (!sections[courseId] || sections[courseId].length === 0) {
-          await fetchCourseSections(courseId);
-        }
-        
-        // Get sections after they're loaded
-        const currentSections = sections[courseId] || [];
-        console.log('[CourseDetails] Course sections:', currentSections);
-        
-        // Fetch lessons for sections that don't have lessons loaded
-        const sectionsNeedingLessons = currentSections.filter(
-          section => !sectionLessons[section.id] || sectionLessons[section.id].length === 0
-        );
-        
-        if (sectionsNeedingLessons.length > 0) {
-          setLoadingSections(sectionsNeedingLessons.map(s => s.id));
-          await Promise.all(sectionsNeedingLessons.map(async section => {
-            console.log(`[CourseDetails] Fetching lessons for section ${section.id}`);
-            try {
-              const lessons = await fetchSectionLessons(section.id);
-              console.log(`[CourseDetails] Fetched lessons for section ${section.id}:`, lessons);
-            } finally {
-              setLoadingSections(prev => prev.filter(id => id !== section.id));
-            }
-          }));
-        }
-
-        console.log('[CourseDetails] All section lessons:', sectionLessons);
-        setDataLoaded(true);
-      } catch (error) {
-        console.error('Error loading course data:', error);
-        toast.error('Failed to load course data');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadCourseData();
-  }, [courseId, courses.length, sections, sectionLessons, fetchCourses, fetchCourseSections, fetchSectionLessons]);
-
-  useEffect(() => {
-    const checkAccess = async () => {
-      if (!user || !courseId) {
-        setHasAccess(false);
-        return;
-      }
-      try {
-        const { data } = await supabase
-          .from('course_access')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('course_id', courseId);
-
-        setHasAccess(data && data.length > 0);
-      } catch (error) {
-        console.error('Error checking course access:', error);
-        setHasAccess(false);
-      }
-    };
-
-    checkAccess();
-  }, [user?.id, courseId]);
-
-  const getEmbedUrl = (url: string): string | null => {
-    if (!url) return null;
-    try {
-      const videoUrl = new URL(url);
-      
-      // Handle YouTube URLs
-      if (videoUrl.hostname.includes('youtube.com') || videoUrl.hostname.includes('youtu.be')) {
-        const videoId = videoUrl.hostname.includes('youtu.be')
-          ? videoUrl.pathname.slice(1)
-          : new URLSearchParams(videoUrl.search).get('v');
-        return `https://www.youtube.com/embed/${videoId}`;
-      }
-      
-      // Handle Vimeo URLs
-      if (videoUrl.hostname.includes('vimeo.com')) {
-        const videoId = videoUrl.pathname.split('/').pop();
-        if (videoId) {
-          return `https://player.vimeo.com/video/${videoId}`;
-        }
-      }
-
-      return url;
-    } catch (error) {
-      console.error('Invalid URL:', error);
-      setVideoError('Invalid video URL format');
-      return null;
+  // Load course data and check access
+  const loadCourseData = useCallback(async () => {
+    if (!courseId) {
+      setError('Course ID is missing');
+      setIsLoading(false);
+      return;
     }
-  };
 
-  const handleLessonClick = async (lessonId: string) => {
-    if (!user) {
-      toast.error('Please sign in to access lessons');
+    if (isLoadingCourse(courseId)) {
       return;
     }
     
-    if (!hasAccess) {
-      toast.error('Please purchase this course to access lessons');
-      return;
+    try {
+      // Load data in sequence to ensure dependencies are met
+      if (courses.length === 0) {
+        await fetchCourses();
+      }
+
+      // Fetch sections for this course
+      await fetchCourseSections(courseId);
+      
+      // Check course access
+      if (user) {
+        const hasAccess = await courseApi.hasAccessToCourse(user.id, courseId);
+        setHasAccess(hasAccess);
+      }
+    } catch (err) {
+      console.error('Error loading course data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load course data');
+    } finally {
+      setIsLoading(false);
     }
+  }, [courseId, user, courses.length, fetchCourses, fetchCourseSections, isLoadingCourse]);
 
-    navigate(`/courses/${courseId}/lessons/${lessonId}`);
-  };
+  // Load section lessons
+  const loadSectionLessons = useCallback(async () => {
+    if (!courseSections.length) return;
 
-  const handlePurchaseComplete = () => {
-    setHasAccess(true);
-    // Force a refresh of courses data when navigating back
-    navigate('/courses', { state: { refreshAccess: true } });
-  };
+    const sectionsToLoad = courseSections.filter(
+      section => !sectionLessons[section.id]
+    );
 
-  // Show loading state while fetching data
-  if (isLoading || storeLoading) {
+    if (sectionsToLoad.length === 0) return;
+
+    setLoadingSections(sectionsToLoad.map(s => s.id));
+
+    try {
+      await Promise.all(
+        sectionsToLoad.map(section => 
+          fetchSectionLessons(section.id).catch(err => {
+            console.error(`Error loading lessons for section ${section.id}:`, err);
+            toast.error(`Failed to load lessons for section ${section.title}`);
+          })
+        )
+      );
+    } finally {
+      setLoadingSections([]);
+    }
+  }, [courseSections, sectionLessons, fetchSectionLessons]);
+
+  // Initial data load
+  useEffect(() => {
+    loadCourseData();
+  }, [loadCourseData]);
+
+  // Load lessons after sections are loaded
+  useEffect(() => {
+    if (!isLoading && courseSections.length > 0) {
+      loadSectionLessons();
+    }
+  }, [isLoading, courseSections.length, loadSectionLessons]);
+
+  const renderLesson = (item: SectionLesson) => {
+    if (!item.lesson?.id || !item.lesson?.title) return null;
+
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-mint-500"></div>
+      <div
+        key={item.id}
+        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+      >
+        <div className="flex items-center space-x-3">
+          {item.lesson.image_url ? (
+            <div className="relative w-12 h-12 rounded overflow-hidden flex-shrink-0">
+              <img
+                src={item.lesson.image_url}
+                alt={item.lesson.title}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            </div>
+          ) : (
+            <div className="w-12 h-12 rounded bg-gray-200 flex-shrink-0 flex items-center justify-center">
+              <BookOpen className="h-6 w-6 text-gray-400" />
+            </div>
+          )}
+          <div>
+            <span className="text-gray-700 font-medium">{item.lesson.title}</span>
+            {item.lesson.duration && (
+              <div className="text-sm text-gray-500 flex items-center mt-1">
+                <Clock className="h-4 w-4 mr-1" />
+                {item.lesson.duration}
+              </div>
+            )}
+          </div>
+          {!hasAccess && <Lock className="h-4 w-4 text-gray-400 ml-2" />}
+        </div>
+        {hasAccess && (
+          <button
+            onClick={() => navigate(`/lessons/${item.lesson.id}`)}
+            className="flex items-center space-x-1 text-mint-600 hover:text-mint-700"
+          >
+            <span>Start</span>
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        )}
       </div>
     );
-  }
+  };
 
-  // Show error state if course not found
-  if (!course) {
+  if (error) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Course Not Found</h1>
-          <p className="text-gray-600 mb-4">The course you're looking for doesn't exist or has been removed.</p>
+      <div className="min-h-screen bg-gray-50 px-4 py-8">
+        <div className="mx-auto max-w-3xl">
+          <div className="flex items-center space-x-2 text-red-600 mb-4">
+            <AlertCircle className="h-5 w-5" />
+            <span>{error}</span>
+          </div>
           <button
-            onClick={() => navigate('/courses')}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-mint-600 hover:bg-mint-700"
+            onClick={() => navigate(-1)}
+            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
           >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Courses
+            <ArrowLeft className="h-5 w-5" />
+            <span>Go Back</span>
           </button>
         </div>
       </div>
     );
   }
 
-  const welcomeEmbedUrl = course.welcome_video ? getEmbedUrl(course.welcome_video) : null;
+  if (isLoading || !course) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="mx-auto max-w-3xl animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded w-2/3 mb-2"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-      {/* Back button */}
-      <button
-        onClick={() => navigate('/courses')}
-        className="inline-flex items-center text-gray-600 hover:text-gray-900"
-      >
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to Courses
-      </button>
+    <div className="min-h-screen bg-gray-50">
+      <div className="mx-auto max-w-3xl px-4 py-8">
+        {/* Course Header */}
+        <div className="mb-8">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 mb-4"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            <span>Back to Courses</span>
+          </button>
 
-      {/* Course header */}
-      <div className="space-y-6">
-        {/* Course image */}
-        <div className="relative max-h-[400px] h-[40vh] rounded-lg overflow-hidden">
-          {course.image_url ? (
-            <img
-              src={course.image_url}
-              alt={course.title}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-              <BookOpen className="w-12 h-12 text-gray-400" />
+          {course.image_url && (
+            <div className="relative w-full h-48 md:h-64 mb-6 rounded-lg overflow-hidden">
+              <img
+                src={course.image_url}
+                alt={course.title}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
             </div>
           )}
-          {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-        </div>
 
-        <div className="space-y-4">
-          <h1 className="text-3xl font-bold text-gray-900">{course.title}</h1>
-          <p className="text-lg text-gray-600">{course.description}</p>
-
-          {/* Course stats */}
-          <div className="flex flex-wrap gap-4 text-gray-600">
-            <div className="flex items-center">
-              <Clock className="mr-2 h-4 w-4" />
-              <span>{course.duration} minutes</span>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">{course.title}</h1>
+          
+          <div className="flex flex-wrap gap-4 text-gray-600 mb-6">
+            <div className="flex items-center space-x-2">
+              <Clock className="h-5 w-5" />
+              <span>{course.duration}</span>
             </div>
-            <div className="flex items-center">
-              <Target className="mr-2 h-4 w-4" />
-              <span>{course.level}</span>
+            <div className="flex items-center space-x-2">
+              <Target className="h-5 w-5" />
+              <span>{course.difficulty}</span>
             </div>
-            <div className="flex items-center">
-              <BookOpen className="mr-2 h-4 w-4" />
+            <div className="flex items-center space-x-2">
+              <BookOpen className="h-5 w-5" />
               <span>{courseSections.length} sections</span>
             </div>
           </div>
 
-          {/* Welcome video */}
-          {welcomeEmbedUrl && (
-            <div className="aspect-w-16 aspect-h-9">
-              <iframe
-                src={welcomeEmbedUrl}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="rounded-lg shadow-lg"
-                onError={() => setVideoError('Failed to load video')}
+          <p className="text-gray-600 mb-6">{course.description}</p>
+
+          {!hasAccess && (
+            <div className="mb-6">
+              <CoursePurchaseButton
+                courseId={course.id}
+                onPurchaseComplete={() => setHasAccess(true)}
               />
             </div>
           )}
-          {videoError && (
-            <div className="text-red-500 flex items-center">
-              <AlertCircle className="mr-2 h-4 w-4" />
-              {videoError}
-            </div>
-          )}
-
-          {/* Purchase button */}
-          <div className="max-w-sm">
-            <CoursePurchaseButton 
-              course={course} 
-              onPurchaseComplete={handlePurchaseComplete}
-            />
-          </div>
         </div>
-      </div>
 
-      {/* Course content */}
-      <div className="space-y-6">
-        <h2 className="text-2xl font-bold text-gray-900">Course Content</h2>
-        {!hasAccess && (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex items-center text-gray-600">
-            <Lock className="mr-2 h-4 w-4" />
-            Purchase this course to access all content
-          </div>
-        )}
-        <div className="space-y-4">
-          {courseSections.map((section, index) => (
-            <div key={section.id} className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900">
-                  Section {index + 1}: {section.title}
+        {/* Course Content */}
+        <div className="space-y-6">
+          {courseSections.map((section) => {
+            const isLoading = loadingSections.includes(section.id);
+            const sectionLessonList = sectionLessons[section.id] || [];
+
+            return (
+              <div
+                key={section.id}
+                className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+              >
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                  {section.title}
                 </h3>
-                {section.description && (
-                  <p className="mt-1 text-sm text-gray-500">{section.description}</p>
-                )}
+                <p className="text-gray-600 mb-4">{section.description}</p>
+
+                <div className="space-y-3">
+                  {isLoading ? (
+                    <div className="animate-pulse space-y-3">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="h-12 bg-gray-100 rounded"></div>
+                      ))}
+                    </div>
+                  ) : sectionLessonList.length > 0 ? (
+                    sectionLessonList.map(renderLesson)
+                  ) : (
+                    <p className="text-gray-500 italic">No lessons available</p>
+                  )}
+                </div>
               </div>
-              <div className="divide-y divide-gray-200">
-                {loadingSections.includes(section.id) ? (
-                  <div className="px-4 py-3 text-sm text-gray-500">Loading lessons...</div>
-                ) : (sectionLessons[section.id] || []).map((item) => {
-                  const lesson = item.lesson;
-                  if (!lesson) return null;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => handleLessonClick(lesson.id)}
-                      className={`w-full px-4 py-3 flex items-center justify-between text-left transition-colors
-                        ${hasAccess 
-                          ? 'hover:bg-gray-50 cursor-pointer' 
-                          : 'cursor-not-allowed text-gray-400'
-                        }`}
-                    >
-                      <div className="flex items-center space-x-3">
-                        {lesson.image_url && (
-                          <div className="w-10 h-10 rounded overflow-hidden flex-shrink-0">
-                            <img
-                              src={lesson.image_url}
-                              alt={lesson.title}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        )}
-                        <div>
-                          <div className="font-medium">{lesson.title}</div>
-                          <div className="text-sm text-gray-500">
-                            <span className="flex items-center">
-                              <Clock className="h-4 w-4 mr-1" />
-                              {lesson.duration}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      {!hasAccess ? (
-                        <Lock className="h-4 w-4" />
-                      ) : (
-                        <ArrowRight className="h-4 w-4 text-mint-600" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

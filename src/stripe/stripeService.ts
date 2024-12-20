@@ -8,10 +8,20 @@ interface CreatePaymentIntentResponse {
   error?: string;
 }
 
+interface CreatePaymentIntentParams {
+  courseId: string;
+  userId: string;
+  amount: number;
+}
+
 export const stripeService = {
-  async createPaymentIntent(courseId: string, amount: number): Promise<CreatePaymentIntentResponse> {
+  async createPaymentIntent({ courseId, userId, amount }: CreatePaymentIntentParams): Promise<CreatePaymentIntentResponse> {
     try {
-      console.log('Creating payment intent for:', { courseId, amount });
+      if (!courseId || !amount) {
+        throw new Error('Missing required fields: courseId and amount');
+      }
+
+      console.log('Creating payment intent for:', { courseId, userId, amount });
 
       // Get the current session
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -32,7 +42,10 @@ export const stripeService = {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ courseId, amount: formatStripePrice(amount) }),
+        body: JSON.stringify({ 
+          courseId, 
+          amount: formatStripePrice(amount)
+        }),
       });
 
       if (!response.ok) {
@@ -55,35 +68,73 @@ export const stripeService = {
 
   async handlePaymentSuccess(paymentIntentId: string, courseId: string): Promise<void> {
     try {
-      console.log('Handling payment success for:', paymentIntentId);
-
-      // Get the current session
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) {
-        console.error('Session error:', sessionError);
-        throw new Error('Authentication required');
+      if (sessionError) throw new Error('Authentication required');
+      if (!session) throw new Error('Please sign in to complete purchase');
+
+      console.log('Creating course purchase record...');
+
+      const now = new Date().toISOString();
+
+      // First create a purchase record
+      const { data: purchaseData, error: purchaseError } = await supabase
+        .from('course_purchases')
+        .insert([
+          {
+            user_id: session.user.id,
+            course_id: courseId,
+            amount: 0, // This should be the actual amount from the course
+            currency: 'usd',
+            status: 'completed',
+            payment_intent_id: paymentIntentId,
+            payment_method: 'stripe'
+          }
+        ])
+        .select()
+        .single();
+
+      if (purchaseError) {
+        console.error('Error creating purchase record:', purchaseError);
+        throw new Error('Failed to record purchase');
       }
 
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/handle-payment-success`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
-        },
-        body: JSON.stringify({ paymentIntentId, courseId }),
-      });
+      // Check if access already exists
+      const { data: existingAccess } = await supabase
+        .from('course_access')
+        .select()
+        .eq('user_id', session.user.id)
+        .eq('course_id', courseId)
+        .single();
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Payment success handling failed:', errorData);
-        throw new Error(errorData.error || 'Failed to process payment');
+      if (existingAccess) {
+        console.log('User already has access to this course');
+        return;
       }
 
-      const data = await response.json();
-      console.log('Payment success handled:', data);
+      // Create course access record with the purchase ID
+      const { error: accessError } = await supabase
+        .from('course_access')
+        .insert([
+          {
+            user_id: session.user.id,
+            course_id: courseId,
+            purchase_id: purchaseData.id,
+            access_type: 'lifetime', 
+            starts_at: now,
+            created_at: now,
+            updated_at: now
+          }
+        ]);
+
+      if (accessError) {
+        console.error('Error creating course access:', accessError);
+        throw new Error('Failed to grant course access');
+      }
+
+      console.log('Course access granted successfully');
     } catch (error: any) {
-      console.error('Error in handlePaymentSuccess:', error);
+      console.error('Error handling payment success:', error);
       throw error;
     }
-  },
+  }
 };

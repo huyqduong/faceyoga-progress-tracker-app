@@ -170,27 +170,29 @@ export const useCourseStore = create<CourseState>((set, get) => ({
   },
 
   fetchSectionLessons: async (sectionId: string) => {
-    console.log(`[CourseStore] Starting fetchSectionLessons for section ${sectionId}`);
+    const { lessons: currentLessons } = get();
+    
+    // Return cached lessons if available
+    if (currentLessons[sectionId]) {
+      return currentLessons[sectionId];
+    }
+
     try {
       const lessons = await courseApi.fetchSectionLessons(sectionId);
-      console.log(`[CourseStore] Successfully fetched ${lessons.length} lessons for section ${sectionId}:`, lessons);
       
-      // Update the store with the new lessons
+      // Filter out lessons with missing data
+      const validLessons = lessons.filter(item => item.lesson && item.lesson.id);
+
       set(state => ({
         lessons: {
           ...state.lessons,
-          [sectionId]: lessons.map(item => ({
-            ...item,
-            lesson: item.lesson || null // Ensure lesson is never undefined
-          }))
+          [sectionId]: validLessons
         }
       }));
-      
-      return lessons;
+
+      return validLessons;
     } catch (error) {
       console.error(`[CourseStore] Error fetching lessons for section ${sectionId}:`, error);
-      const message = error instanceof Error ? error.message : 'Failed to fetch section lessons';
-      set({ error: message });
       throw error;
     }
   },

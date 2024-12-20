@@ -35,24 +35,61 @@ const PaymentForm = ({ clientSecret, course, onSuccess, onError }: PaymentFormPr
     setErrorMessage('');
 
     try {
-      const { error, paymentIntent } = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: `${window.location.origin}/course/${course.id}`,
-        },
-        redirect: 'if_required',
-      });
+      // First, check the PaymentIntent status
+      const { paymentIntent: existingIntent } = await stripe.retrievePaymentIntent(clientSecret);
+      console.log('Current PaymentIntent status:', existingIntent?.status);
 
-      if (error) {
-        setErrorMessage(error.message || 'An error occurred during payment');
-        onError(error.message || 'An error occurred during payment');
-      } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+      if (existingIntent?.status === 'succeeded') {
+        console.log('Payment already succeeded');
         setPaymentStatus('Payment successful!');
-        onSuccess(paymentIntent.id);
+        onSuccess(existingIntent.id);
+        return;
+      }
+
+      if (existingIntent?.status === 'requires_payment_method') {
+        const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
+          elements,
+          confirmParams: {
+            return_url: `${window.location.origin}/course/${course.id}`,
+            payment_method_data: {
+              billing_details: {
+                name: 'Course Purchase',
+              },
+            },
+          },
+          redirect: 'if_required',
+        });
+
+        if (confirmError) {
+          console.error('Payment confirmation error:', confirmError);
+          if (confirmError.type === 'invalid_request_error' && 
+              confirmError.code === 'payment_intent_unexpected_state') {
+            // Handle the case where the payment might have succeeded but we missed the update
+            const { paymentIntent: updatedIntent } = await stripe.retrievePaymentIntent(clientSecret);
+            if (updatedIntent?.status === 'succeeded') {
+              setPaymentStatus('Payment successful!');
+              onSuccess(updatedIntent.id);
+              return;
+            }
+          }
+          setErrorMessage(confirmError.message || 'An error occurred during payment');
+          onError(confirmError.message || 'An error occurred during payment');
+          return;
+        }
+
+        if (paymentIntent && paymentIntent.status === 'succeeded') {
+          setPaymentStatus('Payment successful!');
+          onSuccess(paymentIntent.id);
+        } else {
+          setErrorMessage('Please try another payment method');
+          onError('Please try another payment method');
+        }
       } else {
-        setPaymentStatus('Payment requires additional steps...');
+        setErrorMessage('Invalid payment state. Please try again.');
+        onError('Invalid payment state. Please try again.');
       }
     } catch (error: any) {
+      console.error('Payment error:', error);
       setErrorMessage(error.message || 'An unexpected error occurred');
       onError(error.message || 'An unexpected error occurred');
     } finally {
@@ -66,7 +103,7 @@ const PaymentForm = ({ clientSecret, course, onSuccess, onError }: PaymentFormPr
         <div className="mb-6">
           <h3 className="text-lg font-semibold mb-2">Payment Details</h3>
           <p className="text-gray-600">
-            Amount: {formatDisplayPrice(course.price)}
+            Amount: {formatDisplayPrice(course.price || 0)}
           </p>
         </div>
 
