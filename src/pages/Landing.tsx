@@ -223,7 +223,7 @@ const Landing = () => {
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">Why Choose Our App?</h2>
             <p className="text-xl text-gray-600 dark:text-gray-300">
-              Discover the features that make our <span className="text-mint-600 font-semibold">100% free</span> face yoga app unique
+              Discover the features that make our face yoga app unique
             </p>
           </div>
 
@@ -288,7 +288,7 @@ const Landing = () => {
           >
             <h2 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">Be the First to Experience</h2>
             <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
-              Join our exclusive waitlist and get early access to transform your face naturally - <span className="text-mint-600 font-semibold">completely free forever</span>
+              Join our exclusive waitlist and get early access to transform your face naturally
             </p>
             
             <form onSubmit={handleSignup} className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
