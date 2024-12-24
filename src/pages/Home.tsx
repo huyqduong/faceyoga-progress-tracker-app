@@ -112,7 +112,7 @@ function Home() {
           {settings?.home_title || 'Welcome back'}, {profile?.full_name || 'User'}!
         </h1>
         <p className="text-xl text-gray-600 dark:text-gray-300">
-          {settings?.tagline || 'Continue your face yoga journey'}
+          {settings?.home_subtitle || 'Continue your face yoga journey'}
         </p>
       </header>
 

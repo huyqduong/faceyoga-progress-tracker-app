@@ -10,6 +10,7 @@ interface AppSettings {
   business_name: string;
   tagline: string;
   home_title: string;
+  home_subtitle: string;
   logo_url: string | null;
   contact_email: string | null;
   contact_phone: string | null;
@@ -33,6 +34,7 @@ function SettingsManager() {
     business_name: '',
     tagline: '',
     home_title: '',
+    home_subtitle: '',
     contact_email: '',
     contact_phone: '',
     social_links: {
@@ -59,6 +61,7 @@ function SettingsManager() {
           business_name: data.business_name || '',
           tagline: data.tagline || '',
           home_title: data.home_title || '',
+          home_subtitle: data.home_subtitle || '',
           contact_email: data.contact_email || '',
           contact_phone: data.contact_phone || '',
           social_links: {
@@ -167,6 +170,7 @@ function SettingsManager() {
           business_name: formData.business_name,
           tagline: formData.tagline,
           home_title: formData.home_title,
+          home_subtitle: formData.home_subtitle,
           contact_email: formData.contact_email || null,
           contact_phone: formData.contact_phone || null,
           social_links: formData.social_links,
@@ -295,6 +299,21 @@ function SettingsManager() {
                 }
                 className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-mint-500 dark:focus:ring-mint-400"
                 placeholder="Enter home title"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Home Subtitle
+              </label>
+              <input
+                type="text"
+                value={formData.home_subtitle}
+                onChange={(e) =>
+                  setFormData({ ...formData, home_subtitle: e.target.value })
+                }
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-mint-500 dark:focus:ring-mint-400"
+                placeholder="Enter home subtitle"
               />
             </div>
 

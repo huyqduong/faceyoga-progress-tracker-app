@@ -9,6 +9,8 @@ import { ThemeToggle } from '../components/ThemeToggle';
 interface AppSettings {
   id: string;
   business_name: string;
+  home_title: string;
+  home_subtitle: string;
   logo_url: string | null;
   description: string;
   primary_color: string;
@@ -137,11 +139,11 @@ const Landing = () => {
             >
               <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold tracking-tight mb-4 sm:mb-6 text-gray-900 dark:text-white">
                 <span className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-mint-600/90 to-mint-300/90">
-                  Transform Your Face Naturally
+                  {settings?.home_title || 'Transform Your Face Naturally'}
                 </span>
               </h1>
               <p className="mt-4 sm:mt-6 text-lg sm:text-xl md:text-2xl leading-relaxed text-gray-600 dark:text-gray-300">
-                Experience the power of guided face yoga exercises for natural rejuvenation and radiant skin
+                {settings?.home_subtitle || 'Experience the power of guided face yoga exercises for natural rejuvenation and radiant skin'}
               </p>
 
               <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">

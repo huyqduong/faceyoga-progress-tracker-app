@@ -6,6 +6,7 @@ interface AppSettings {
   business_name: string;
   tagline: string;
   home_title: string;
+  home_subtitle: string;
   logo_url: string | null;
   description: string;
   contact_email: string | null;
@@ -36,6 +37,7 @@ const DEFAULT_SETTINGS = {
   secondary_color: '#38B2AC',
   tagline: 'Your Natural Face Transformation Journey',
   home_title: 'Welcome to Face Yoga',
+  home_subtitle: 'Transform your face naturally with guided exercises',
   logo_url: null,
   contact_email: null,
   contact_phone: null,
