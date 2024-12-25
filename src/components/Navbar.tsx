@@ -66,22 +66,10 @@ function Navbar() {
       current: location.pathname === '/'
     },
     {
-      name: 'Dashboard',
-      href: '/dashboard',
-      icon: Layout,
-      current: location.pathname === '/dashboard'
-    },
-    {
-      name: 'Lessons',
-      href: '/lessons',
-      icon: Book,
-      current: location.pathname.startsWith('/lessons')
-    },
-    {
-      name: 'Progress',
-      href: '/progress',
-      icon: Sparkles,
-      current: location.pathname.startsWith('/progress')
+      name: 'Courses',
+      href: '/courses',
+      icon: GraduationCap,
+      current: location.pathname === '/courses'
     },
     {
       name: 'Feedback',

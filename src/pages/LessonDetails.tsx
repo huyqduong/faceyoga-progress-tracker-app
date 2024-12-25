@@ -1,25 +1,14 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { useLessonStore } from '../store/lessonStore';
-import { useProfileStore } from '../store/profileStore';
 import { useProgressStore } from '../store/progressStore';
 import { useLessonHistoryStore } from '../store/lessonHistoryStore';
 import { useGoalProgressStore } from '../store/goalProgressStore';
-import { courseApi } from '../lib/courses';
-import toast from 'react-hot-toast';
+import { AlertCircle, Play, Pause, RotateCcw, ImageOff, Lock, CheckCircle, X } from 'lucide-react';
+import { vimeoService } from '../lib/vimeo';
 import BackButton from '../components/BackButton';
-import { 
-  Play, 
-  Pause, 
-  RotateCcw, 
-  ImageOff, 
-  Lock, 
-  AlertCircle, 
-  CheckCircle, 
-  X 
-} from 'lucide-react';
 
 interface LessonDetailsProps {
   onComplete?: () => void;
@@ -30,22 +19,22 @@ function LessonDetails({ onComplete }: LessonDetailsProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { profile, updateProfile } = useProfileStore();
   const { lessons, fetchLessons } = useLessonStore();
-  const { fetchProgress } = useProgressStore();
-  const { fetchHistory } = useLessonHistoryStore();
-  const { trackLessonCompletion } = useGoalProgressStore();
   
   const [isStarted, setIsStarted] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [videoError, setVideoError] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [hasAccess, setHasAccess] = useState<boolean>(false);
   const [checkingAccess, setCheckingAccess] = useState(true);
+  const [videoPassword, setVideoPassword] = useState('');
+  const [requiresPassword, setRequiresPassword] = useState(false);
+  const [embedUrl, setEmbedUrl] = useState<string | null>(null);
+  const [videoError, setVideoError] = useState<string | null>(null);
+  const [videoLoading, setVideoLoading] = useState(false);
 
   useEffect(() => {
     fetchLessons();
@@ -204,54 +193,49 @@ function LessonDetails({ onComplete }: LessonDetailsProps) {
     return () => window.clearInterval(timer);
   }, [isStarted, isPaused, timeLeft]);
 
+  const getEmbedUrl = async (videoUrl: string): Promise<string> => {
+    try {
+      console.log('Getting embed URL for:', videoUrl);
+      const videoInfo = await vimeoService.getVideoInfo(videoUrl);
+      
+      if (!videoInfo.embedUrl) {
+        throw new Error('No embed URL available for this video');
+      }
+
+      return videoInfo.embedUrl;
+    } catch (error) {
+      console.error('Error getting embed URL:', error);
+      throw error;
+    }
+  };
+
+  useEffect(() => {
+    if (lesson?.video_url) {
+      console.log('Loading video for URL:', lesson.video_url);
+      setVideoLoading(true);
+      setVideoError(null);
+      
+      getEmbedUrl(lesson.video_url)
+        .then(url => {
+          console.log('Setting embed URL:', url);
+          setEmbedUrl(url);
+        })
+        .catch(error => {
+          console.error('Error loading video:', error);
+          setVideoError(error instanceof Error ? error.message : 'Failed to load video');
+        })
+        .finally(() => {
+          setVideoLoading(false);
+        });
+    } else {
+      setEmbedUrl(null);
+    }
+  }, [lesson]);
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const getEmbedUrl = (url: string): string | null => {
-    if (!url) return null;
-    
-    try {
-      if (url.includes('vimeo.com')) {
-        let videoId = '';
-        if (url.includes('player.vimeo.com/video/')) {
-          videoId = url.split('player.vimeo.com/video/')[1]?.split('?')[0] || '';
-        } else {
-          videoId = url.split('vimeo.com/')[1]?.split('?')[0] || '';
-        }
-        
-        if (!videoId) {
-          throw new Error('Invalid Vimeo URL');
-        }
-        
-        return `https://player.vimeo.com/video/${videoId}?autoplay=0&title=0&byline=0&portrait=0&dnt=1`;
-      }
-      
-      if (url.includes('youtube.com') || url.includes('youtu.be')) {
-        let videoId = '';
-        if (url.includes('youtube.com/watch')) {
-          videoId = new URL(url).searchParams.get('v') || '';
-        } else if (url.includes('youtu.be/')) {
-          videoId = url.split('youtu.be/')[1]?.split('?')[0] || '';
-        } else if (url.includes('youtube.com/embed/')) {
-          videoId = url.split('youtube.com/embed/')[1]?.split('?')[0] || '';
-        }
-        
-        if (!videoId) {
-          throw new Error('Invalid YouTube URL');
-        }
-        
-        return `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1`;
-      }
-      
-      throw new Error('Unsupported video platform');
-    } catch (error) {
-      console.error('Error parsing video URL:', error);
-      setVideoError((error as Error).message);
-      return null;
-    }
   };
 
   const handleReset = () => {
@@ -307,6 +291,29 @@ function LessonDetails({ onComplete }: LessonDetailsProps) {
     }
   };
 
+  const handlePasswordSubmit = async () => {
+    if (!lesson?.video_url || !videoPassword) return;
+    
+    try {
+      const videoId = lesson.video_url.split('vimeo.com/')[1]?.split('?')[0];
+      if (!videoId) {
+        throw new Error('Invalid video URL');
+      }
+      
+      const success = await vimeoService.unlockVideo(videoId, videoPassword);
+      if (success) {
+        const videoInfo = await vimeoService.getVideoInfo(lesson.video_url);
+        setEmbedUrl(videoInfo.embedUrl);
+        setRequiresPassword(false);
+      } else {
+        toast.error('Incorrect password');
+      }
+    } catch (error) {
+      console.error('Error unlocking video:', error);
+      toast.error('Failed to unlock video');
+    }
+  };
+
   if (checkingAccess) {
     return <div>Checking access...</div>;
   }
@@ -345,25 +352,34 @@ function LessonDetails({ onComplete }: LessonDetailsProps) {
       <div className="mt-8 max-w-4xl mx-auto">
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           <div className="relative">
-            {lesson.video_url ? (
-              <div className="aspect-w-16 aspect-h-9">
-                {videoError ? (
-                  <div className="flex items-center justify-center bg-gray-100">
-                    <div className="text-center">
-                      <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
-                      <p className="mt-2 text-gray-600">{videoError}</p>
+            {/* Video Section */}
+            {lesson?.video_url && (
+              <div className="w-full max-w-4xl mx-auto px-4 mb-8">
+                <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
+                  {videoLoading ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-mint-500" />
                     </div>
-                  </div>
-                ) : (
-                  <iframe
-                    src={getEmbedUrl(lesson.video_url) || ''}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="w-full h-full"
-                  ></iframe>
-                )}
+                  ) : videoError ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
+                      <div className="text-red-500 flex items-center gap-2">
+                        <AlertCircle className="w-5 h-5" />
+                        <span>{videoError}</span>
+                      </div>
+                    </div>
+                  ) : embedUrl ? (
+                    <iframe
+                      src={embedUrl}
+                      className="absolute top-0 left-0 w-full h-full rounded-lg shadow-lg"
+                      frameBorder="0"
+                      allow="autoplay; fullscreen; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : null}
+                </div>
               </div>
-            ) : (
+            )}
+            {!lesson.video_url && (
               <div
                 className="relative aspect-w-16 aspect-h-9 bg-gray-100 cursor-pointer"
                 onClick={() => setShowImageModal(true)}

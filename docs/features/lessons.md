@@ -123,6 +123,49 @@ interface LessonCardProps {
 }
 ```
 
+### LessonDetails Component
+- Displays detailed information about a specific lesson
+- Handles video playback using Vimeo integration
+- Shows lesson description, instructions, and benefits
+- Supports timer functionality for practice sessions
+
+## Video Integration
+
+### Vimeo Video Support
+- Supports both public and unlisted Vimeo videos
+- Handles video hash parameters for unlisted videos
+- Responsive video player with 16:9 aspect ratio
+- Clean UI with rounded corners and subtle shadow
+
+### Video URL Formats
+- Public videos: `https://vimeo.com/{video_id}`
+- Unlisted videos: `https://vimeo.com/{video_id}?h={hash}`
+- Embed URL: `https://player.vimeo.com/video/{video_id}?h={hash}`
+
+## Implementation Details
+
+### Video Player
+```tsx
+// Video container with responsive 16:9 aspect ratio
+<div className="w-full max-w-4xl mx-auto px-4 mb-8">
+  <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
+    <iframe
+      src={embedUrl}
+      className="absolute top-0 left-0 w-full h-full rounded-lg shadow-lg"
+      frameBorder="0"
+      allow="autoplay; fullscreen; picture-in-picture"
+      allowFullScreen
+    />
+  </div>
+</div>
+```
+
+### Vimeo Service
+- Extracts video ID and hash from various URL formats
+- Constructs proper embed URLs for the video player
+- Handles error cases and invalid URLs
+- Provides video information through a consistent interface
+
 ## API Layer
 
 ### Lesson API (`src/lib/lessons.ts`)
@@ -261,3 +304,10 @@ const hasAccess = async (userId: string, lessonId: string) => {
 3. Batch progress updates
 4. Performance monitoring
 5. Advanced caching strategies
+
+## Future Improvements
+- [ ] Add video quality selection
+- [ ] Implement video playback analytics
+- [ ] Add support for video chapters/timestamps
+- [ ] Implement video progress tracking
+- [ ] Add offline video support
