@@ -137,6 +137,125 @@ interface ExerciseGoalMapping {
 }
 ```
 
+### Goal-Lesson Integration
+
+#### Lesson Contribution System
+Each lesson can be linked to multiple goals with customizable contribution weights:
+```typescript
+interface GoalLesson {
+  id: string;
+  goal_id: string;
+  lesson_id: string;
+  contribution_weight: number;  // Points contributed to goal progress when lesson is completed
+  created_at: string;
+}
+```
+
+#### Lesson Completion Flow
+When a user completes a lesson, the following process occurs:
+
+1. **Goal Progress Update**
+   - System identifies all goals linked to the completed lesson
+   - For each linked goal:
+     - Adds the lesson's contribution weight to the goal's progress points
+     - Recalculates milestone achievements based on new progress
+     - Updates goal status if all milestones are reached
+
+2. **Progress Visualization**
+   - Goal progress card updates to show:
+     - New progress points
+     - Updated circular progress percentage
+     - Current milestone achievements
+     - Goal status changes
+
+3. **Status Updates**
+   - Goal status automatically changes to:
+     - "in_progress" when first lesson is completed
+     - "completed" when all milestones are reached
+
+#### Example Flow
+```mermaid
+sequenceDiagram
+    participant User
+    participant Lesson
+    participant GoalProgress
+    participant Milestones
+    participant UI
+
+    User->>Lesson: Completes lesson
+    Lesson->>GoalProgress: Get linked goals
+    loop For each linked goal
+        GoalProgress->>GoalProgress: Add contribution points
+        GoalProgress->>Milestones: Check milestone achievements
+        GoalProgress->>GoalProgress: Update status
+    end
+    GoalProgress->>UI: Update progress display
+```
+
+### Goal Points System
+
+#### Points Calculation
+- Each lesson can contribute different points to different goals
+- Default contribution is 10 points if not specified
+- Total points needed for goal completion = highest milestone target value
+- Progress percentage = (current points / total points needed) * 100
+
+#### Example
+```
+Goal: "Improve Face Symmetry"
+Milestones:
+- Basic exercises completed (30 points)
+- Intermediate mastery (60 points)
+- Advanced techniques (100 points)
+
+Related Lessons:
+- Basic symmetry exercises (15 points)
+- Mirror technique practice (20 points)
+- Advanced balancing routine (25 points)
+
+Progress Calculation:
+- Complete basic exercises = 15 points (15% progress)
+- Complete mirror technique = 35 points (35% progress)
+- Complete advanced routine = 60 points (60% progress)
+```
+
+### Admin Management
+
+#### Goal Setup
+Administrators can:
+- Create and edit goals
+- Define milestones and target points
+- Link lessons to goals
+- Set contribution weights for each lesson
+- Manage goal categories and difficulty levels
+
+#### Lesson Weight Configuration
+In the Admin Goals interface:
+1. Add related lessons to a goal
+2. Set custom point values for each lesson
+3. Points determine how much the lesson contributes to goal progress
+4. Higher points = greater impact on goal completion
+
+### Best Practices
+
+#### Setting Contribution Weights
+- Align points with lesson difficulty and importance
+- Consider lesson duration and complexity
+- Balance points across different lesson types
+- Use consistent point scales across similar goals
+
+#### Goal Structure
+- Set realistic milestone targets
+- Space milestones evenly
+- Ensure total points are achievable
+- Consider user skill progression
+
+#### Progress Tracking
+- Monitor completion rates
+- Analyze point distribution
+- Adjust weights if needed
+- Get user feedback on progression
+
 ### Status Management
 
 #### Status Types

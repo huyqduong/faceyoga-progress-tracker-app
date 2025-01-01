@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Edit2, ArrowLeft, BarChart2 } from 'lucide-react';
+import { Edit2, ArrowLeft, BarChart2, ArrowRight } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
@@ -28,19 +28,32 @@ function Goals() {
     updateGoalStatus
   } = useGoalProgressStore();
 
+  useEffect(() => {
+    if (!user) return;
+    fetchData();
+  }, [user]);
+
   const fetchData = async () => {
     if (!user) return;
 
     try {
       setDataLoading(true);
       
-      // Fetch goals and user goals in parallel for better performance
       const [goalsResult, userGoalsResult] = await Promise.all([
         supabase
           .from('goals')
           .select(`
             *,
-            milestones:goal_milestones(*)
+            milestones:goal_milestones(*),
+            lessons:goal_lessons(
+              lesson:lessons(
+                id,
+                title,
+                description,
+                image_url,
+                video_url
+              )
+            )
           `)
           .order('created_at', { ascending: true }),
         supabase
@@ -56,54 +69,17 @@ function Goals() {
       setGoals(goalsResult.data || []);
       setUserGoals(userGoalsResult.data);
 
-      // Fetch goal progress only if user has goals
       if (userGoalsResult.data) {
         await fetchGoalProgress(user.id);
       }
 
-    } catch (err) {
-      console.error('Error fetching data:', err);
+    } catch (error) {
+      console.error('Error fetching data:', error);
       toast.error('Failed to load goals');
       setGoals([]);
       setUserGoals(null);
     } finally {
       setDataLoading(false);
-    }
-  };
-
-  // Memoize fetchData to prevent unnecessary re-renders
-  const memoizedFetchData = useCallback(fetchData, [user?.id, fetchGoalProgress]);
-
-  useEffect(() => {
-    if (!user) return;
-    memoizedFetchData();
-  }, [user, memoizedFetchData]);
-
-  const handleUpdateGoals = async () => {
-    if (!user) return;
-
-    try {
-      // Reset onboarding_completed flag
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ onboarding_completed: false })
-        .eq('user_id', user.id);
-
-      if (profileError) throw profileError;
-
-      // Clear existing goals to force new AI recommendation
-      const { error: goalsError } = await supabase
-        .from('user_goals')
-        .delete()
-        .eq('user_id', user.id);
-
-      if (goalsError) throw goalsError;
-
-      // Navigate to onboarding page
-      navigate('/onboarding');
-    } catch (err) {
-      console.error('Error updating profile:', err);
-      toast.error('Failed to start goal update');
     }
   };
 
@@ -124,7 +100,6 @@ function Goals() {
     
     try {
       await updateGoalStatus(goalId, status);
-      // Update the selected goal's status if it's the one being modified
       if (selectedGoal?.id === goalId) {
         setSelectedGoal(prev => prev ? {
           ...prev,
@@ -136,7 +111,36 @@ function Goals() {
     }
   };
 
-  // Only show loading on initial load
+  const handleUpdateGoals = async () => {
+    if (!user) return;
+
+    try {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ onboarding_completed: false })
+        .eq('user_id', user.id);
+
+      if (profileError) throw profileError;
+
+      const { error: goalsError } = await supabase
+        .from('user_goals')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (goalsError) throw goalsError;
+
+      navigate('/onboarding');
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      toast.error('Failed to start goal update');
+    }
+  };
+
+  const stripHtml = (html: string) => {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    return doc.body.textContent || '';
+  };
+
   if (dataLoading && !userGoals) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
@@ -146,16 +150,15 @@ function Goals() {
     );
   }
 
-  // No goals state
   if (!userGoals) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <p className="text-gray-600 dark:text-gray-400 mb-4">You haven't set any goals yet.</p>
         <button
           onClick={() => navigate('/onboarding')}
-          className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90"
+          className="px-6 py-3 bg-mint-500 text-white rounded-lg hover:bg-mint-600 transition-colors"
         >
-          Set Your Goals
+          Set Up Goals
         </button>
       </div>
     );
@@ -164,7 +167,6 @@ function Goals() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        {/* Header Section - Mobile Optimized */}
         <div className="space-y-6 sm:space-y-0 sm:flex sm:items-center sm:justify-between mb-8 sm:mb-10">
           <div className="flex items-center gap-4">
             <BackButton />
@@ -173,7 +175,6 @@ function Goals() {
               <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400 mt-1 sm:mt-2">Track and update your face yoga journey</p>
             </div>
           </div>
-          {/* Action Buttons - Stack on mobile */}
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <button
               onClick={() => navigate('/goals/analytics')}
@@ -195,7 +196,6 @@ function Goals() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
-          {/* Goals List */}
           <div className="lg:col-span-2">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               {userGoals.goals.map((goalId) => {
@@ -224,15 +224,59 @@ function Goals() {
             </div>
           </div>
 
-          {/* Goal Details */}
           <div className="lg:col-span-1">
             {selectedGoal ? (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 sticky top-6">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">{selectedGoal.label}</h2>
-                <GoalMilestones
-                  milestones={selectedGoal.milestones || []}
-                  currentProgress={selectedGoal.progress?.progress_value || 0}
-                />
+                <div className="space-y-4">
+                  <GoalMilestones 
+                    goal={selectedGoal} 
+                    milestones={selectedGoal.milestones || []} 
+                    progress={selectedGoal.progress} 
+                    loading={milestonesLoading} 
+                  />
+                  {selectedGoal.lessons && selectedGoal.lessons.length > 0 && (
+                    <div className="bg-white shadow rounded-lg p-6">
+                      <h3 className="text-lg font-medium mb-4">Related Lessons</h3>
+                      <div className="space-y-3">
+                        {selectedGoal.lessons.map(({ lesson }) => (
+                          <div 
+                            key={lesson.id} 
+                            className="group flex items-start gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
+                            onClick={() => navigate(`/lessons/${lesson.id}`)}
+                          >
+                            {lesson.image_url ? (
+                              <img 
+                                src={lesson.image_url} 
+                                alt={lesson.title}
+                                className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+                              />
+                            ) : (
+                              <div className="w-16 h-16 bg-gradient-to-br from-mint-100 to-mint-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <span className="text-mint-500 text-xl font-bold">
+                                  {lesson.title.charAt(0)}
+                                </span>
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-gray-900 group-hover:text-mint-600 transition-colors mb-1 truncate">
+                                {lesson.title}
+                              </h4>
+                              {lesson.description && (
+                                <p className="text-sm text-gray-600 line-clamp-2">
+                                  {stripHtml(lesson.description)}
+                                </p>
+                              )}
+                            </div>
+                            <div className="text-mint-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <ArrowRight className="w-5 h-5" />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 text-center">

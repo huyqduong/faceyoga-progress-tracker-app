@@ -179,9 +179,9 @@ export const useGoalProgressStore = create<GoalProgressState>((set, get) => ({
 
   trackLessonCompletion: async (lessonId: string, userId: string) => {
     try {
-      // 1. Get all goals related to this lesson
+      // 1. Get all goals related to this lesson with their contribution weights
       const { data: mappings, error: mappingError } = await supabase
-        .from('lesson_goal_mapping')
+        .from('goal_lessons')
         .select('*, goals(*)')
         .eq('lesson_id', lessonId);
       
@@ -189,22 +189,41 @@ export const useGoalProgressStore = create<GoalProgressState>((set, get) => ({
       
       // 2. For each related goal, update progress
       for (const mapping of mappings || []) {
-        const { data: currentProgress, error: progressError } = await supabase
-          .from('goal_progress')
-          .select('*')
-          .eq('goal_id', mapping.goal_id)
-          .eq('user_id', userId)
-          .single();
+        // Get current progress and milestones in parallel
+        const [progressResult, milestonesResult] = await Promise.all([
+          supabase
+            .from('goal_progress')
+            .select('*')
+            .eq('goal_id', mapping.goal_id)
+            .eq('user_id', userId)
+            .single(),
+          supabase
+            .from('goal_milestones')
+            .select('*')
+            .eq('goal_id', mapping.goal_id)
+            .order('target_value', { ascending: true })
+        ]);
           
-        if (progressError && progressError.code !== 'PGRST116') throw progressError;
+        if (progressResult.error && progressResult.error.code !== 'PGRST116') throw progressResult.error;
+        if (milestonesResult.error) throw milestonesResult.error;
+
+        const currentProgress = progressResult.data;
+        const milestones = milestonesResult.data || [];
         
-        // Calculate new progress value
+        // Calculate new progress value using the contribution weight
+        const newProgressValue = (currentProgress?.progress_value || 0) + (mapping.contribution_weight || 10);
+        
+        // Calculate milestones reached with new progress value
+        const milestonesReached = milestones.filter(m => newProgressValue >= m.target_value).length;
+        
+        // Prepare new progress data
         const newProgress = {
           user_id: userId,
           goal_id: mapping.goal_id,
-          progress_value: (currentProgress?.progress_value || 0) + mapping.contribution_weight,
+          progress_value: newProgressValue,
+          milestone_reached: milestonesReached,
           last_updated: new Date().toISOString(),
-          status: 'in_progress' as GoalStatus
+          status: milestonesReached === milestones.length ? 'completed' : 'in_progress' as GoalStatus
         };
         
         // If no existing progress, insert new record
@@ -223,9 +242,6 @@ export const useGoalProgressStore = create<GoalProgressState>((set, get) => ({
             
           if (updateError) throw updateError;
         }
-        
-        // Update milestones reached
-        await get().updateMilestoneProgress(mapping.goal_id, userId);
       }
       
       // Refresh progress data
@@ -235,41 +251,6 @@ export const useGoalProgressStore = create<GoalProgressState>((set, get) => ({
       const error = err as Error;
       console.error('Failed to track lesson completion:', error);
       toast.error('Failed to update goal progress');
-    }
-  },
-
-  updateMilestoneProgress: async (goalId: string, userId: string) => {
-    try {
-      const { data: progress } = await supabase
-        .from('goal_progress')
-        .select('progress_value')
-        .eq('goal_id', goalId)
-        .eq('user_id', userId)
-        .single();
-        
-      const { data: milestones } = await supabase
-        .from('goal_milestones')
-        .select('*')
-        .eq('goal_id', goalId)
-        .order('target_value', { ascending: true });
-        
-      if (!progress || !milestones) return;
-      
-      const milestonesReached = milestones.filter(m => 
-        progress.progress_value >= m.target_value
-      ).length;
-      
-      await supabase
-        .from('goal_progress')
-        .update({ 
-          milestone_reached: milestonesReached,
-          status: milestonesReached === milestones.length ? 'completed' : 'in_progress'
-        })
-        .eq('goal_id', goalId)
-        .eq('user_id', userId);
-        
-    } catch (err) {
-      console.error('Failed to update milestone progress:', err);
     }
   },
 
