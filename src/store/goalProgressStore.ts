@@ -178,162 +178,98 @@ export const useGoalProgressStore = create<GoalProgressState>((set, get) => ({
   },
 
   trackLessonCompletion: async (lessonId: string, userId: string) => {
-    if (!lessonId || !userId) {
-      console.error('Missing lessonId or userId');
-      return;
-    }
-
-    set({ progressLoading: true, error: null });
-    
     try {
-      // First check if this lesson was already completed today
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      const { data: existingEntry, error: checkError } = await supabase
-        .from('lesson_history')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('lesson_id', lessonId)
-        .gte('completed_at', today.toISOString())
-        .maybeSingle();
-
-      if (checkError) {
-        throw checkError;
-      }
-
-      // If already completed today, don't record again
-      if (existingEntry) {
-        console.log('Lesson already completed today');
-        return;
-      }
-
-      // Get the lesson details for duration
-      const { data: lessonData, error: lessonError } = await supabase
-        .from('lessons')
-        .select('duration')
-        .eq('id', lessonId)
-        .single();
-
-      if (lessonError) {
-        throw lessonError;
-      }
-
-      const duration = lessonData?.duration 
-        ? typeof lessonData.duration === 'string'
-          ? parseInt(lessonData.duration.replace(/[^0-9]/g, ''))
-          : typeof lessonData.duration === 'number' 
-            ? lessonData.duration
-            : 0
-        : 0;
-
-      // Record lesson completion
-      const { error: historyError } = await supabase
-        .from('lesson_history')
-        .insert({
-          user_id: userId,
-          lesson_id: lessonId,
-          practice_time: duration,
-          completed_at: new Date().toISOString()
-        });
-
-      if (historyError) {
-        throw historyError;
-      }
-
-      // Update user's profile with new lesson completion
-      const { data: currentProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('lessons_completed, practice_time')
-        .eq('user_id', userId)
-        .single();
-
-      if (profileError) {
-        throw profileError;
-      }
-
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({
-          lessons_completed: (currentProfile?.lessons_completed || 0) + 1,
-          practice_time: (currentProfile?.practice_time || 0) + duration
-        })
-        .eq('user_id', userId);
-
-      if (updateError) {
-        throw updateError;
-      }
-
-      // Get goals associated with this lesson
-      const { data: goalMappings, error: mappingError } = await supabase
+      // 1. Get all goals related to this lesson
+      const { data: mappings, error: mappingError } = await supabase
         .from('lesson_goal_mapping')
-        .select(`
-          goal_id,
-          contribution_weight
-        `)
+        .select('*, goals(*)')
         .eq('lesson_id', lessonId);
-
-      if (mappingError) {
-        throw mappingError;
-      }
-
-      // Update progress for each associated goal
-      for (const mapping of goalMappings || []) {
-        const { data: goalProgress, error: progressError } = await supabase
+      
+      if (mappingError) throw mappingError;
+      
+      // 2. For each related goal, update progress
+      for (const mapping of mappings || []) {
+        const { data: currentProgress, error: progressError } = await supabase
           .from('goal_progress')
           .select('*')
           .eq('goal_id', mapping.goal_id)
           .eq('user_id', userId)
           .single();
-
-        if (progressError && progressError.code !== 'PGRST116') {
-          throw progressError;
-        }
-
+          
+        if (progressError && progressError.code !== 'PGRST116') throw progressError;
+        
         // Calculate new progress value
-        const progressIncrement = mapping.contribution_weight || 1;
-        const currentProgress = goalProgress?.progress_value || 0;
-        const newProgress = Math.min(currentProgress + progressIncrement, 100);
-
-        // Get milestones to check if any new ones are reached
-        const { data: milestones, error: milestonesError } = await supabase
-          .from('goal_milestones')
-          .select('*')
-          .eq('goal_id', mapping.goal_id)
-          .order('target_value', { ascending: true });
-
-        if (milestonesError) {
-          throw milestonesError;
+        const newProgress = {
+          user_id: userId,
+          goal_id: mapping.goal_id,
+          progress_value: (currentProgress?.progress_value || 0) + mapping.contribution_weight,
+          last_updated: new Date().toISOString(),
+          status: 'in_progress' as GoalStatus
+        };
+        
+        // If no existing progress, insert new record
+        if (!currentProgress) {
+          const { error: insertError } = await supabase
+            .from('goal_progress')
+            .insert([newProgress]);
+            
+          if (insertError) throw insertError;
+        } else {
+          // Update existing progress
+          const { error: updateError } = await supabase
+            .from('goal_progress')
+            .update(newProgress)
+            .eq('id', currentProgress.id);
+            
+          if (updateError) throw updateError;
         }
-
-        const milestonesReached = (milestones || []).filter(m => newProgress >= m.target_value).length;
-
-        // Update or create goal progress
-        const { error: updateError } = await supabase
-          .from('goal_progress')
-          .upsert({
-            user_id: userId,
-            goal_id: mapping.goal_id,
-            progress_value: newProgress,
-            milestone_reached: milestonesReached,
-            last_updated: new Date().toISOString(),
-            status: goalProgress?.status || 'in_progress'
-          });
-
-        if (updateError) {
-          throw updateError;
-        }
+        
+        // Update milestones reached
+        await get().updateMilestoneProgress(mapping.goal_id, userId);
       }
-
-      // Refresh goal progress after all updates
+      
+      // Refresh progress data
       await get().fetchGoalProgress(userId);
+      
+    } catch (err) {
+      const error = err as Error;
+      console.error('Failed to track lesson completion:', error);
+      toast.error('Failed to update goal progress');
+    }
+  },
 
-    } catch (error) {
-      console.error('Error tracking lesson completion:', error);
-      set({ error: error instanceof Error ? error.message : 'Failed to track lesson completion' });
-      throw error; // Re-throw to handle in the component
-    } finally {
-      set({ progressLoading: false });
+  updateMilestoneProgress: async (goalId: string, userId: string) => {
+    try {
+      const { data: progress } = await supabase
+        .from('goal_progress')
+        .select('progress_value')
+        .eq('goal_id', goalId)
+        .eq('user_id', userId)
+        .single();
+        
+      const { data: milestones } = await supabase
+        .from('goal_milestones')
+        .select('*')
+        .eq('goal_id', goalId)
+        .order('target_value', { ascending: true });
+        
+      if (!progress || !milestones) return;
+      
+      const milestonesReached = milestones.filter(m => 
+        progress.progress_value >= m.target_value
+      ).length;
+      
+      await supabase
+        .from('goal_progress')
+        .update({ 
+          milestone_reached: milestonesReached,
+          status: milestonesReached === milestones.length ? 'completed' : 'in_progress'
+        })
+        .eq('goal_id', goalId)
+        .eq('user_id', userId);
+        
+    } catch (err) {
+      console.error('Failed to update milestone progress:', err);
     }
   },
 

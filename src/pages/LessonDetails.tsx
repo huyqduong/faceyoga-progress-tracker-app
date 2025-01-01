@@ -6,6 +6,7 @@ import { useLessonStore } from '../store/lessonStore';
 import { useProgressStore } from '../store/progressStore';
 import { useLessonHistoryStore } from '../store/lessonHistoryStore';
 import { useProfileStore } from '../store/profileStore';
+import { useGoalProgressStore } from '../store/goalProgressStore';
 import { AlertCircle, Play, Pause, RotateCcw, ImageOff, Lock, CheckCircle, X } from 'lucide-react';
 import { vimeoService } from '../lib/vimeo';
 import BackButton from '../components/BackButton';
@@ -25,6 +26,7 @@ function LessonDetails({ onComplete }: LessonDetailsProps) {
   const { lessons, fetchLessons } = useLessonStore();
   const { fetchProgress } = useProgressStore();
   const { fetchHistory } = useLessonHistoryStore();
+  const { trackLessonCompletion } = useGoalProgressStore();
   
   const [isStarted, setIsStarted] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -299,7 +301,6 @@ function LessonDetails({ onComplete }: LessonDetailsProps) {
         throw profileError;
       }
 
-      // Try updating with practice_time first
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
@@ -309,35 +310,24 @@ function LessonDetails({ onComplete }: LessonDetailsProps) {
         .eq('user_id', user.id);
 
       if (updateError) {
-        // If practice_time update fails, try updating total_practice_time
-        console.warn('Failed to update practice_time, trying total_practice_time:', updateError);
-        const { error: fallbackError } = await supabase
-          .from('profiles')
-          .update({
-            lessons_completed: (currentProfile?.lessons_completed || 0) + 1,
-            total_practice_time: (currentProfile?.total_practice_time || 0) + lessonDuration
-          })
-          .eq('user_id', user.id);
-
-        if (fallbackError) {
-          console.error('Error updating profile with total_practice_time:', fallbackError);
-          throw fallbackError;
-        }
+        console.error('Error updating profile:', updateError);
+        throw updateError;
       }
-      
-      // Refresh all data
-      await Promise.all([
-        fetchHistory(),
-        fetchProgress(),
-        fetchLessons(),
-      ]);
 
+      // Track lesson completion for goals
+      await trackLessonCompletion(lesson.id, user.id);
+
+      // Update UI state
       setIsCompleted(true);
       toast.success('Lesson completed! Great job!');
       
-      if (onComplete) {
-        onComplete();
-      }
+      // Refresh data
+      fetchHistory();
+      fetchProgress();
+      
+      // Call completion callback if provided
+      onComplete?.();
+      
     } catch (error) {
       console.error('Error completing lesson:', error);
       toast.error('Failed to complete lesson. Please try again.');

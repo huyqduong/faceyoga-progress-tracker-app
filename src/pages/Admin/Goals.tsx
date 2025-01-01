@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Save, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
+import MilestoneEditor from '../../components/admin/MilestoneEditor';
+import { GoalMilestone } from '../../types/goal';
 
 interface Goal {
   id: string;
@@ -9,6 +11,7 @@ interface Goal {
   icon: string;
   description: string;
   created_at: string;
+  milestones?: GoalMilestone[];
 }
 
 interface EditingGoal {
@@ -16,6 +19,7 @@ interface EditingGoal {
   label: string;
   icon: string;
   description: string;
+  milestones: GoalMilestone[];
 }
 
 const AVAILABLE_ICONS = [
@@ -43,7 +47,10 @@ export default function AdminGoals() {
     try {
       const { data, error } = await supabase
         .from('goals')
-        .select('*')
+        .select(`
+          *,
+          milestones:goal_milestones(*)
+        `)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -62,6 +69,7 @@ export default function AdminGoals() {
       label: '',
       icon: 'Target',
       description: '',
+      milestones: []
     });
   };
 
@@ -72,6 +80,7 @@ export default function AdminGoals() {
       label: goal.label,
       icon: goal.icon,
       description: goal.description,
+      milestones: goal.milestones || []
     });
   };
 
@@ -80,18 +89,40 @@ export default function AdminGoals() {
 
     try {
       if (isAdding) {
-        const { error } = await supabase
+        // First create the goal
+        const { data: goalData, error: goalError } = await supabase
           .from('goals')
           .insert([{
             label: editingGoal.label,
             icon: editingGoal.icon,
             description: editingGoal.description,
-          }]);
+          }])
+          .select()
+          .single();
 
-        if (error) throw error;
+        if (goalError) throw goalError;
+
+        // Then create the milestones
+        if (editingGoal.milestones.length > 0) {
+          const { error: milestonesError } = await supabase
+            .from('goal_milestones')
+            .insert(
+              editingGoal.milestones.map(m => ({
+                goal_id: goalData.id,
+                title: m.title,
+                description: m.description,
+                target_value: m.target_value,
+                reward_points: m.reward_points
+              }))
+            );
+
+          if (milestonesError) throw milestonesError;
+        }
+
         toast.success('Goal added successfully');
       } else {
-        const { error } = await supabase
+        // Update the goal
+        const { error: goalError } = await supabase
           .from('goals')
           .update({
             label: editingGoal.label,
@@ -100,7 +131,33 @@ export default function AdminGoals() {
           })
           .eq('id', editingGoal.id);
 
-        if (error) throw error;
+        if (goalError) throw goalError;
+
+        // Delete existing milestones
+        const { error: deleteError } = await supabase
+          .from('goal_milestones')
+          .delete()
+          .eq('goal_id', editingGoal.id);
+
+        if (deleteError) throw deleteError;
+
+        // Create new milestones
+        if (editingGoal.milestones.length > 0) {
+          const { error: milestonesError } = await supabase
+            .from('goal_milestones')
+            .insert(
+              editingGoal.milestones.map(m => ({
+                goal_id: editingGoal.id,
+                title: m.title,
+                description: m.description,
+                target_value: m.target_value,
+                reward_points: m.reward_points
+              }))
+            );
+
+          if (milestonesError) throw milestonesError;
+        }
+
         toast.success('Goal updated successfully');
       }
 
@@ -198,76 +255,85 @@ export default function AdminGoals() {
 
       {editingGoal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-lg">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                {isAdding ? 'Add New Goal' : 'Edit Goal'}
-              </h3>
-              <button
-                onClick={() => setEditingGoal(null)}
-                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Label
-                </label>
-                <input
-                  type="text"
-                  value={editingGoal.label}
-                  onChange={(e) => setEditingGoal({ ...editingGoal, label: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-mint-500 dark:focus:ring-mint-400"
-                  placeholder="e.g., Tone Jawline"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Icon
-                </label>
-                <select
-                  value={editingGoal.icon}
-                  onChange={(e) => setEditingGoal({ ...editingGoal, icon: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-mint-500 dark:focus:ring-mint-400"
-                >
-                  {AVAILABLE_ICONS.map((icon) => (
-                    <option key={icon.value} value={icon.value}>
-                      {icon.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Description
-                </label>
-                <textarea
-                  value={editingGoal.description}
-                  onChange={(e) => setEditingGoal({ ...editingGoal, description: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-mint-500 dark:focus:ring-mint-400"
-                  placeholder="e.g., Strengthen and define your jawline muscles"
-                  rows={4}
-                  required
-                />
-              </div>
-
-              <div className="flex justify-end space-x-4">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-semibold">
+                  {isAdding ? 'Add New Goal' : 'Edit Goal'}
+                </h2>
                 <button
                   onClick={() => setEditingGoal(null)}
-                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                  className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Label
+                  </label>
+                  <input
+                    type="text"
+                    value={editingGoal.label}
+                    onChange={(e) => setEditingGoal({ ...editingGoal, label: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700"
+                    placeholder="Enter goal label"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Icon
+                  </label>
+                  <select
+                    value={editingGoal.icon}
+                    onChange={(e) => setEditingGoal({ ...editingGoal, icon: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700"
+                  >
+                    {AVAILABLE_ICONS.map((icon) => (
+                      <option key={icon.value} value={icon.value}>
+                        {icon.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    value={editingGoal.description}
+                    onChange={(e) => setEditingGoal({ ...editingGoal, description: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700"
+                    rows={3}
+                    placeholder="Enter goal description"
+                  />
+                </div>
+
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                  <MilestoneEditor
+                    goalId={editingGoal.id || ''}
+                    milestones={editingGoal.milestones}
+                    onChange={(milestones) => setEditingGoal({ ...editingGoal, milestones })}
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => setEditingGoal(null)}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSave}
-                  className="px-4 py-2 bg-mint-500 hover:bg-mint-600 dark:bg-mint-600 dark:hover:bg-mint-700 text-white rounded-lg transition-colors"
+                  className="px-4 py-2 bg-mint-500 hover:bg-mint-600 text-white rounded-lg flex items-center gap-2"
                 >
+                  <Save className="w-5 h-5" />
                   Save Goal
                 </button>
               </div>

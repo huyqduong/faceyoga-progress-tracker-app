@@ -38,7 +38,10 @@ function Goals() {
       const [goalsResult, userGoalsResult] = await Promise.all([
         supabase
           .from('goals')
-          .select('*')
+          .select(`
+            *,
+            milestones:goal_milestones(*)
+          `)
           .order('created_at', { ascending: true }),
         supabase
           .from('user_goals')

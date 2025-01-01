@@ -44,13 +44,16 @@ export default function GoalProgressCard({ goal, onStatusChange }: GoalProgressC
 
   const progress = goal.progress?.progress_value || 0;
   const status = goal.progress?.status || 'not_started';
-  const milestoneCount = goal.milestones?.length || 0;
+  const milestoneCount = goal.milestones?.filter(milestone => milestone.target_value > 0).length || 0;
   const milestonesReached = goal.progress?.milestone_reached || 0;
   
-  // Calculate percentage for circular progress
-  const percentage = milestoneCount > 0 
-    ? (milestonesReached / milestoneCount) * 100 
-    : (progress / 100);
+  // Calculate total points needed for completion
+  const totalPointsNeeded = goal.milestones?.length > 0
+    ? Math.max(...goal.milestones.map(m => m.target_value))
+    : 100; // Default to 100 if no milestones
+  
+  // Calculate percentage for circular progress based on points
+  const percentage = Math.min((progress / totalPointsNeeded) * 100, 100);
 
   useEffect(() => {
     const fetchRelatedLessons = async () => {
