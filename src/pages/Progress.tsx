@@ -174,7 +174,7 @@ function Progress() {
 
     try {
       setError(null);
-      await addProgress(user.id, selectedImage, notes);
+      await addProgress(selectedImage, notes);
       await fetchProgress(user.id);
       setSelectedImage(null);
       setPreview(null);
