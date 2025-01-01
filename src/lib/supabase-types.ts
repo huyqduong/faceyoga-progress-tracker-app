@@ -2,18 +2,13 @@ export interface Profile {
   id: string;
   user_id: string;
   email: string;
-  username: string;
-  full_name: string;
-  address?: string;
-  phone?: string;
-  avatar_url?: string;
-  role: 'admin' | 'user';
+  username: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+  role: 'user' | 'admin';
   streak: number;
   lessons_completed: number;
-  total_practice_time: number;
-  onboarding_completed: boolean;
-  completed_lessons: string[];
-  last_lesson_completed?: string;
+  practice_time: number;
   created_at: string;
   updated_at: string;
 }
@@ -105,6 +100,16 @@ export interface SectionLesson {
     created_at: string;
     updated_at: string;
   };
+}
+
+export interface LessonHistory {
+  id: string;
+  user_id: string;
+  lesson_id: string;
+  completed_at: string;
+  practice_time: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Progress {

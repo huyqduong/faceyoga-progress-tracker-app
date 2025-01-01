@@ -228,7 +228,10 @@ function CourseDetails() {
             </div>
           </div>
 
-          <p className="text-gray-600 mb-6">{course.description}</p>
+          <div 
+            className="prose prose-mint max-w-none mb-6"
+            dangerouslySetInnerHTML={{ __html: course.description }}
+          />
 
           {!hasAccess && (
             <div className="mb-6">
@@ -251,10 +254,14 @@ function CourseDetails() {
                 key={section.id}
                 className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
               >
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                  {section.title}
-                </h3>
-                <p className="text-gray-600 mb-4">{section.description}</p>
+                <h3 
+                  className="text-xl font-semibold text-gray-900 mb-4 prose prose-mint max-w-none"
+                  dangerouslySetInnerHTML={{ __html: section.title }}
+                />
+                <div 
+                  className="text-gray-600 mb-4 prose prose-mint max-w-none"
+                  dangerouslySetInnerHTML={{ __html: section.description }}
+                />
 
                 <div className="space-y-3">
                   {isLoading ? (

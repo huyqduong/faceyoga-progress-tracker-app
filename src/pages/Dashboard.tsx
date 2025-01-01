@@ -70,8 +70,8 @@ function Dashboard() {
   }, [user, fetchProfile, fetchLessons, fetchAllCourses, fetchProgress, fetchHistory]);
 
   const stats = useMemo(() => {
-    // Use profile's total_practice_time instead of calculating from history
-    const totalPracticeTime = profile?.total_practice_time || 0;
+    // Use profile's practice_time for total practice time
+    const totalPracticeTime = profile?.practice_time || 0;
     const totalLessons = history.length;
     const completedCourses = new Set(history.map(entry => entry.course_id)).size;
     const streakDays = history.reduce((acc, entry) => {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Edit2, Plus, X } from 'lucide-react';
+import { Editor } from '@tinymce/tinymce-react';
 import { useLessonStore } from '../../store/lessonStore';
 import { Lesson } from '../../types';
 import { supabaseApi } from '../../lib/supabaseApi';
@@ -294,14 +295,27 @@ function LessonManager() {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Description
             </label>
-            <textarea
+            <Editor
+              apiKey={import.meta.env.VITE_TINYMCE_API_KEY}
               value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
+              onEditorChange={(content) =>
+                setFormData({ ...formData, description: content })
               }
-              rows={4}
-              className="w-full px-4 py-2 border rounded-lg dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
-              placeholder="Enter lesson description"
+              init={{
+                height: 300,
+                menubar: false,
+                plugins: [
+                  'advlist', 'autolink', 'lists', 'link', 'charmap',
+                  'anchor', 'searchreplace', 'visualblocks', 'code',
+                  'insertdatetime', 'media', 'table', 'preview',
+                  'help', 'wordcount'
+                ],
+                toolbar: 'undo redo | blocks | ' +
+                  'bold italic forecolor | alignleft aligncenter ' +
+                  'alignright alignjustify | bullist numlist outdent indent | ' +
+                  'removeformat | help',
+                content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
+              }}
             />
           </div>
 
@@ -309,33 +323,60 @@ function LessonManager() {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Instructions
             </label>
-            {formData.instructions.map((instruction, index) => (
-              <div key={index} className="flex gap-2 mb-2">
-                <input
-                  type="text"
-                  value={instruction}
-                  onChange={(e) =>
-                    handleArrayInput('instructions', index, e.target.value)
-                  }
-                  className="flex-1 px-4 py-2 border rounded-lg dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                  placeholder={`Step ${index + 1}`}
-                />
-                <button
-                  type="button"
-                  onClick={() => removeArrayItem('instructions', index)}
-                  className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900 rounded-lg"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => addArrayItem('instructions')}
-              className="text-mint-600 dark:text-mint-400 hover:text-mint-700 dark:hover:text-mint-500"
-            >
-              + Add Step
-            </button>
+            <div className="space-y-4">
+              {formData.instructions.map((instruction, index) => (
+                <div key={index} className="flex gap-4">
+                  <div className="flex-grow">
+                    <Editor
+                      apiKey={import.meta.env.VITE_TINYMCE_API_KEY}
+                      value={instruction}
+                      onEditorChange={(content) => {
+                        const newInstructions = [...formData.instructions];
+                        newInstructions[index] = content;
+                        setFormData({ ...formData, instructions: newInstructions });
+                      }}
+                      init={{
+                        height: 150,
+                        menubar: false,
+                        plugins: [
+                          'advlist', 'autolink', 'lists', 'link',
+                          'charmap', 'preview', 'searchreplace',
+                          'visualblocks', 'code', 'insertdatetime',
+                          'media', 'table', 'help', 'wordcount'
+                        ],
+                        toolbar: 'undo redo | ' +
+                          'bold italic forecolor | alignleft aligncenter ' +
+                          'alignright alignjustify | bullist numlist | ' +
+                          'removeformat',
+                        content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
+                      }}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newInstructions = formData.instructions.filter((_, i) => i !== index);
+                      setFormData({ ...formData, instructions: newInstructions });
+                    }}
+                    className="p-2 text-red-600 hover:text-red-800"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData({
+                    ...formData,
+                    instructions: [...formData.instructions, '']
+                  });
+                }}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-mint-600 hover:bg-mint-700"
+              >
+                <Plus className="h-4 w-4 mr-2" /> Add Instruction
+              </button>
+            </div>
           </div>
 
           <div>

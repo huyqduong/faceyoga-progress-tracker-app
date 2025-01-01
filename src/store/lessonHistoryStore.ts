@@ -1,30 +1,44 @@
 import { create } from 'zustand';
-import { lessonApi } from '../lib/lessons';
-import type { LessonHistory } from '../types';
+import { supabase } from '../lib/supabase';
 
-interface LessonHistoryState {
-  history: LessonHistory[];
-  loading: boolean;
-  error: string | null;
-  fetchHistory: (userId: string) => Promise<void>;
+interface LessonHistory {
+  id: string;
+  user_id: string;
+  lesson_id: string;
+  completed_at: string;
+  practice_time: number;
+  created_at: string;
+  updated_at: string;
 }
 
-export const useLessonHistoryStore = create<LessonHistoryState>((set) => ({
-  history: [],
-  loading: false,
-  error: null,
+interface LessonHistoryStore {
+  history: LessonHistory[];
+  fetchHistory: () => Promise<void>;
+}
 
-  fetchHistory: async (userId: string) => {
-    set({ loading: true, error: null });
+export const useLessonHistoryStore = create<LessonHistoryStore>((set) => ({
+  history: [],
+  fetchHistory: async () => {
     try {
-      const history = await lessonApi.getLessonHistory(userId);
-      set({ history, loading: false });
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user?.id) {
+        console.error('No user found when fetching history');
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('lesson_history')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('completed_at', { ascending: false });
+
+      if (error) throw error;
+
+      set({ history: data || [] });
     } catch (error) {
       console.error('Error fetching lesson history:', error);
-      set({ 
-        error: error instanceof Error ? error.message : 'Failed to fetch lesson history',
-        loading: false 
-      });
+      throw error;
     }
-  }
+  },
 }));

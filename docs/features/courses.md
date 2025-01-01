@@ -186,143 +186,125 @@ A `DebugPanel` component is available for real-time monitoring:
 - Provides export functionality for log analysis
 - Helps track state changes and async operations
 
-## Race Condition Handling
+## Course Management System
 
-### Prevention Strategies
-1. **Loading State Tracking**
-   ```typescript
-   // Track loading state per course
-   loadingCourseIds: string[]
-   
-   // Check before starting new request
-   if (loadingCourseIds.includes(courseId)) {
-     return existingData;
-   }
-   ```
+The course management system organizes face yoga lessons into structured learning paths, helping users progress systematically through their face yoga journey.
 
-2. **Request Deduplication**
-   - Track active requests
-   - Prevent duplicate section/lesson loading
-   - Cancel stale requests when appropriate
+### Features
 
-3. **State Updates**
-   - Atomic updates to prevent partial state
-   - Proper cleanup of loading states
-   - Error state management
+#### Course Structure
+- Hierarchical organization of lessons
+- Progressive difficulty levels
+- Clear prerequisites and requirements
+- Course completion tracking
+- Estimated time commitments
 
-### Recent Fixes
+#### Course Types
+1. **Beginner Courses**
+   - Introduction to face yoga
+   - Basic techniques and movements
+   - Proper form and safety guidelines
 
-#### CourseDetails Component
-Recent improvements to prevent race conditions:
+2. **Intermediate Courses**
+   - Advanced techniques
+   - Targeted area exercises
+   - Combination movements
+
+3. **Specialized Programs**
+   - Area-specific routines
+   - Intensive programs
+   - Maintenance routines
+
+#### Progress Tracking
+- Course completion percentage
+- Individual lesson progress
+- Time spent per course
+- Achievement tracking
+- Streak maintenance
+
+#### User Experience
+- Intuitive course navigation
+- Clear progress indicators
+- Mobile-responsive design
+- Offline access to course content
+- Resume from last position
+
+## Technical Implementation
+
+### Course Data Structure
 ```typescript
-// Check if data needs loading
-if (!sections[courseId] || sections[courseId].length === 0) {
-  await fetchCourseSections(courseId);
+interface Course {
+  id: string;
+  title: string;
+  description: string;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  lessons: Lesson[];
+  prerequisites?: string[];
+  estimatedDuration: number;
+  thumbnail?: string;
 }
 
-// Only fetch lessons for sections that need them
-const sectionsNeedingLessons = currentSections.filter(
-  section => !sectionLessons[section.id] || sectionLessons[section.id].length === 0
-);
-```
-
-Key improvements:
-1. Proper dependency tracking in useEffect
-2. Conditional data fetching
-3. Better error handling
-4. Loading state management per section
-
-## State Management Details
-
-### Course Store
-The course store implements a sophisticated state management system:
-
-```typescript
-interface CourseState {
-  courses: Course[];
-  sections: Record<string, CourseSection[]>;
-  sectionLessons: Record<string, SectionLesson[]>;
-  loading: boolean;
-  loadingCourseIds: string[];
-  error: string | null;
+interface CourseProgress {
+  userId: string;
+  courseId: string;
+  completedLessons: string[];
+  startedAt: string;
+  lastAccessedAt: string;
+  completedAt?: string;
 }
 ```
 
-State update patterns:
-1. **Atomic Updates**
-   ```typescript
-   set(state => ({
-     sections: { ...state.sections, [courseId]: sections },
-     loadingCourseIds: state.loadingCourseIds.filter(id => id !== courseId)
-   }));
-   ```
+### Course Access Control
+- User role-based access
+- Premium content restrictions
+- Trial access management
+- Course availability scheduling
 
-2. **Error Handling**
-   ```typescript
-   catch (error) {
-     set({ 
-       error: error instanceof Error ? error.message : 'Unknown error',
-       loading: false 
-     });
-   }
-   ```
+### Error Handling
+- Invalid course access
+- Progress sync failures
+- Content loading issues
+- Network connectivity problems
 
-3. **Loading State**
-   ```typescript
-   // Track loading state per entity
-   setLoadingSections(sectionsNeedingLessons.map(s => s.id));
-   // Clear loading state after operation
-   setLoadingSections(prev => prev.filter(id => id !== section.id));
-   ```
+## Usage Examples
 
-## Common Tasks
+### Accessing Course Progress
+```typescript
+const getCourseProgress = async (courseId: string) => {
+  try {
+    const progress = await courseStore.getCourseProgress(courseId);
+    return {
+      completedLessons: progress.completedLessons,
+      percentComplete: calculateProgress(progress),
+      remainingLessons: getRemainingLessons(progress)
+    };
+  } catch (error) {
+    toast.error('Failed to load course progress');
+    return null;
+  }
+};
+```
 
-### Adding a New Course
-1. Navigate to Course Manager
-2. Click "Add Course"
-3. Fill in course details
-4. Add sections and lessons
-5. Save course
+## Best Practices
 
-### Editing a Course
-1. Find course in Course Manager
-2. Click edit button
-3. Modify course details
-4. Update sections/lessons
-5. Save changes
+### Course Creation
+1. Clear learning objectives
+2. Logical progression of difficulty
+3. Consistent lesson structure
+4. Regular assessment points
+5. Clear prerequisite information
 
-### Managing Course Access
-1. Set course access level
-2. Configure purchase requirements
-3. Test access control
+### Content Organization
+1. Modular lesson structure
+2. Progressive skill building
+3. Regular review points
+4. Clear success criteria
+5. Flexible learning paths
 
-## Troubleshooting
-
-Common issues and solutions:
-
-1. Course not displaying:
-   - Check if course is published
-   - Verify user has access
-   - Check network requests
-
-2. Sections not loading:
-   - Check section data in Supabase
-   - Verify course ID is correct
-   - Check loading states
-
-3. Lesson playback issues:
-   - Verify video URL is valid
-   - Check user access permissions
-   - Confirm network connectivity
-
-## Future Improvements
-
-Planned enhancements:
-1. Bulk course operations
-2. Advanced course analytics
-3. Enhanced progress tracking
-4. Offline course access
-5. Course sharing capabilities
+## Related Documentation
+- [Lesson System](./lessons.md)
+- [Progress Tracking](./progress.md)
+- [User Profiles](./profile.md)
 
 ## Recent Updates Log
 

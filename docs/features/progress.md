@@ -3,6 +3,36 @@
 ## Overview
 The Progress feature tracks and visualizes user progress across courses, lessons, and practice sessions. It provides insights into user engagement, completion rates, and learning patterns.
 
+## Features
+
+### Progress Metrics
+- Daily practice streaks
+- Total practice time
+- Completed lessons count
+- Course completion rates
+- Achievement milestones
+
+### Visual Progress
+- Before/after photo comparisons
+- Progress timeline
+- Achievement badges
+- Streak calendar
+- Completion charts
+
+### Data Collection
+- Lesson completion timestamps
+- Practice duration tracking
+- Photo progress tracking
+- Goal achievement tracking
+- User engagement metrics
+
+### Progress Analytics
+- Practice patterns
+- Completion trends
+- Engagement metrics
+- Goal progress
+- Achievement rates
+
 ## Architecture
 
 ### Data Model
@@ -39,6 +69,24 @@ interface ProgressStats {
   completed_courses: number;
   average_session_duration: number;
 }
+
+interface UserProgress {
+  userId: string;
+  streak: number;
+  exercisesDone: number;
+  totalPracticeTime: number;
+  lastLessonCompletedAt: string;
+  completedLessons: string[];
+}
+
+interface ProgressPhoto {
+  id: string;
+  userId: string;
+  imageUrl: string;
+  timestamp: string;
+  notes?: string;
+  angle: 'front' | 'left' | 'right';
+}
 ```
 
 ### State Management
@@ -52,6 +100,8 @@ interface ProgressState {
   error: string | null;
   practiceHistory: PracticeSession[];
   streakData: StreakData;
+  userProgress: UserProgress;
+  progressPhotos: ProgressPhoto[];
 }
 
 interface StreakData {
@@ -66,8 +116,10 @@ Key Methods:
 - `calculateStats()`: Computes user statistics
 - `updateStreak()`: Updates streak information
 - `logPracticeSession()`: Records new practice sessions
+- `updateUserProgress(progressData)`: Updates user progress records
+- `addProgressPhoto(photoData)`: Adds new progress photo
 
-## Components
+### Components
 
 ### ProgressDashboard (`src/components/ProgressDashboard.tsx`)
 Main progress visualization component.
@@ -144,6 +196,8 @@ const progressApi = {
   fetchStats(userId: string): Promise<ProgressStats>;
   logPractice(session: PracticeSession): Promise<void>;
   getStreakData(userId: string): Promise<StreakData>;
+  fetchUserProgress(userId: string): Promise<UserProgress>;
+  addProgressPhoto(photoData: ProgressPhoto): Promise<void>;
 };
 ```
 

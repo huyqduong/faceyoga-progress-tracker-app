@@ -82,6 +82,19 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['early_access_signups']['Row'], 'id' | 'created_at' | 'updated_at'>
         Update: Partial<Database['public']['Tables']['early_access_signups']['Row']>
       }
+      lesson_history: {
+        Row: {
+          id: string
+          user_id: string
+          lesson_id: string
+          completed_at: string
+          practice_time: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['lesson_history']['Row'], 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Database['public']['Tables']['lesson_history']['Row']>
+      }
     }
     Views: {
       [_ in never]: never

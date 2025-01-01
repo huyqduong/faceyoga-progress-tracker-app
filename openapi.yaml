@@ -1,0 +1,353 @@
+openapi: 3.0.0
+info:
+  title: Face Yoga Progress Tracker API
+  version: 1.0.0
+  description: API for tracking face yoga exercises progress using Supabase
+
+servers:
+  - url: https://nibqxzgucbzfygrzgoaj.supabase.co
+    description: Supabase API Server
+
+components:
+  securitySchemes:
+    ApiKey:
+      type: apiKey
+      in: header
+      name: apikey
+      description: Supabase anonymous API key
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        full_name:
+          type: string
+        avatar_url:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    Course:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        difficulty:
+          type: string
+          enum: [beginner, intermediate, advanced]
+        status:
+          type: string
+          enum: [draft, published]
+        lessons_count:
+          type: integer
+
+    Lesson:
+      type: object
+      properties:
+        id:
+          type: string
+        course_id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        duration:
+          type: integer
+        video_url:
+          type: string
+        status:
+          type: string
+          enum: [draft, published]
+
+    Progress:
+      type: object
+      properties:
+        user_id:
+          type: string
+        lessons_completed:
+          type: integer
+        total_practice_time:
+          type: integer
+        streak_days:
+          type: integer
+        last_practice:
+          type: string
+          format: date-time
+
+    ProgressPhoto:
+      type: object
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        photo_url:
+          type: string
+        angle:
+          type: string
+          enum: [front, left, right]
+        notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+paths:
+  /auth/v1/token:
+    post:
+      tags:
+        - Authentication
+      summary: Sign in with email and password
+      security:
+        - ApiKey: []
+      parameters:
+        - name: grant_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [password]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+                  expires_in:
+                    type: integer
+                  refresh_token:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+
+  /auth/v1/signup:
+    post:
+      tags:
+        - Authentication
+      summary: Sign up a new user
+      security:
+        - ApiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+                data:
+                  type: object
+                  properties:
+                    full_name:
+                      type: string
+      responses:
+        '200':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  email:
+                    type: string
+
+  /rest/v1/profiles:
+    get:
+      tags:
+        - Profile
+      summary: Get user profile
+      security:
+        - ApiKey: []
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+    patch:
+      tags:
+        - Profile
+      summary: Update user profile
+      security:
+        - ApiKey: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                full_name:
+                  type: string
+                avatar_url:
+                  type: string
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /rest/v1/courses:
+    get:
+      tags:
+        - Courses
+      summary: List all courses
+      security:
+        - ApiKey: []
+        - BearerAuth: []
+      parameters:
+        - name: difficulty
+          in: query
+          schema:
+            type: string
+            enum: [beginner, intermediate, advanced]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, published]
+      responses:
+        '200':
+          description: List of courses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Course'
+
+  /rest/v1/lessons:
+    get:
+      tags:
+        - Lessons
+      summary: List all lessons
+      security:
+        - ApiKey: []
+        - BearerAuth: []
+      parameters:
+        - name: course_id
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, published]
+      responses:
+        '200':
+          description: List of lessons
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Lesson'
+
+  /rest/v1/user_progress:
+    get:
+      tags:
+        - Progress
+      summary: Get user progress
+      security:
+        - ApiKey: []
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User progress retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Progress'
+
+  /storage/v1/object/progress:
+    post:
+      tags:
+        - Progress
+      summary: Upload progress photo
+      security:
+        - ApiKey: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: File uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Key:
+                    type: string

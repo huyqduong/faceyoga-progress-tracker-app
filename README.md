@@ -91,10 +91,10 @@ CREATE TABLE profiles (
     avatar_url TEXT,
     role TEXT DEFAULT 'user',
     streak INTEGER DEFAULT 0,
-    exercises_done INTEGER DEFAULT 0,
-    total_practice_time INTEGER DEFAULT 0,
-    last_lesson_completed_at TIMESTAMP WITH TIME ZONE,
-    completed_lessons UUID[] DEFAULT '{}'::UUID[]
+    lessons_completed INTEGER DEFAULT 0,
+    practice_time INTEGER DEFAULT 0 NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 ```
 
@@ -105,7 +105,7 @@ CREATE TABLE lesson_history (
     user_id UUID REFERENCES auth.users ON DELETE CASCADE,
     lesson_id UUID REFERENCES lessons ON DELETE CASCADE,
     completed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    practice_time INTEGER DEFAULT 0,
+    practice_time INTEGER DEFAULT 0 NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -166,10 +166,18 @@ CREATE TABLE section_exercises (
 The app includes comprehensive progress tracking features:
 
 ### Practice Time
-- Tracks time spent on each lesson
-- Accumulates total practice time in user profile
-- Displays practice time in hours and minutes format
+- Tracks time spent on each lesson in minutes
+- Records practice time in both lesson history and user profile
+- Displays total practice time in hours and minutes format
 - Shows daily practice time in an interactive chart
+- Automatically updates profile's practice time on lesson completion
+
+### Lesson History
+- Records each completed lesson with timestamp
+- Stores practice time per lesson in minutes
+- Maintains completion timestamps for streak calculation
+- Used for progress visualization and stats
+- Enables detailed practice analytics
 
 ### Daily Streak
 - Tracks consecutive days of practice
@@ -178,16 +186,11 @@ The app includes comprehensive progress tracking features:
 - Resets streak after missed days
 - Shows current streak on dashboard
 
-### Lesson History
-- Records each completed lesson
-- Stores practice time per lesson
-- Maintains completion timestamps
-- Used for progress visualization and stats
-
 ### Progress Charts
 - Visual representation of practice time
 - Last 7 days practice history
 - Interactive tooltips with daily stats
+- Total practice time overview
 
 ## Authentication
 

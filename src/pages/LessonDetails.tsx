@@ -5,10 +5,11 @@ import { useAuth } from '../hooks/useAuth';
 import { useLessonStore } from '../store/lessonStore';
 import { useProgressStore } from '../store/progressStore';
 import { useLessonHistoryStore } from '../store/lessonHistoryStore';
-import { useGoalProgressStore } from '../store/goalProgressStore';
+import { useProfileStore } from '../store/profileStore';
 import { AlertCircle, Play, Pause, RotateCcw, ImageOff, Lock, CheckCircle, X } from 'lucide-react';
 import { vimeoService } from '../lib/vimeo';
 import BackButton from '../components/BackButton';
+import toast from 'react-hot-toast';
 
 interface LessonDetailsProps {
   onComplete?: () => void;
@@ -19,7 +20,10 @@ function LessonDetails({ onComplete }: LessonDetailsProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { profile } = useProfileStore();
   const { lessons, fetchLessons } = useLessonStore();
+  const { fetchProgress } = useProgressStore();
+  const { fetchHistory } = useLessonHistoryStore();
   
   const [isStarted, setIsStarted] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -257,37 +261,85 @@ function LessonDetails({ onComplete }: LessonDetailsProps) {
   };
 
   const handleComplete = async () => {
-    if (!user || !lesson || !lessonId) return;
-    
     try {
-      setIsCompleted(true);
-      
-      await Promise.all([
-        trackLessonCompletion(lessonId, user.id).catch(error => {
-          console.error('Error tracking lesson completion:', error);
-          // Don't throw here, continue with other operations
-        }),
-        
-        updateProfile({ 
-          user_id: user.id, 
-          total_practice_time: (profile?.total_practice_time || 0) + parseInt(lesson.duration)
-        }).catch(error => {
-          console.error('Error updating profile:', error);
-          // Don't throw here, continue with other operations
+      if (!lesson || !user) {
+        toast.error('Please sign in to complete lessons');
+        return;
+      }
+
+      const lessonDuration = parseInt(lesson.duration);
+
+      // Record lesson completion in history first
+      const { error: historyError } = await supabase
+        .from('lesson_history')
+        .insert([
+          {
+            user_id: user.id,
+            lesson_id: lesson.id,
+            practice_time: lessonDuration,
+            completed_at: new Date().toISOString()
+          }
+        ]);
+
+      if (historyError) {
+        console.error('Error recording lesson history:', historyError);
+        throw historyError;
+      }
+
+      // Update profile practice time
+      const { data: currentProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('lessons_completed, practice_time')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        throw profileError;
+      }
+
+      // Try updating with practice_time first
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          lessons_completed: (currentProfile?.lessons_completed || 0) + 1,
+          practice_time: (currentProfile?.practice_time || 0) + lessonDuration
         })
+        .eq('user_id', user.id);
+
+      if (updateError) {
+        // If practice_time update fails, try updating total_practice_time
+        console.warn('Failed to update practice_time, trying total_practice_time:', updateError);
+        const { error: fallbackError } = await supabase
+          .from('profiles')
+          .update({
+            lessons_completed: (currentProfile?.lessons_completed || 0) + 1,
+            total_practice_time: (currentProfile?.total_practice_time || 0) + lessonDuration
+          })
+          .eq('user_id', user.id);
+
+        if (fallbackError) {
+          console.error('Error updating profile with total_practice_time:', fallbackError);
+          throw fallbackError;
+        }
+      }
+      
+      // Refresh all data
+      await Promise.all([
+        fetchHistory(),
+        fetchProgress(),
+        fetchLessons(),
       ]);
 
-      // Refresh data
-      await Promise.all([
-        fetchProgress(user.id),
-        fetchHistory(user.id)
-      ]).catch(console.error);
-
+      setIsCompleted(true);
       toast.success('Lesson completed! Great job!');
-      onComplete?.();
+      
+      if (onComplete) {
+        onComplete();
+      }
     } catch (error) {
       console.error('Error completing lesson:', error);
-      toast.error('Failed to save progress. Please try again.');
+      toast.error('Failed to complete lesson. Please try again.');
     }
   };
 
@@ -436,19 +488,25 @@ function LessonDetails({ onComplete }: LessonDetailsProps) {
             <div className="mt-4 space-y-6">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">Description</h2>
-                <p className="mt-2 text-gray-600">{lesson.description}</p>
+                <div 
+                  className="mt-2 prose prose-mint max-w-none"
+                  dangerouslySetInnerHTML={{ __html: lesson.description }}
+                />
               </div>
 
               {lesson.instructions && lesson.instructions.length > 0 && (
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">Instructions</h2>
-                  <ol className="mt-2 space-y-2">
+                  <ol className="mt-2 space-y-4">
                     {lesson.instructions.map((instruction, index) => (
                       <li key={index} className="flex items-start">
-                        <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-mint-100 text-mint-600 rounded-full text-sm font-medium mr-2">
+                        <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-mint-100 text-mint-600 rounded-full text-sm font-medium mr-3 mt-1">
                           {index + 1}
                         </span>
-                        <span className="text-gray-600">{instruction}</span>
+                        <div 
+                          className="flex-1 prose prose-mint max-w-none"
+                          dangerouslySetInnerHTML={{ __html: instruction }}
+                        />
                       </li>
                     ))}
                   </ol>

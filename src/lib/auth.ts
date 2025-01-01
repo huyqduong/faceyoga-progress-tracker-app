@@ -65,7 +65,7 @@ export const signUp = async (email: string, password: string) => {
         full_name: '',
         role: 'user',
         streak: 0,
-        exercises_done: 0,
+        lessons_completed: 0,
         practice_time: 0
       })
       .select()

@@ -311,3 +311,103 @@ const hasAccess = async (userId: string, lessonId: string) => {
 - [ ] Add support for video chapters/timestamps
 - [ ] Implement video progress tracking
 - [ ] Add offline video support
+
+## Lesson System
+
+The lesson system is a core feature of the Face Yoga Progress Tracker, providing users with structured face yoga content through high-quality video lessons.
+
+### Features
+
+#### Video Player
+- Responsive 16:9 aspect ratio player
+- Support for both public and unlisted Vimeo videos
+- Automatic video hash parameter handling
+- Loading states with visual feedback
+- Error handling for failed video loads
+- Mobile-optimized playback
+
+#### Lesson Structure
+- Clear lesson descriptions and instructions
+- Step-by-step exercise guidance
+- Estimated duration indicators
+- Difficulty levels
+- Target areas and benefits
+- Prerequisites (if any)
+
+#### Lesson Progress
+- Mark lessons as completed
+- Track completion history
+- View completion timestamps
+- Progress indicators in course view
+- Streak tracking integration
+
+#### User Experience
+- Intuitive lesson navigation
+- Clear loading states
+- Error notifications
+- Progress feedback
+- Mobile-responsive design
+
+## Technical Implementation
+
+### Video Integration
+```typescript
+interface VideoPlayerProps {
+  videoUrl: string;
+  title: string;
+  onLoad?: () => void;
+  onError?: (error: Error) => void;
+}
+```
+
+### Lesson Completion
+```typescript
+interface LessonCompletion {
+  lessonId: string;
+  userId: string;
+  completedAt: string;
+  courseId?: string;
+}
+```
+
+### Error Handling
+- Network connectivity issues
+- Video loading failures
+- Invalid video URLs
+- Authentication errors
+- Database operation failures
+
+## Usage Examples
+
+### Marking a Lesson Complete
+```typescript
+const markLessonComplete = async (lessonId: string) => {
+  try {
+    await lessonStore.completeLessonById(lessonId);
+    toast.success('Lesson completed!');
+  } catch (error) {
+    toast.error('Failed to mark lesson as complete');
+  }
+};
+```
+
+## Best Practices
+
+### Content Creation
+1. Use high-quality video recordings
+2. Provide clear verbal instructions
+3. Include visual cues for movements
+4. Maintain consistent pacing
+5. Add captions when necessary
+
+### Technical Considerations
+1. Optimize video quality for streaming
+2. Handle different network conditions
+3. Implement proper error recovery
+4. Maintain video aspect ratio
+5. Support offline viewing (planned feature)
+
+## Related Documentation
+- [Course Management](./courses.md)
+- [Progress Tracking](./progress.md)
+- [API Reference](../API.md)

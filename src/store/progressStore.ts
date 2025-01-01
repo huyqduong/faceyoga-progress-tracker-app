@@ -7,8 +7,8 @@ interface ProgressState {
   entries: Progress[];
   loading: boolean;
   error: Error | null;
-  fetchProgress: (userId: string) => Promise<void>;
-  addProgress: (userId: string, imageFile: File, notes: string) => Promise<void>;
+  fetchProgress: () => Promise<void>;
+  addProgress: (imageFile: File, notes: string) => Promise<void>;
   deleteProgress: (id: string) => Promise<void>;
 }
 
@@ -17,16 +17,24 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
   loading: false,
   error: null,
 
-  fetchProgress: async (userId: string) => {
-    set({ loading: true, error: null });
+  fetchProgress: async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user?.id) {
+        console.error('No user found when fetching progress');
+        return;
+      }
+
+      set({ loading: true, error: null });
       const { data, error } = await supabase
         .from('user_progress')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+
       set({ entries: data || [], loading: false });
     } catch (error) {
       console.error('Error fetching progress:', error);
@@ -38,12 +46,19 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
     }
   },
 
-  addProgress: async (userId: string, imageFile: File, notes: string) => {
-    set({ loading: true, error: null });
+  addProgress: async (imageFile: File, notes: string) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user?.id) {
+        console.error('No user found when adding progress');
+        return;
+      }
+
+      set({ loading: true, error: null });
       // First, upload the image to storage
       const fileExt = imageFile.name.split('.').pop();
-      const filePath = `${userId}/${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${Date.now()}.${fileExt}`;
 
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from('progress')
@@ -63,7 +78,7 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
       const { data: progressData, error: progressError } = await supabase
         .from('user_progress')
         .insert({
-          user_id: userId,
+          user_id: user.id,
           image_url: publicUrl,
           notes
         })

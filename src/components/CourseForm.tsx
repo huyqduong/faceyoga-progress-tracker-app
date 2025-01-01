@@ -5,6 +5,7 @@ import { useCourseStore } from '../store/courseStore';
 import type { Course, CourseSection } from '../lib/supabase-types';
 import LessonSelector from './LessonSelector';
 import { supabase } from '../lib/supabase';
+import { Editor } from '@tinymce/tinymce-react';
 
 interface CourseFormProps {
   initialData?: Course;
@@ -232,14 +233,27 @@ function CourseForm({
             <label htmlFor="description" className="block text-sm font-medium text-gray-700">
               Description
             </label>
-            <textarea
-              id="description"
-              name="description"
-              rows={3}
+            <Editor
+              apiKey={import.meta.env.VITE_TINYMCE_API_KEY}
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-mint-500 focus:ring-mint-500 sm:text-sm"
-              required
+              onEditorChange={(content) =>
+                setFormData({ ...formData, description: content })
+              }
+              init={{
+                height: 300,
+                menubar: false,
+                plugins: [
+                  'advlist', 'autolink', 'lists', 'link', 'charmap',
+                  'anchor', 'searchreplace', 'visualblocks', 'code',
+                  'insertdatetime', 'media', 'table', 'preview',
+                  'help', 'wordcount'
+                ],
+                toolbar: 'undo redo | blocks | ' +
+                  'bold italic forecolor | alignleft aligncenter ' +
+                  'alignright alignjustify | bullist numlist outdent indent | ' +
+                  'removeformat | help',
+                content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
+              }}
             />
           </div>
 
@@ -459,31 +473,56 @@ function CourseForm({
                     <label className="block text-sm font-medium text-gray-700">
                       Section Title
                     </label>
-                    <input
-                      type="text"
+                    <Editor
+                      apiKey={import.meta.env.VITE_TINYMCE_API_KEY}
                       value={section.title}
-                      onChange={(e) => {
+                      onEditorChange={(content) => {
                         const newSections = [...sections];
-                        newSections[index].title = e.target.value;
+                        newSections[index].title = content;
                         setSections(newSections);
                       }}
-                      className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-mint-500 focus:ring-mint-500 sm:text-sm"
-                      required
+                      init={{
+                        height: 150,
+                        menubar: false,
+                        plugins: [
+                          'advlist', 'autolink', 'lists', 'link',
+                          'charmap', 'preview', 'searchreplace',
+                          'visualblocks', 'code', 'help', 'wordcount'
+                        ],
+                        toolbar: 'undo redo | ' +
+                          'bold italic forecolor | alignleft aligncenter ' +
+                          'alignright alignjustify | ' +
+                          'removeformat',
+                        content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
+                      }}
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
                       Section Description
                     </label>
-                    <textarea
+                    <Editor
+                      apiKey={import.meta.env.VITE_TINYMCE_API_KEY}
                       value={section.description}
-                      onChange={(e) => {
+                      onEditorChange={(content) => {
                         const newSections = [...sections];
-                        newSections[index].description = e.target.value;
+                        newSections[index].description = content;
                         setSections(newSections);
                       }}
-                      rows={2}
-                      className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-mint-500 focus:ring-mint-500 sm:text-sm"
+                      init={{
+                        height: 300,
+                        menubar: false,
+                        plugins: [
+                          'advlist', 'autolink', 'lists', 'link',
+                          'charmap', 'preview', 'searchreplace',
+                          'visualblocks', 'code', 'help', 'wordcount'
+                        ],
+                        toolbar: 'undo redo | blocks | ' +
+                          'bold italic forecolor | alignleft aligncenter ' +
+                          'alignright alignjustify | bullist numlist | ' +
+                          'removeformat',
+                        content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
+                      }}
                     />
                   </div>
                   <LessonSelector

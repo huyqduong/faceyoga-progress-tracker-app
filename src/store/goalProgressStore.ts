@@ -221,8 +221,10 @@ export const useGoalProgressStore = create<GoalProgressState>((set, get) => ({
 
       const duration = lessonData?.duration 
         ? typeof lessonData.duration === 'string'
-          ? parseInt(lessonData.duration.split(' ')[0])
-          : lessonData.duration
+          ? parseInt(lessonData.duration.replace(/[^0-9]/g, ''))
+          : typeof lessonData.duration === 'number' 
+            ? lessonData.duration
+            : 0
         : 0;
 
       // Record lesson completion
@@ -242,7 +244,7 @@ export const useGoalProgressStore = create<GoalProgressState>((set, get) => ({
       // Update user's profile with new lesson completion
       const { data: currentProfile, error: profileError } = await supabase
         .from('profiles')
-        .select('lessons_completed, total_practice_time')
+        .select('lessons_completed, practice_time')
         .eq('user_id', userId)
         .single();
 
@@ -254,7 +256,7 @@ export const useGoalProgressStore = create<GoalProgressState>((set, get) => ({
         .from('profiles')
         .update({
           lessons_completed: (currentProfile?.lessons_completed || 0) + 1,
-          total_practice_time: (currentProfile?.total_practice_time || 0) + duration
+          practice_time: (currentProfile?.practice_time || 0) + duration
         })
         .eq('user_id', userId);
 

@@ -24,6 +24,7 @@
     "@stripe/stripe-js": "^5.2.0",
     "@supabase/supabase-js": "^2.39.7",
     "@tailwindcss/aspect-ratio": "^0.4.2",
+    "@tinymce/tinymce-react": "^5.1.1",
     "@types/react-calendar": "^3.9.0",
     "@types/recharts": "^1.8.29",
     "@vimeo/player": "^2.25.0",

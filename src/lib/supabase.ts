@@ -142,7 +142,7 @@ export const supabaseApi = {
       role: 'user',
       streak: 0,
       lessons_completed: 0,
-      total_practice_time: 0
+      practice_time: 0
     };
 
     const { data, error } = await supabase
@@ -223,7 +223,7 @@ export const supabaseApi = {
       const updatedProfile = {
         ...currentProfile,
         lessons_completed: currentProfile?.lessons_completed || 0,
-        total_practice_time: currentProfile?.total_practice_time || 0,
+        practice_time: currentProfile?.practice_time || 0,
         ...profile,
         updated_at: new Date().toISOString()
       };
