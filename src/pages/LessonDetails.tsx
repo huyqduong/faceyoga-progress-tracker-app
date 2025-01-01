@@ -10,6 +10,7 @@ import { AlertCircle, Play, Pause, RotateCcw, ImageOff, Lock, CheckCircle, X } f
 import { vimeoService } from '../lib/vimeo';
 import BackButton from '../components/BackButton';
 import toast from 'react-hot-toast';
+import { courseApi } from '../api/courseApi';
 
 interface LessonDetailsProps {
   onComplete?: () => void;

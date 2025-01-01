@@ -6,6 +6,7 @@ import { Lesson } from '../../types';
 import { supabaseApi } from '../../lib/supabaseApi';
 import toast from 'react-hot-toast';
 import LessonList from './LessonList';
+import { stripHtml } from '../../utils/sanitize';
 
 const emptyLesson: Omit<Lesson, 'id'> = {
   title: '',
@@ -95,10 +96,16 @@ function LessonManager() {
 
       const cleanedData = {
         ...formData,
-        instructions: formData.instructions?.filter(i => i.trim()) || [],
-        benefits: formData.benefits?.filter(b => b.trim()) || [],
-        image_url: imageUrl,
+        title: stripHtml(formData.title).trim(),
+        duration: formData.duration.trim(),
+        description: stripHtml(formData.description).trim(),
+        category: formData.category.trim(),
+        target_area: formData.target_area.trim(),
+        difficulty: formData.difficulty.trim(),
+        instructions: formData.instructions.map(i => stripHtml(i).trim()).filter(Boolean),
+        benefits: formData.benefits.map(b => stripHtml(b).trim()).filter(Boolean),
         video_url: formData.video_url?.trim() || null,
+        image_url: imageUrl,
       };
 
       if (formData.id) {

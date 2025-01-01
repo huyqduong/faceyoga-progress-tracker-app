@@ -41,5 +41,27 @@ export const courseApi = {
       console.error('Error in hasAccessToExercise:', error);
       return false;
     }
+  },
+
+  async checkCourseAccess(userId: string, courseId: string): Promise<boolean> {
+    try {
+      // Check if user has purchased this course
+      const { data: purchaseData, error: purchaseError } = await supabase
+        .from('course_purchases')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('course_id', courseId)
+        .single();
+
+      if (purchaseError) {
+        console.error('Error checking course purchase:', purchaseError);
+        return false;
+      }
+
+      return !!purchaseData;
+    } catch (error) {
+      console.error('Error in checkCourseAccess:', error);
+      return false;
+    }
   }
 };

@@ -3,6 +3,7 @@ import { Lesson } from '../types';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import TargetIcon from '@mui/icons-material/GpsFixed';
+import { stripHtml } from '../utils/sanitize';
 
 interface LessonCardProps {
   lesson: Lesson;
@@ -37,7 +38,7 @@ export default function LessonCard({ lesson, onStartLesson, isLocked, courseTitl
       {/* Content */}
       <CardContent className="p-4">
         <Typography gutterBottom variant="h6" component="div" className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-          {title}
+          {stripHtml(title)}
           {isLocked && (
             <Chip
               label="Locked"
@@ -48,11 +49,15 @@ export default function LessonCard({ lesson, onStartLesson, isLocked, courseTitl
           )}
           {courseTitle && (
             <Typography variant="caption" color="text.secondary" display="block">
-              {courseTitle}
+              {stripHtml(courseTitle)}
             </Typography>
           )}
         </Typography>
         
+        <Typography variant="body2" color="text.secondary" className="mb-4 line-clamp-2 dark:text-gray-400">
+          {stripHtml(description)}
+        </Typography>
+
         <Stack direction="row" spacing={1} mb={2} className="flex items-center justify-between">
           <Chip
             icon={<AccessTimeIcon />}
@@ -76,10 +81,6 @@ export default function LessonCard({ lesson, onStartLesson, isLocked, courseTitl
             className="text-sm text-gray-500 dark:text-gray-400"
           />
         </Stack>
-
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }} className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-3">
-          {description}
-        </Typography>
 
         {lesson.benefits && lesson.benefits.length > 0 && (
           <div className="mt-2">

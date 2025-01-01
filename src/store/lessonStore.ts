@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Lesson } from '../types';
 import { lessonApi } from '../lib/lessons';
+import { stripHtml } from '../utils/sanitize';
 
 interface LessonState {
   lessons: Lesson[];
@@ -97,20 +98,18 @@ export const useLessonStore = create<LessonState>((set, get) => ({
   },
 
   fetchLessons: async () => {
-    console.log('[LessonStore] Starting fetchLessons');
-    // If already loading or we have lessons, don't fetch again
-    if (get().loading || get().lessons.length > 0) {
-      console.log('[LessonStore] Lessons are already loaded or currently loading, skipping fetch');
-      return;
-    }
-
-    console.log('[LessonStore] Loading lessons...');
-    set({ loading: true, error: null });
     try {
+      set({ loading: true, error: null });
       const lessons = await lessonApi.getLessons(1, 1000); // Get all lessons at once
-      console.log(`[LessonStore] Successfully loaded ${lessons.length} lessons`);
+      // Clean HTML from titles and descriptions
+      const cleanedLessons = lessons.map(lesson => ({
+        ...lesson,
+        title: stripHtml(lesson.title),
+        description: stripHtml(lesson.description)
+      }));
+      console.log(`[LessonStore] Successfully loaded ${cleanedLessons.length} lessons`);
       set({ 
-        lessons,
+        lessons: cleanedLessons,
         loading: false,
         hasMore: false, // Since we're getting all lessons at once
         page: 1,
@@ -119,7 +118,11 @@ export const useLessonStore = create<LessonState>((set, get) => ({
     } catch (error) {
       console.error('[LessonStore] Error loading lessons:', error);
       const message = error instanceof Error ? error.message : 'Failed to load lessons';
-      set({ error: message, loading: false, lessonsLoaded: false });
+      set({ 
+        error: message, 
+        loading: false,
+        lessonsLoaded: false 
+      });
       throw error;
     }
   },
@@ -129,10 +132,16 @@ export const useLessonStore = create<LessonState>((set, get) => ({
     set({ loading: true, error: null, page: 1 });
     try {
       const lessons = await lessonApi.getLessonsByCategory(category);
-      console.log(`[LessonStore] Successfully loaded ${lessons.length} lessons for category: ${category}`);
+      // Clean HTML from titles and descriptions
+      const cleanedLessons = lessons.map(lesson => ({
+        ...lesson,
+        title: stripHtml(lesson.title),
+        description: stripHtml(lesson.description)
+      }));
+      console.log(`[LessonStore] Successfully loaded ${cleanedLessons.length} lessons for category: ${category}`);
       // Ensure unique lessons by ID
       const uniqueLessons = Array.from(
-        new Map(lessons.map(l => [l.id, l])).values()
+        new Map(cleanedLessons.map(l => [l.id, l])).values()
       );
       set({ lessons: uniqueLessons, loading: false, hasMore: lessons.length > 0, lessonsLoaded: true });
     } catch (error) {
