@@ -1,18 +1,37 @@
 import React from 'react';
 import { CheckCircle2, Circle } from 'lucide-react';
-import { GoalMilestone } from '../../types/goal';
+import { GoalMilestone, GoalProgress, GoalWithProgress } from '../../types/goal';
 
 interface GoalMilestonesProps {
+  goal: GoalWithProgress;
   milestones: GoalMilestone[];
-  currentProgress: number;
+  progress?: GoalProgress;
+  loading?: boolean;
 }
 
-export default function GoalMilestones({ milestones, currentProgress }: GoalMilestonesProps) {
+export default function GoalMilestones({ goal, milestones, progress, loading }: GoalMilestonesProps) {
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  const currentProgress = progress?.progress_value || 0;
   const sortedMilestones = [...milestones].sort((a, b) => a.target_value - b.target_value);
+  
+  // Calculate total reward points earned
+  const earnedRewardPoints = sortedMilestones
+    .filter(milestone => currentProgress >= milestone.target_value)
+    .reduce((total, milestone) => total + milestone.reward_points, 0);
 
   return (
     <div className="space-y-4">
-      <h4 className="text-lg font-semibold text-gray-900">Milestones</h4>
+      <div className="flex justify-between items-center">
+        <h4 className="text-lg font-semibold text-gray-900">Milestones</h4>
+        {earnedRewardPoints > 0 && (
+          <span className="text-yellow-600 font-medium">
+            Total Rewards: +{earnedRewardPoints} points
+          </span>
+        )}
+      </div>
       <div className="relative">
         {/* Progress Line */}
         <div className="absolute left-3 top-4 bottom-4 w-0.5 bg-gray-200" />
@@ -44,8 +63,8 @@ export default function GoalMilestones({ milestones, currentProgress }: GoalMile
                   <div className="flex items-center gap-4 mt-2 text-sm">
                     <span>Target: {milestone.target_value} points</span>
                     {milestone.reward_points > 0 && (
-                      <span className="text-yellow-600">
-                        +{milestone.reward_points} reward points
+                      <span className={`${isCompleted ? 'text-yellow-600' : 'text-gray-500'}`}>
+                        {isCompleted ? '✨ Earned: ' : ''} +{milestone.reward_points} reward points
                       </span>
                     )}
                   </div>

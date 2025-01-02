@@ -1,7 +1,7 @@
 # Goals Feature Documentation
 
 ## Overview
-The Goals feature allows users to set, track, and achieve face yoga practice goals. It includes milestone tracking, progress visualization, and integration with lessons and exercises.
+The Goals feature allows users to set, track, and achieve face yoga practice goals. It includes milestone tracking, progress visualization, and integration with lessons.
 
 ## Features
 
@@ -19,6 +19,8 @@ The Goals feature allows users to set, track, and achieve face yoga practice goa
 - Progress history
 - Status updates (Not Started, In Progress, Completed, Paused)
 - Notes and documentation
+- Reward points system for completed milestones
+- Progress-based milestone completion
 
 ### Goal Analytics
 - Completion rates
@@ -26,6 +28,14 @@ The Goals feature allows users to set, track, and achieve face yoga practice goa
 - Time spent tracking
 - Milestone achievements
 - Points and rewards system
+- Total reward points earned
+
+### Lesson Integration
+- Track goal progress through lesson completion
+- Map lessons to goals with contribution weights
+- Automatic progress updates from lessons
+- Progress calculation based on lesson completion
+- Related lessons display
 
 ## Implementation
 
@@ -86,6 +96,46 @@ interface GoalMilestone {
 }
 ```
 
+#### Lesson Goal Mapping
+```typescript
+interface LessonGoalMapping {
+  id: string;
+  lesson_id: string;
+  goal_id: string;
+  contribution_weight: number;
+  created_at: string;
+}
+```
+
+### Progress Calculation
+
+#### Milestone Progress
+- Progress percentage = (current points / total points needed) * 100
+- Milestone completion based on reaching target value
+- Reward points awarded upon milestone completion
+- Total points needed for goal completion = highest milestone target value
+
+#### Lesson Progress Integration
+- Each completed lesson contributes points based on its weight
+- Points are automatically added to goal progress
+- Multiple lessons can contribute to the same goal
+- Weighted contribution allows for different lesson importance
+
+#### Example
+```typescript
+// Calculate milestone completion
+const isCompleted = currentProgress >= milestone.target_value;
+
+// Calculate total reward points
+const totalRewardPoints = milestones
+  .filter(m => currentProgress >= m.target_value)
+  .reduce((total, m) => total + m.reward_points, 0);
+
+// Calculate lesson contribution
+const lessonPoints = lessonWeight * basePoints;
+const newProgress = currentProgress + lessonPoints;
+```
+
 ### Key Components
 
 #### GoalProgressCard
@@ -94,12 +144,16 @@ interface GoalMilestone {
 - Milestone progress tracking
 - Related lessons integration
 - Quick status updates
+- Total reward points display
+- Progress-based milestone completion
 
 #### GoalMilestones
 - Milestone listing and tracking
 - Progress visualization
 - Reward points display
-- Achievement tracking
+- Visual completion indicators
+- Earned rewards summary
+- Milestone status tracking
 
 ### State Management
 
@@ -122,20 +176,10 @@ The goals feature uses Zustand for state management with the following operation
 
 #### Lesson Integration
 - Track goal progress through lesson completion
-- Map exercises to goals
-- Weight-based progress calculation
-- Automatic progress updates
-
-#### Exercise Mapping
-```typescript
-interface ExerciseGoalMapping {
-  id: string;
-  exercise_id: string;
-  goal_id: string;
-  contribution_weight: number;
-  created_at: string;
-}
-```
+- Map lessons to goals with contribution weights
+- Automatic progress updates from lessons
+- Progress calculation based on lesson completion
+- Related lessons display
 
 ### Goal-Lesson Integration
 

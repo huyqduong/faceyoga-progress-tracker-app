@@ -41,9 +41,9 @@ export interface GoalMilestone {
   created_at: string;
 }
 
-export interface ExerciseGoalMapping {
+export interface LessonGoalMapping {
   id: string;
-  exercise_id: string;
+  lesson_id: string;
   goal_id: string;
   contribution_weight: number;
   created_at: string;
@@ -52,8 +52,8 @@ export interface ExerciseGoalMapping {
 export interface GoalWithProgress extends Goal {
   progress?: GoalProgress;
   milestones?: GoalMilestone[];
-  related_exercises?: Array<{
-    exercise_id: string;
+  lessons?: Array<{
+    lesson_id: string;
     contribution_weight: number;
   }>;
 }

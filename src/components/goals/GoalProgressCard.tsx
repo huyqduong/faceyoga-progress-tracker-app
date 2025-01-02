@@ -33,12 +33,18 @@ export default function GoalProgressCard({ goal, onStatusChange }: GoalProgressC
   const progress = goal.progress?.progress_value || 0;
   const status = goal.progress?.status || 'not_started';
   const milestoneCount = goal.milestones?.filter(milestone => milestone.target_value > 0).length || 0;
-  const milestonesReached = goal.progress?.milestone_reached || 0;
+  const milestonesReached = goal.milestones?.filter(
+    milestone => progress >= milestone.target_value
+  ).length || 0;
   
-  // Calculate total points needed for completion
+  // Calculate total points needed for completion and total reward points
   const totalPointsNeeded = goal.milestones?.length > 0
     ? Math.max(...goal.milestones.map(m => m.target_value))
     : 100; // Default to 100 if no milestones
+    
+  const totalRewardPoints = goal.milestones
+    ?.filter(milestone => progress >= milestone.target_value)
+    .reduce((total, milestone) => total + milestone.reward_points, 0) || 0;
   
   // Calculate percentage for circular progress based on points
   const percentage = Math.min((progress / totalPointsNeeded) * 100, 100);
@@ -104,6 +110,14 @@ export default function GoalProgressCard({ goal, onStatusChange }: GoalProgressC
                 ? format(new Date(goal.progress.last_updated), 'MMM d')
                 : 'Not started'}
             </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Trophy className="w-5 h-5 text-yellow-500" />
+          <div>
+            <div className="text-sm font-medium text-gray-900 dark:text-white">Reward Points</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">{totalRewardPoints}</div>
           </div>
         </div>
       </div>

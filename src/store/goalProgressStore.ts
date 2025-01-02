@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { GoalProgress, GoalMilestone, GoalWithProgress, GoalStatus } from '../types/goal';
 import { toast } from 'react-hot-toast';
+import { useRewardStore } from './rewardStore';
 
 interface GoalProgressState {
   progress: GoalProgress[];
@@ -119,6 +120,8 @@ export const useGoalProgressStore = create<GoalProgressState>((set, get) => ({
       if (userError) throw userError;
       if (!user) throw new Error('No user found');
 
+      console.log('Updating goal status:', { goalId, status, userId: user.id });
+
       const timestamp = new Date().toISOString();
       let result;
 
@@ -130,9 +133,12 @@ export const useGoalProgressStore = create<GoalProgressState>((set, get) => ({
         .eq('user_id', user.id)
         .single();
 
+      console.log('Existing progress:', existingProgress);
+
       if (checkError && checkError.code !== 'PGRST116') throw checkError;
 
       if (!existingProgress) {
+        console.log('Creating new progress entry');
         // Create new progress entry
         result = await supabase
           .from('goal_progress')
@@ -148,6 +154,7 @@ export const useGoalProgressStore = create<GoalProgressState>((set, get) => ({
           .select()
           .single();
       } else {
+        console.log('Updating existing progress entry');
         // Update existing progress entry
         result = await supabase
           .from('goal_progress')
@@ -159,6 +166,33 @@ export const useGoalProgressStore = create<GoalProgressState>((set, get) => ({
       }
 
       if (result.error) throw result.error;
+
+      // If goal is completed, update rewards
+      if (status === 'completed' && (!existingProgress || existingProgress.status !== 'completed')) {
+        try {
+          console.log('Goal completed, updating rewards');
+          // Fetch goal rewards info
+          const { data: goalData, error: goalError } = await supabase
+            .from('goals')
+            .select('id, points_reward')
+            .eq('id', goalId)
+            .single();
+
+          console.log('Goal points reward:', goalData?.points_reward);
+
+          if (goalError) throw goalError;
+
+          if (goalData?.points_reward) {
+            // Update reward store state
+            const rewardStore = useRewardStore.getState();
+            console.log('Fetching rewards to update points');
+            await rewardStore.fetchRewards(user.id);
+          }
+        } catch (rewardErr) {
+          console.error('Error updating rewards:', rewardErr);
+          toast.error('Failed to update rewards');
+        }
+      }
 
       // Update local state immediately without refetching
       set(state => ({
@@ -172,6 +206,7 @@ export const useGoalProgressStore = create<GoalProgressState>((set, get) => ({
       toast.success('Goal status updated');
     } catch (err) {
       const error = err as Error;
+      console.error('Failed to update goal status:', error);
       toast.error('Failed to update goal status');
       throw error;
     }

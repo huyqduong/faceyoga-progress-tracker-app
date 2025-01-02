@@ -42,6 +42,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Duration field from lesson history records
 - Redundant loading states from stores
 
+## [1.2.0] - 2025-01-01
+
+### Added
+- Enhanced rewards system with automatic achievement tracking
+- New achievement badges with custom SVG icons
+- Automatic level progression based on points
+- Streak tracking for consistent practice
+- Database triggers for automatic achievement awards
+- Documentation for rewards system
+
+### Fixed
+- Achievement display issues in user profile
+- Points calculation from completed goals
+- Streak tracking accuracy
+- Multiple user rewards records handling
+
+### Changed
+- Updated achievement badge styling
+- Improved rewards state management
+- Enhanced achievement fetching with proper ordering
+
 ## [0.1.0] - 2024-12-24
 
 ### Added
@@ -51,4 +72,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Basic error handling for video playback
 
 [Unreleased]: https://github.com/huyqduong/faceyoga-progress-tracker-app/compare/v0.1.0...HEAD
+[1.2.0]: https://github.com/huyqduong/faceyoga-progress-tracker-app/releases/tag/v1.2.0
 [0.1.0]: https://github.com/huyqduong/faceyoga-progress-tracker-app/releases/tag/v0.1.0
