@@ -1,8 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Camera, Save, User, Mail, Phone, MapPin, UserCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useProfileStore } from '../store/profileStore';
 import { supabaseApi } from '../lib/supabase';
+import { statsApi } from '../api/statsApi';
 import toast from 'react-hot-toast';
 import BackButton from '../components/BackButton';
 
@@ -10,6 +11,12 @@ function Profile() {
   const { user, profile } = useAuth();
   const { updateProfile, fetchProfile } = useProfileStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [stats, setStats] = useState({
+    coursesEnrolled: 0,
+    lessonsCompleted: 0,
+    daysPracticed: 0
+  });
 
   const [formData, setFormData] = useState({
     username: profile?.username || '',
@@ -22,6 +29,14 @@ function Profile() {
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      statsApi.getUserStats(user.id).then(stats => {
+        setStats(stats);
+      });
+    }
+  }, [user]);
 
   // If no user, don't render the profile page
   if (!user) {
@@ -151,15 +166,15 @@ function Profile() {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600 dark:text-gray-400">Courses Enrolled</span>
-                  <span className="font-medium">3</span>
+                  <span className="font-medium">{stats.coursesEnrolled}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600 dark:text-gray-400">Exercises Completed</span>
-                  <span className="font-medium">24</span>
+                  <span className="text-gray-600 dark:text-gray-400">Lessons Completed</span>
+                  <span className="font-medium">{stats.lessonsCompleted}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600 dark:text-gray-400">Days Practiced</span>
-                  <span className="font-medium">15</span>
+                  <span className="font-medium">{stats.daysPracticed}</span>
                 </div>
               </div>
             </div>
