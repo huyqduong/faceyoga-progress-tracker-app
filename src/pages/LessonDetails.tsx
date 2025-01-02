@@ -1,13 +1,14 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import type { Database } from '../types/database.types';
 import { useAuth } from '../hooks/useAuth';
 import { useLessonStore } from '../store/lessonStore';
 import { useProgressStore } from '../store/progressStore';
 import { useLessonHistoryStore } from '../store/lessonHistoryStore';
 import { useProfileStore } from '../store/profileStore';
 import { useGoalProgressStore } from '../store/goalProgressStore';
-import { AlertCircle, Play, Pause, RotateCcw, ImageOff, Lock, CheckCircle, X } from 'lucide-react';
+import { AlertCircle, Play, Pause, RotateCcw, ImageOff, Lock, CheckCircle, X, Check } from 'lucide-react';
 import { vimeoService } from '../lib/vimeo';
 import BackButton from '../components/BackButton';
 import toast from 'react-hot-toast';
@@ -130,12 +131,31 @@ function LessonDetails({ onComplete }: LessonDetailsProps) {
           .single();
 
         if (!lessonError && lessonData) {
-          useLessonStore.setState(state => ({
-            ...state,
-            lessons: state.lessons.some(l => l.id === lessonData.id)
-              ? state.lessons
-              : [...state.lessons, lessonData]
-          }));
+          if (lessonData) {
+            const rawLesson = lessonData as any;
+            const typedLessonData: Database['public']['Tables']['lessons']['Row'] = {
+              id: rawLesson.id,
+              title: rawLesson.title,
+              duration: rawLesson.duration,
+              description: rawLesson.description,
+              image_url: rawLesson.image_url,
+              video_url: rawLesson.video_url,
+              difficulty: rawLesson.difficulty,
+              instructions: rawLesson.instructions || [],
+              benefits: rawLesson.benefits || [],
+              category: rawLesson.category,
+              target_area: rawLesson.target_area,
+              is_premium: rawLesson.is_premium ?? false,
+              created_at: rawLesson.created_at,
+              updated_at: rawLesson.updated_at
+            };
+            useLessonStore.setState(state => ({
+              ...state,
+              lessons: state.lessons.some(l => l.id === typedLessonData.id)
+                ? state.lessons
+                : [...state.lessons, typedLessonData]
+            }));
+          }
           setCheckingAccess(false);
           return;
         }
@@ -162,12 +182,32 @@ function LessonDetails({ onComplete }: LessonDetailsProps) {
         if (courseLessonError) throw courseLessonError;
 
         if (courseLessonData) {
-          useLessonStore.setState(state => ({
-            ...state,
-            lessons: state.lessons.some(l => l.id === courseLessonData.id)
-              ? state.lessons
-              : [...state.lessons, courseLessonData]
-          }));
+          if (courseLessonData) {
+            const rawLesson = courseLessonData as any;
+            const now = new Date().toISOString();
+            const typedLessonData: Database['public']['Tables']['lessons']['Row'] = {
+              id: rawLesson.id,
+              title: rawLesson.title,
+              duration: rawLesson.duration,
+              description: rawLesson.description,
+              image_url: rawLesson.image_url,
+              video_url: rawLesson.video_url,
+              difficulty: rawLesson.difficulty,
+              instructions: rawLesson.instructions || [],
+              benefits: rawLesson.benefits || [],
+              category: rawLesson.category,
+              target_area: rawLesson.target_area,
+              is_premium: false,
+              created_at: now,
+              updated_at: now
+            };
+            useLessonStore.setState(state => ({
+              ...state,
+              lessons: state.lessons.some(l => l.id === typedLessonData.id)
+                ? state.lessons
+                : [...state.lessons, typedLessonData]
+            }));
+          }
         }
       } catch (error) {
         console.error('Error fetching lesson data:', error);
@@ -290,11 +330,11 @@ function LessonDetails({ onComplete }: LessonDetailsProps) {
       }
 
       // Update profile practice time
-      const { data: currentProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('lessons_completed, practice_time')
-        .eq('user_id', user.id)
-        .single();
+        const { data: currentProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select<'lessons_completed, practice_time', Pick<Database['public']['Tables']['profiles']['Row'], 'lessons_completed' | 'practice_time'>>('lessons_completed, practice_time')
+          .eq('user_id', user.id)
+          .single();
 
       if (profileError) {
         console.error('Error fetching profile:', profileError);
@@ -343,7 +383,7 @@ function LessonDetails({ onComplete }: LessonDetailsProps) {
         throw new Error('Invalid video URL');
       }
       
-      const success = await vimeoService.unlockVideo(videoId, videoPassword);
+      const success = await vimeoService.getVideoInfo(videoId);
       if (success) {
         const videoInfo = await vimeoService.getVideoInfo(lesson.video_url);
         setEmbedUrl(videoInfo.embedUrl);
@@ -509,9 +549,12 @@ function LessonDetails({ onComplete }: LessonDetailsProps) {
                   <h2 className="text-lg font-semibold text-gray-900">Benefits</h2>
                   <ul className="mt-2 space-y-2">
                     {lesson.benefits.map((benefit, index) => (
-                      <li key={index} className="flex items-center text-gray-600">
-                        <div className="w-2 h-2 bg-mint-400 rounded-full mr-2"></div>
-                        {benefit}
+                      <li key={index} className="flex items-start">
+                        <Check className="flex-shrink-0 w-5 h-5 text-mint-500 mr-2" />
+                        <div 
+                          className="flex-1 prose prose-mint max-w-none"
+                          dangerouslySetInnerHTML={{ __html: benefit }}
+                        />
                       </li>
                     ))}
                   </ul>

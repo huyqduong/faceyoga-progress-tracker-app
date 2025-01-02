@@ -11,7 +11,7 @@ export interface Database {
           avatar_url: string | null;
           role: 'user' | 'admin';
           streak: number;
-          exercises_done: number;
+          lessons_completed: number;
           practice_time: number;
           created_at: string;
           updated_at: string;
@@ -25,7 +25,7 @@ export interface Database {
           avatar_url?: string | null;
           role?: 'user' | 'admin';
           streak?: number;
-          exercises_done?: number;
+          lessons_completed?: number;
           practice_time?: number;
           created_at?: string;
           updated_at?: string;
@@ -39,8 +39,84 @@ export interface Database {
           avatar_url?: string | null;
           role?: 'user' | 'admin';
           streak?: number;
-          exercises_done?: number;
+          lessons_completed?: number;
           practice_time?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      lessons: {
+        Row: {
+          id: string;
+          title: string;
+          duration: string;
+          description: string;
+          image_url: string;
+          video_url?: string;
+          difficulty: string;
+          instructions: string[];
+          benefits: string[];
+          category: string;
+          target_area: string;
+          is_premium: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          duration: string;
+          description: string;
+          image_url: string;
+          video_url?: string;
+          difficulty: string;
+          instructions: string[];
+          benefits: string[];
+          category: string;
+          target_area: string;
+          is_premium?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          duration?: string;
+          description?: string;
+          image_url?: string;
+          video_url?: string;
+          difficulty?: string;
+          instructions?: string[];
+          benefits?: string[];
+          category?: string;
+          target_area?: string;
+          is_premium?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      course_lessons: {
+        Row: {
+          id: string;
+          course_id: string;
+          lesson_id: string;
+          order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          course_id: string;
+          lesson_id: string;
+          order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          course_id?: string;
+          lesson_id?: string;
+          order?: number;
           created_at?: string;
           updated_at?: string;
         };

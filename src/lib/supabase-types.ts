@@ -24,7 +24,7 @@ export interface UserGoals {
   updated_at: string;
 }
 
-export interface Exercise {
+export interface Lesson {
   id: string;
   title: string;
   duration: string;
@@ -34,8 +34,9 @@ export interface Exercise {
   video_url?: string;
   category: string;
   difficulty: string;
-  instructions?: string[];
-  benefits?: string[];
+  instructions: string[];
+  benefits: string[];
+  is_premium: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -69,37 +70,14 @@ export interface CourseSection {
   updated_at: string;
 }
 
-export interface SectionExercise {
-  id: string;
-  section_id: string;
-  exercise_id: string;
-  order_index: number;
-  created_at: string;
-  exercise?: Exercise;
-}
-
 export interface SectionLesson {
   id: string;
   section_id: string;
   lesson_id: string;
-  order_id: number;
+  order: number;
   created_at: string;
   updated_at: string;
-  lesson?: {
-    id: string;
-    title: string;
-    duration: string;
-    description: string;
-    image_url: string;
-    video_url?: string;
-    difficulty: string;
-    instructions: string[];
-    benefits: string[];
-    category: string;
-    target_area: string;
-    created_at: string;
-    updated_at: string;
-  };
+  lesson?: Lesson;
 }
 
 export interface LessonHistory {

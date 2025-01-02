@@ -9,7 +9,7 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
-      exercises: {
+      lessons: {
         Row: {
           id: string
           title: string
@@ -23,10 +23,41 @@ export interface Database {
           category: string
           created_at: string
           updated_at: string
-          is_premium?: boolean
+          is_premium: boolean
+          video_url?: string
         }
-        Insert: Omit<Database['public']['Tables']['exercises']['Row'], 'id' | 'created_at' | 'updated_at'>
-        Update: Partial<Database['public']['Tables']['exercises']['Row']>
+        Insert: Omit<Database['public']['Tables']['lessons']['Row'], 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Database['public']['Tables']['lessons']['Row']>
+      }
+      course_lessons: {
+        Row: {
+          id: string
+          course_id: string
+          lesson_id: string
+          order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['course_lessons']['Row'], 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Database['public']['Tables']['course_lessons']['Row']>
+      }
+      course_purchases: {
+        Row: {
+          id: string
+          user_id: string
+          course_id: string
+          amount: number
+          currency: string
+          status: 'pending' | 'completed' | 'failed' | 'refunded'
+          payment_intent_id: string
+          payment_method: string
+          receipt_url: string | null
+          expires_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['course_purchases']['Row'], 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Database['public']['Tables']['course_purchases']['Row']>
       }
       user_subscriptions: {
         Row: {
@@ -52,7 +83,7 @@ export interface Database {
           avatar_url: string | null
           role: 'user' | 'admin'
           streak: number
-          exercises_done: number
+          lessons_completed: number
           practice_time: number
           experience_level: 'beginner' | 'intermediate' | 'advanced' | null
           created_at: string

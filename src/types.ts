@@ -12,6 +12,7 @@ export interface Lesson {
   target_area: string;
   created_at: string;
   updated_at: string;
+  is_premium: boolean;
 }
 
 export interface LessonHistory {

@@ -1,21 +1,21 @@
 import { supabase } from '../lib/supabase';
 
 export const courseApi = {
-  async hasAccessToExercise(userId: string, exerciseId: string): Promise<boolean> {
+  async hasAccessToLesson(userId: string, lessonId: string): Promise<boolean> {
     try {
-      const { data: exerciseData, error: exerciseError } = await supabase
-        .from('exercises')
+      const { data: lessonData, error: lessonError } = await supabase
+        .from('lessons')
         .select('id, is_premium')
-        .eq('id', exerciseId)
+        .eq('id', lessonId)
         .single();
 
-      if (exerciseError || !exerciseData) {
-        console.error('Error checking exercise:', exerciseError);
+      if (lessonError || !lessonData) {
+        console.error('Error checking lesson:', lessonError);
         return false;
       }
 
-      // If exercise is not premium, allow access
-      if (!exerciseData.is_premium) {
+      // If lesson is not premium, allow access
+      if (!lessonData.is_premium) {
         return true;
       }
 
@@ -38,7 +38,7 @@ export const courseApi = {
 
       return false;
     } catch (error) {
-      console.error('Error in hasAccessToExercise:', error);
+      console.error('Error in hasAccessToLesson:', error);
       return false;
     }
   },

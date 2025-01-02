@@ -10,6 +10,7 @@ interface LessonState {
   page: number;
   hasMore: boolean;
   categories: string[];
+  lessonsLoaded: boolean;
   fetchLessons: () => Promise<void>;
   fetchLessonsByCategory: (category: string) => Promise<void>;
   createLesson: (lesson: Omit<Lesson, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
@@ -22,6 +23,23 @@ interface LessonState {
   getLessonsByIds: (ids: string[]) => Lesson[];
   ensureLessonsLoaded: () => Promise<void>;
 }
+
+const processLesson = (lesson: any): Lesson => ({
+  id: lesson.id,
+  title: lesson.title,
+  duration: lesson.duration,
+  description: lesson.description,
+  image_url: lesson.image_url,
+  video_url: lesson.video_url,
+  difficulty: lesson.difficulty,
+  instructions: lesson.instructions,
+  benefits: lesson.benefits,
+  category: lesson.category,
+  target_area: lesson.target_area,
+  created_at: lesson.created_at,
+  updated_at: lesson.updated_at,
+  is_premium: lesson.is_premium ?? false
+});
 
 export const useLessonStore = create<LessonState>((set, get) => ({
   lessons: [],
@@ -50,7 +68,6 @@ export const useLessonStore = create<LessonState>((set, get) => ({
     console.log('[LessonStore] Starting ensureLessonsLoaded');
     const state = get();
     
-    // If lessons are already loaded or currently loading, don't reload
     if (state.lessonsLoaded) {
       console.log('[LessonStore] Lessons already loaded, skipping fetch');
       return;
@@ -58,7 +75,6 @@ export const useLessonStore = create<LessonState>((set, get) => ({
     
     if (state.loading) {
       console.log('[LessonStore] Lessons are currently loading, waiting...');
-      // Wait for current loading to complete
       await new Promise(resolve => {
         const checkLoading = () => {
           if (!get().loading) {
@@ -76,13 +92,14 @@ export const useLessonStore = create<LessonState>((set, get) => ({
     set({ loading: true, error: null });
 
     try {
-      const lessons = await lessonApi.getLessons(1, 1000); // Get all lessons at once
+      const rawLessons = await lessonApi.getLessons(1, 1000);
+      const lessons = rawLessons.map(processLesson);
       console.log(`[LessonStore] Successfully loaded ${lessons.length} lessons`);
       set({ 
         lessons, 
         loading: false, 
         lessonsLoaded: true,
-        hasMore: false, // Since we're getting all lessons at once
+        hasMore: false,
         page: 1
       });
     } catch (error) {
@@ -100,18 +117,13 @@ export const useLessonStore = create<LessonState>((set, get) => ({
   fetchLessons: async () => {
     try {
       set({ loading: true, error: null });
-      const lessons = await lessonApi.getLessons(1, 1000); // Get all lessons at once
-      // Clean HTML from titles and descriptions
-      const cleanedLessons = lessons.map(lesson => ({
-        ...lesson,
-        title: stripHtml(lesson.title),
-        description: stripHtml(lesson.description)
-      }));
-      console.log(`[LessonStore] Successfully loaded ${cleanedLessons.length} lessons`);
+      const rawLessons = await lessonApi.getLessons(1, 1000);
+      const lessons = rawLessons.map(processLesson);
+      console.log(`[LessonStore] Successfully loaded ${lessons.length} lessons`);
       set({ 
-        lessons: cleanedLessons,
+        lessons,
         loading: false,
-        hasMore: false, // Since we're getting all lessons at once
+        hasMore: false,
         page: 1,
         lessonsLoaded: true
       });
@@ -131,17 +143,11 @@ export const useLessonStore = create<LessonState>((set, get) => ({
     console.log(`[LessonStore] Starting fetchLessonsByCategory for category: ${category}`);
     set({ loading: true, error: null, page: 1 });
     try {
-      const lessons = await lessonApi.getLessonsByCategory(category);
-      // Clean HTML from titles and descriptions
-      const cleanedLessons = lessons.map(lesson => ({
-        ...lesson,
-        title: stripHtml(lesson.title),
-        description: stripHtml(lesson.description)
-      }));
-      console.log(`[LessonStore] Successfully loaded ${cleanedLessons.length} lessons for category: ${category}`);
-      // Ensure unique lessons by ID
+      const rawLessons = await lessonApi.getLessonsByCategory(category);
+      const lessons = rawLessons.map(processLesson);
+      console.log(`[LessonStore] Successfully loaded ${lessons.length} lessons for category: ${category}`);
       const uniqueLessons = Array.from(
-        new Map(cleanedLessons.map(l => [l.id, l])).values()
+        new Map(lessons.map(l => [l.id, l])).values()
       );
       set({ lessons: uniqueLessons, loading: false, hasMore: lessons.length > 0, lessonsLoaded: true });
     } catch (error) {
@@ -154,9 +160,14 @@ export const useLessonStore = create<LessonState>((set, get) => ({
     console.log('[LessonStore] Starting createLesson');
     set({ loading: true, error: null });
     try {
-      const newLesson = await lessonApi.createLesson(lesson);
+      const rawNewLesson = await lessonApi.createLesson({
+        ...lesson,
+        is_premium: lesson.is_premium ?? false
+      });
+      if (!rawNewLesson) throw new Error('Failed to create lesson');
+      
+      const newLesson = processLesson(rawNewLesson);
       console.log(`[LessonStore] Successfully created lesson: ${newLesson.id}`);
-      if (!newLesson) throw new Error('Failed to create lesson');
       
       set(state => ({
         lessons: [newLesson, ...state.lessons],
@@ -174,7 +185,11 @@ export const useLessonStore = create<LessonState>((set, get) => ({
     console.log(`[LessonStore] Starting updateLesson for lesson: ${id}`);
     set({ loading: true, error: null });
     try {
-      const updatedLesson = await lessonApi.updateLesson(id, lesson);
+      const rawUpdatedLesson = await lessonApi.updateLesson(id, {
+        ...lesson,
+        is_premium: lesson.is_premium ?? false
+      });
+      const updatedLesson = processLesson(rawUpdatedLesson);
       console.log(`[LessonStore] Successfully updated lesson: ${updatedLesson.id}`);
       set(state => ({
         lessons: state.lessons.map(ex => ex.id === id ? updatedLesson : ex),

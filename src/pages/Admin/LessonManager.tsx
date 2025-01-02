@@ -6,15 +6,15 @@ import { Lesson } from '../../types';
 import { supabaseApi } from '../../lib/supabaseApi';
 import toast from 'react-hot-toast';
 import LessonList from './LessonList';
-import { stripHtml } from '../../utils/sanitize';
+import { stripHtml, sanitizeHtml } from '../../utils/sanitize';
 
-const emptyLesson: Omit<Lesson, 'id'> = {
+const emptyLesson: Omit<Lesson, 'id' | 'created_at' | 'updated_at'> = {
   title: '',
   description: '',
   duration: '',
   difficulty: '',
   image_url: '',
-  video_url: '',
+  video_url: undefined,
   category: '',
   target_area: '',
   instructions: [''],
@@ -22,7 +22,11 @@ const emptyLesson: Omit<Lesson, 'id'> = {
   is_premium: false,
 };
 
-type LessonFormData = Omit<Lesson, 'id'> & { id?: string };
+type LessonFormData = Omit<Lesson, 'id' | 'created_at' | 'updated_at'> & { 
+  id?: string;
+  created_at?: string;
+  updated_at?: string;
+};
 
 function LessonManager() {
   const { lessons, loading, error: storeError, fetchLessons, createLesson, updateLesson, deleteLesson } = useLessonStore();
@@ -98,13 +102,13 @@ function LessonManager() {
         ...formData,
         title: stripHtml(formData.title).trim(),
         duration: formData.duration.trim(),
-        description: stripHtml(formData.description).trim(),
+        description: formData.description.trim(),
         category: formData.category.trim(),
         target_area: formData.target_area.trim(),
         difficulty: formData.difficulty.trim(),
-        instructions: formData.instructions.map(i => stripHtml(i).trim()).filter(Boolean),
-        benefits: formData.benefits.map(b => stripHtml(b).trim()).filter(Boolean),
-        video_url: formData.video_url?.trim() || null,
+        instructions: formData.instructions.map(i => sanitizeHtml(i).trim()).filter(Boolean),
+        benefits: formData.benefits.map(b => sanitizeHtml(b).trim()).filter(Boolean),
+        video_url: formData.video_url?.trim() || undefined,
         image_url: imageUrl,
       };
 
@@ -390,26 +394,48 @@ function LessonManager() {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Benefits
             </label>
-            {formData.benefits.map((benefit, index) => (
-              <div key={index} className="flex gap-2 mb-2">
-                <input
-                  type="text"
-                  value={benefit}
-                  onChange={(e) =>
-                    handleArrayInput('benefits', index, e.target.value)
-                  }
-                  className="flex-1 px-4 py-2 border rounded-lg dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                  placeholder={`Benefit ${index + 1}`}
-                />
-                <button
-                  type="button"
-                  onClick={() => removeArrayItem('benefits', index)}
-                  className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900 rounded-lg"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            ))}
+            <div className="space-y-4">
+              {formData.benefits.map((benefit, index) => (
+                <div key={index} className="flex gap-4">
+                  <div className="flex-grow">
+                    <Editor
+                      apiKey={import.meta.env.VITE_TINYMCE_API_KEY}
+                      value={benefit}
+                      onEditorChange={(content) => {
+                        const newBenefits = [...formData.benefits];
+                        newBenefits[index] = content;
+                        setFormData({ ...formData, benefits: newBenefits });
+                      }}
+                      init={{
+                        height: 150,
+                        menubar: false,
+                        plugins: [
+                          'advlist', 'autolink', 'lists', 'link',
+                          'charmap', 'preview', 'searchreplace',
+                          'visualblocks', 'code', 'insertdatetime',
+                          'media', 'table', 'help', 'wordcount'
+                        ],
+                        toolbar: 'undo redo | ' +
+                          'bold italic forecolor | alignleft aligncenter ' +
+                          'alignright alignjustify | bullist numlist | ' +
+                          'removeformat',
+                        content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
+                      }}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newBenefits = formData.benefits.filter((_, i) => i !== index);
+                      setFormData({ ...formData, benefits: newBenefits });
+                    }}
+                    className="p-2 text-red-600 hover:text-red-800"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              ))}
+            </div>
             <button
               type="button"
               onClick={() => addArrayItem('benefits')}
