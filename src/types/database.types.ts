@@ -54,6 +54,7 @@ export interface Database {
           streak: number
           exercises_done: number
           practice_time: number
+          experience_level: 'beginner' | 'intermediate' | 'advanced' | null
           created_at: string
           updated_at: string
         }
