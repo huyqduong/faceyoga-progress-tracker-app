@@ -99,7 +99,7 @@ function Onboarding() {
       });
 
       // Save user goals
-      await supabase.from('user_goals').upsert({
+       await supabase.from('user_goals').upsert({
         user_id: user.id,
         goals: selectedGoals,
         time_commitment: parseInt(quickSetup.timeCommitment),
@@ -135,12 +135,12 @@ function Onboarding() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-mint-50 to-white py-16 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-mint-50 to-white dark:from-gray-900 dark:to-gray-900 py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-xl mx-auto">
         {step === 'welcome' && (
           <div className="text-center">
-            <h1 className="text-4xl font-bold text-gray-900 mb-8">Welcome to Face Yoga</h1>
-            <p className="text-lg text-gray-600 mb-8">
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-8">Welcome to Face Yoga</h1>
+            <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
               Choose how you'd like to get started:
             </p>
             <div className="space-y-4">
@@ -155,7 +155,7 @@ function Onboarding() {
                   setStep('quick-setup');
                   setQuickSetup(prev => ({ ...prev, withGoals: true }));
                 }}
-                className="w-full py-3 px-4 bg-white text-mint-600 border-2 border-mint-600 rounded-lg hover:bg-mint-50 transition-colors"
+                className="w-full py-3 px-4 bg-white dark:bg-gray-800 text-mint-600 dark:text-mint-400 border-2 border-mint-600 dark:border-mint-400 rounded-lg hover:bg-mint-50 dark:hover:bg-gray-700 transition-colors"
               >
                 Personalized Setup with Goals (5 min)
               </button>
@@ -165,27 +165,27 @@ function Onboarding() {
 
         {step === 'quick-setup' && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-semibold text-gray-900">Quick Setup</h2>
+            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Quick Setup</h2>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 What should we call you?
               </label>
               <input
                 type="text"
                 value={quickSetup.name}
                 onChange={(e) => setQuickSetup(prev => ({ ...prev, name: e.target.value }))}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-mint-500 focus:ring-mint-500"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-mint-500 focus:ring-mint-500 dark:bg-gray-700"
                 placeholder="Your name"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 How much time can you commit daily?
               </label>
               <select
                 value={quickSetup.timeCommitment}
                 onChange={(e) => setQuickSetup(prev => ({ ...prev, timeCommitment: e.target.value }))}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-mint-500 focus:ring-mint-500"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-mint-500 focus:ring-mint-500 dark:bg-gray-700 dark:text-white"
               >
                 <option value="5">5 minutes</option>
                 <option value="10">10 minutes</option>
@@ -194,13 +194,13 @@ function Onboarding() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Your experience with face yoga
               </label>
               <select
                 value={quickSetup.experience}
                 onChange={(e) => setQuickSetup(prev => ({ ...prev, experience: e.target.value }))}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-mint-500 focus:ring-mint-500"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-mint-500 focus:ring-mint-500 dark:bg-gray-700 dark:text-white"
               >
                 <option value="beginner">Beginner</option>
                 <option value="intermediate">Some Experience</option>
@@ -221,8 +221,8 @@ function Onboarding() {
 
         {step === 'goals' && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-semibold text-gray-900">Select Your Goals</h2>
-            <p className="text-gray-600">Choose the goals you'd like to work towards:</p>
+            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Select Your Goals</h2>
+            <p className="text-gray-600 dark:text-gray-300">Choose the goals you'd like to work towards:</p>
             <div className="space-y-4">
               {goals.map((goal) => (
                 <div
@@ -236,17 +236,17 @@ function Onboarding() {
                   }}
                   className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
                     selectedGoals.includes(goal.id)
-                      ? 'border-mint-500 bg-mint-50'
-                      : 'border-gray-200 hover:border-mint-300'
+                      ? 'border-mint-500 bg-mint-50 dark:bg-gray-800'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-mint-300'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <h3 className="font-medium text-gray-900">{goal.title}</h3>
+                    <h3 className="font-medium text-gray-900 dark:text-white">{goal.title}</h3>
                     <span className={`px-2 py-1 rounded-full text-xs ${getDifficultyColor(goal.difficulty)}`}>
                       {goal.difficulty}
                     </span>
                   </div>
-                  <p className="mt-1 text-sm text-gray-500">{goal.description}</p>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{goal.description}</p>
                 </div>
               ))}
             </div>
@@ -260,7 +260,7 @@ function Onboarding() {
               </button>
               <button
                 onClick={() => setStep('quick-setup')}
-                className="w-full py-3 px-4 bg-white text-mint-600 border-2 border-mint-600 rounded-lg hover:bg-mint-50 transition-colors"
+                className="w-full py-3 px-4 bg-white dark:bg-gray-800 text-mint-600 dark:text-mint-400 border-2 border-mint-600 dark:border-mint-400 rounded-lg hover:bg-mint-50 dark:hover:bg-gray-700 transition-colors"
               >
                 Back
               </button>

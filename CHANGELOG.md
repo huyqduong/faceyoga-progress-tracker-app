@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed duration field from lesson completion to match database schema
 - Improved store authentication handling
 - Simplified store interfaces
+- Optimized tile images (courses.jpg, dashboard.jpg, lessons.jpg, progress.jpg) for faster page loading
 
 ### Fixed
 - Video display issues with incorrect sizing
