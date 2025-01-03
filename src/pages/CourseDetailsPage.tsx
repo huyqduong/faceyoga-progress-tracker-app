@@ -21,22 +21,24 @@ export const CourseDetailsPage = () => {
 
     try {
       setLoading(true);
-      const courseData = await courseApi.getCourseById(courseId);
-      const sectionsData = await courseApi.getCourseSections(courseId);
+      const courses = await courseApi.fetchCourses();
+      const courseData = courses.find(c => c.id === courseId);
+      if (!courseData) throw new Error('Course not found');
+      const sectionsData = await courseApi.fetchCourseSections(courseId);
       
       setCourse(courseData);
       setSections(sectionsData);
 
       // Check course access
       if (user) {
-        const { data: accessData } = await supabase
-          .from('course_access')
+        const { data: purchaseData } = await supabase
+          .from('course_purchases')
           .select('*')
           .eq('user_id', user.id)
           .eq('course_id', courseId)
           .single();
         
-        setHasAccess(!!accessData);
+        setHasAccess(!!purchaseData);
       }
     } catch (error) {
       console.error('Error loading course:', error);
@@ -56,19 +58,19 @@ export const CourseDetailsPage = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin" />
+        <Loader2 className="w-8 h-8 animate-spin text-gray-600 dark:text-gray-300" />
       </div>
     );
   }
 
   if (!course) {
-    return <div className="text-center py-8">Course not found</div>;
+    return <div className="text-center py-8 text-gray-600 dark:text-gray-300">Course not found</div>;
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
       {/* Course Header */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden mb-8">
         <div className="relative">
           {course.image_url && (
             <img
@@ -87,18 +89,18 @@ export const CourseDetailsPage = () => {
         {/* Course Info */}
         <div className="p-6">
           <div className="flex flex-wrap gap-4 mb-6">
-            <div className="flex items-center bg-gray-100 rounded-full px-4 py-2">
-              <span className="text-sm font-medium">
+            <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-full px-4 py-2">
+              <span className="text-sm font-medium text-gray-900 dark:text-white">
                 Difficulty: {course.difficulty}
               </span>
             </div>
-            <div className="flex items-center bg-gray-100 rounded-full px-4 py-2">
-              <span className="text-sm font-medium">
+            <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-full px-4 py-2">
+              <span className="text-sm font-medium text-gray-900 dark:text-white">
                 Duration: {course.duration}
               </span>
             </div>
-            <div className="flex items-center bg-mint-100 rounded-full px-4 py-2">
-              <span className="text-sm font-medium text-mint-700">
+            <div className="flex items-center bg-mint-100 dark:bg-mint-900/30 rounded-full px-4 py-2">
+              <span className="text-sm font-medium text-mint-700 dark:text-mint-400">
                 Price: {formatDisplayPrice(course.price)}
               </span>
             </div>
@@ -107,48 +109,50 @@ export const CourseDetailsPage = () => {
           {/* Purchase or Access Button */}
           <div className="mb-8">
             <CoursePurchaseButton
-              course={course}
+              courseId={course.id}
               onPurchaseComplete={handlePurchaseComplete}
             />
           </div>
 
           {/* Course Sections */}
           <div className="mt-8">
-            <h2 className="text-xl font-bold mb-6">Course Content</h2>
+            <h2 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">Course Content</h2>
             {sections.length > 0 ? (
               <div className="space-y-4">
                 {sections.map((section) => (
                   <div
                     key={section.id}
                     className={`p-4 rounded-lg border ${
-                      hasAccess ? 'border-mint-200 bg-mint-50' : 'border-gray-200'
+                      hasAccess 
+                        ? 'border-mint-200 bg-mint-50 dark:bg-mint-900/20 dark:border-mint-700' 
+                        : 'border-gray-200 dark:border-gray-700 dark:bg-gray-800'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <h3 className="font-medium text-lg">{section.title}</h3>
+                      <h3 className="font-medium text-lg text-gray-900 dark:text-white">{section.title}</h3>
                       {hasAccess ? (
                         <Link
                           to={`/course/${courseId}/section/${section.id}`}
-                          className="flex items-center text-mint-600 hover:text-mint-700"
+                          className="flex items-center text-mint-600 hover:text-mint-700 dark:text-mint-400 dark:hover:text-mint-300"
                         >
                           <PlayCircle className="w-5 h-5 mr-1" />
                           <span>Start Learning</span>
                         </Link>
                       ) : (
-                        <div className="flex items-center text-gray-500">
+                        <div className="flex items-center text-gray-500 dark:text-gray-400">
                           <Lock className="w-5 h-5 mr-1" />
                           <span>Purchase to Access</span>
                         </div>
                       )}
                     </div>
                     {section.description && (
-                      <p className="text-gray-600 mt-2">{section.description}</p>
+                      <p className="text-gray-600 dark:text-gray-300 mt-2">{section.description}</p>
                     )}
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500 text-center py-4">
+              <p className="text-gray-500 dark:text-gray-400 text-center py-4">
                 No sections available yet.
               </p>
             )}

@@ -111,7 +111,7 @@ function CourseDetails() {
     return (
       <div
         key={item.id}
-        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
       >
         <div className="flex items-center space-x-3">
           {item.lesson.image_url ? (
@@ -123,25 +123,25 @@ function CourseDetails() {
               />
             </div>
           ) : (
-            <div className="w-12 h-12 rounded bg-gray-200 flex-shrink-0 flex items-center justify-center">
-              <BookOpen className="h-6 w-6 text-gray-400" />
+            <div className="w-12 h-12 rounded bg-gray-200 dark:bg-gray-600 flex-shrink-0 flex items-center justify-center">
+              <BookOpen className="h-6 w-6 text-gray-400 dark:text-gray-300" />
             </div>
           )}
           <div>
-            <span className="text-gray-700 font-medium">{item.lesson.title}</span>
+            <span className="text-gray-700 dark:text-gray-100 font-medium">{item.lesson.title}</span>
             {item.lesson.duration && (
-              <div className="text-sm text-gray-500 flex items-center mt-1">
+              <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center mt-1">
                 <Clock className="h-4 w-4 mr-1" />
                 {item.lesson.duration}
               </div>
             )}
           </div>
-          {!hasAccess && <Lock className="h-4 w-4 text-gray-400 ml-2" />}
+          {!hasAccess && <Lock className="h-4 w-4 text-gray-400 dark:text-gray-500 ml-2" />}
         </div>
         {hasAccess && (
           <button
             onClick={() => navigate(`/lessons/${item.lesson.id}`)}
-            className="flex items-center space-x-1 text-mint-600 hover:text-mint-700"
+            className="flex items-center space-x-1 text-mint-600 hover:text-mint-700 dark:text-mint-400 dark:hover:text-mint-300"
           >
             <span>Start</span>
             <ArrowRight className="h-4 w-4" />
@@ -153,15 +153,15 @@ function CourseDetails() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 px-4 py-8">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 px-4 py-8">
         <div className="mx-auto max-w-3xl">
-          <div className="flex items-center space-x-2 text-red-600 mb-4">
+          <div className="flex items-center space-x-2 text-red-600 dark:text-red-400 mb-4">
             <AlertCircle className="h-5 w-5" />
             <span>{error}</span>
           </div>
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
+            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
           >
             <ArrowLeft className="h-5 w-5" />
             <span>Go Back</span>
@@ -173,14 +173,14 @@ function CourseDetails() {
 
   if (isLoading || !course) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
         <div className="mx-auto max-w-3xl animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
-          <div className="h-4 bg-gray-200 rounded w-2/3 mb-2"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
+          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3 mb-2"></div>
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-4"></div>
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+              <div key={i} className="h-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
             ))}
           </div>
         </div>
@@ -189,13 +189,13 @@ function CourseDetails() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="mx-auto max-w-3xl px-4 py-8">
         {/* Course Header */}
         <div className="mb-8">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 mb-4"
+            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 mb-4"
           >
             <ArrowLeft className="h-5 w-5" />
             <span>Back to Courses</span>
@@ -211,9 +211,9 @@ function CourseDetails() {
             </div>
           )}
 
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">{course.title}</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">{course.title}</h1>
           
-          <div className="flex flex-wrap gap-4 text-gray-600 mb-6">
+          <div className="flex flex-wrap gap-4 text-gray-600 dark:text-gray-300 mb-6">
             <div className="flex items-center space-x-2">
               <Clock className="h-5 w-5" />
               <span>{course.duration}</span>
@@ -229,7 +229,7 @@ function CourseDetails() {
           </div>
 
           <div 
-            className="prose prose-mint max-w-none mb-6"
+            className="prose prose-mint max-w-none mb-6 text-gray-600 dark:text-gray-300"
             dangerouslySetInnerHTML={{ __html: course.description }}
           />
 
@@ -252,14 +252,14 @@ function CourseDetails() {
             return (
               <div
                 key={section.id}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
               >
                 <h3 
-                  className="text-xl font-semibold text-gray-900 mb-4 prose prose-mint max-w-none"
+                  className="text-xl font-semibold text-gray-900 dark:text-white mb-4 prose prose-mint dark:prose-invert max-w-none"
                   dangerouslySetInnerHTML={{ __html: section.title }}
                 />
                 <div 
-                  className="text-gray-600 mb-4 prose prose-mint max-w-none"
+                  className="text-gray-600 dark:text-gray-300 mb-4 prose prose-mint dark:prose-invert max-w-none"
                   dangerouslySetInnerHTML={{ __html: section.description }}
                 />
 
@@ -267,13 +267,13 @@ function CourseDetails() {
                   {isLoading ? (
                     <div className="animate-pulse space-y-3">
                       {[1, 2, 3].map((i) => (
-                        <div key={i} className="h-12 bg-gray-100 rounded"></div>
+                        <div key={i} className="h-12 bg-gray-100 dark:bg-gray-700 rounded"></div>
                       ))}
                     </div>
                   ) : sectionLessonList.length > 0 ? (
                     sectionLessonList.map(renderLesson)
                   ) : (
-                    <p className="text-gray-500 italic">No lessons available</p>
+                    <p className="text-gray-500 dark:text-gray-400 italic">No lessons available</p>
                   )}
                 </div>
               </div>

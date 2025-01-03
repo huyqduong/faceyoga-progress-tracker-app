@@ -398,23 +398,23 @@ function LessonDetails({ onComplete }: LessonDetailsProps) {
   };
 
   if (checkingAccess) {
-    return <div>Checking access...</div>;
+    return <div className="text-gray-600 dark:text-gray-300">Checking access...</div>;
   }
 
   if (!lesson) {
-    return <div>Lesson not found</div>;
+    return <div className="text-gray-600 dark:text-gray-300">Lesson not found</div>;
   }
 
   if (!hasAccess) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 dark:bg-gray-900">
         <BackButton />
         <div className="mt-8 text-center">
-          <Lock className="mx-auto h-16 w-16 text-gray-400" />
-          <h2 className="mt-4 text-2xl font-bold text-gray-900">
+          <Lock className="mx-auto h-16 w-16 text-gray-400 dark:text-gray-500" />
+          <h2 className="mt-4 text-2xl font-bold text-gray-900 dark:text-white">
             This lesson is locked
           </h2>
-          <p className="mt-2 text-gray-600">
+          <p className="mt-2 text-gray-600 dark:text-gray-300">
             Purchase the course to access this lesson
           </p>
           <button
@@ -429,23 +429,23 @@ function LessonDetails({ onComplete }: LessonDetailsProps) {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 dark:bg-gray-900">
       <BackButton />
       
       <div className="mt-8 max-w-4xl mx-auto">
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
           <div className="relative">
             {/* Video Section */}
             {lesson?.video_url && (
               <div className="w-full max-w-4xl mx-auto px-4 mb-8">
                 <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
                   {videoLoading ? (
-                    <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-mint-500" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-lg">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-mint-500 dark:border-mint-400" />
                     </div>
                   ) : videoError ? (
-                    <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
-                      <div className="text-red-500 flex items-center gap-2">
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-lg">
+                      <div className="text-red-500 dark:text-red-400 flex items-center gap-2">
                         <AlertCircle className="w-5 h-5" />
                         <span>{videoError}</span>
                       </div>
@@ -464,7 +464,7 @@ function LessonDetails({ onComplete }: LessonDetailsProps) {
             )}
             {!lesson.video_url && (
               <div
-                className="relative aspect-w-16 aspect-h-9 bg-gray-100 cursor-pointer"
+                className="relative aspect-w-16 aspect-h-9 bg-gray-100 dark:bg-gray-700 cursor-pointer"
                 onClick={() => setShowImageModal(true)}
               >
                 <img
@@ -481,7 +481,7 @@ function LessonDetails({ onComplete }: LessonDetailsProps) {
                 />
                 {imageError && (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <ImageOff className="h-12 w-12 text-gray-400" />
+                    <ImageOff className="h-12 w-12 text-gray-400 dark:text-gray-500" />
                   </div>
                 )}
               </div>
@@ -490,27 +490,27 @@ function LessonDetails({ onComplete }: LessonDetailsProps) {
 
           <div className="p-6">
             <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold text-gray-900">{lesson.title}</h1>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{lesson.title}</h1>
               <div className="flex items-center space-x-4">
-                <div className="text-2xl font-bold text-mint-600">
+                <div className="text-2xl font-bold text-mint-600 dark:text-mint-400">
                   {formatTime(timeLeft)}
                 </div>
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={handlePlayPause}
-                    className="p-2 rounded-full hover:bg-mint-50"
+                    className="p-2 rounded-full hover:bg-mint-50 dark:hover:bg-mint-900/20"
                   >
                     {isPaused || !isStarted ? (
-                      <Play className="h-6 w-6 text-mint-600" />
+                      <Play className="h-6 w-6 text-mint-600 dark:text-mint-400" />
                     ) : (
-                      <Pause className="h-6 w-6 text-mint-600" />
+                      <Pause className="h-6 w-6 text-mint-600 dark:text-mint-400" />
                     )}
                   </button>
                   <button
                     onClick={handleReset}
-                    className="p-2 rounded-full hover:bg-mint-50"
+                    className="p-2 rounded-full hover:bg-mint-50 dark:hover:bg-mint-900/20"
                   >
-                    <RotateCcw className="h-6 w-6 text-mint-600" />
+                    <RotateCcw className="h-6 w-6 text-mint-600 dark:text-mint-400" />
                   </button>
                 </div>
               </div>
@@ -518,24 +518,24 @@ function LessonDetails({ onComplete }: LessonDetailsProps) {
 
             <div className="mt-4 space-y-6">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Description</h2>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Description</h2>
                 <div 
-                  className="mt-2 prose prose-mint max-w-none"
+                  className="mt-2 prose prose-mint max-w-none text-gray-600 dark:text-gray-300 dark:prose-headings:text-white dark:prose-strong:text-white"
                   dangerouslySetInnerHTML={{ __html: lesson.description }}
                 />
               </div>
 
               {lesson.instructions && lesson.instructions.length > 0 && (
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Instructions</h2>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Instructions</h2>
                   <ol className="mt-2 space-y-4">
                     {lesson.instructions.map((instruction, index) => (
                       <li key={index} className="flex items-start">
-                        <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-mint-100 text-mint-600 rounded-full text-sm font-medium mr-3 mt-1">
+                        <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-mint-100 dark:bg-mint-900/30 text-mint-600 dark:text-mint-400 rounded-full text-sm font-medium mr-3 mt-1">
                           {index + 1}
                         </span>
                         <div 
-                          className="flex-1 prose prose-mint max-w-none"
+                          className="flex-1 prose prose-mint max-w-none text-gray-600 dark:text-gray-300 dark:prose-headings:text-white dark:prose-strong:text-white"
                           dangerouslySetInnerHTML={{ __html: instruction }}
                         />
                       </li>
@@ -546,13 +546,13 @@ function LessonDetails({ onComplete }: LessonDetailsProps) {
 
               {lesson.benefits && lesson.benefits.length > 0 && (
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Benefits</h2>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Benefits</h2>
                   <ul className="mt-2 space-y-2">
                     {lesson.benefits.map((benefit, index) => (
                       <li key={index} className="flex items-start">
-                        <Check className="flex-shrink-0 w-5 h-5 text-mint-500 mr-2" />
+                        <Check className="flex-shrink-0 w-5 h-5 text-mint-500 dark:text-mint-400 mr-2" />
                         <div 
-                          className="flex-1 prose prose-mint max-w-none"
+                          className="flex-1 prose prose-mint max-w-none text-gray-600 dark:text-gray-300 dark:prose-headings:text-white dark:prose-strong:text-white"
                           dangerouslySetInnerHTML={{ __html: benefit }}
                         />
                       </li>
@@ -568,8 +568,8 @@ function LessonDetails({ onComplete }: LessonDetailsProps) {
                 disabled={isCompleted}
                 className={`w-full py-3 px-4 rounded-lg flex items-center justify-center space-x-2 ${
                   isCompleted
-                    ? 'bg-green-100 text-green-700 cursor-not-allowed'
-                    : 'bg-mint-500 text-white hover:bg-mint-600'
+                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 cursor-not-allowed'
+                    : 'bg-mint-500 text-white hover:bg-mint-600 dark:hover:bg-mint-600'
                 } transition-colors`}
               >
                 <CheckCircle className="h-5 w-5" />
